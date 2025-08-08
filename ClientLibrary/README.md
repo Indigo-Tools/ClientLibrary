@@ -1,2 +1,2 @@
-**ClientLibrary**
-Indigo's Client Library 
+https://dsc.gg/glacierclientmcbe
+https://glacierclient.xyz
