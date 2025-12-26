@@ -3,46 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Library Archive</title>
+    <title>Indigo Client Library</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        body { background-color: #1e2124; color: #cccccf; }
-        .glass-card { background: #39393e; border: 1px solid #808080; position: relative; overflow: hidden; }
-        .tab-active { border-bottom: 2px solid #347ccb; color: #ffffff; }
-        .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1e2124; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #808080; border-radius: 10px; }
-        .btn-primary { background-color: #347ccb; }
-        .btn-primary:hover { background-color: #2b66a8; }
-        .banner-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.15; z-index: 0; filter: blur(2px); }
+        body { background-color: #121417; color: #a1a1aa; }
+        .glass-card { 
+            background: #1e2124; 
+            border: 1px solid #323539; 
+            transition: all 0.2s ease-in-out;
+        }
+        .glass-card:hover {
+            border-color: #347ccb;
+            transform: translateY(-2px);
+            background: #23272a;
+        }
+        .tab-active { 
+            border-bottom: 3px solid #347ccb; 
+            color: #ffffff; 
+        }
+        .custom-scrollbar::-webkit-scrollbar { height: 5px; width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #121417; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f444a; border-radius: 10px; }
+        .btn-download {
+            background-color: #347ccb;
+            box-shadow: 0 4px 14px 0 rgba(52, 124, 203, 0.39);
+        }
+        .btn-download:hover {
+            background-color: #2b66a8;
+            box-shadow: 0 6px 20px rgba(52, 124, 203, 0.23);
+        }
+        .banner-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; opacity: 0.12; z-index: 0; filter: grayscale(100%) blur(1px);
+        }
         .card-content { position: relative; z-index: 10; }
+        .category-btn { transition: all 0.3s ease; }
+        .category-btn:hover { color: white; }
     </style>
 </head>
-<body class="min-h-screen font-sans antialiased">
+<body class="min-h-screen font-sans antialiased selection:bg-[#347ccb] selection:text-white">
 
-    <div class="max-w-5xl mx-auto px-4 py-12">
-        <header class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-white mb-2 tracking-tight">Indigo Client Library</h1>
-            <p class="text-[#808080]">mca.glacierclient.xyz</p>
+    <div class="max-w-6xl mx-auto px-6 py-16">
+        <header class="text-center mb-16">
+            <div class="inline-block p-3 rounded-2xl bg-[#347ccb]/10 mb-4">
+                <i class="fa-solid fa-box-archive text-[#347ccb] text-3xl"></i>
+            </div>
+            <h1 class="text-5xl font-black text-white mb-3 tracking-tight">Indigo Library</h1>
+            <p class="text-zinc-500 font-medium tracking-wide uppercase text-sm">
+                <i class="fa-solid fa-globe mr-2"></i>mca.glacierclient.xyz
+            </p>
         </header>
 
-        <div id="status-container" class="flex flex-col items-center justify-center space-y-4 py-20">
-            <div id="loader" class="w-10 h-10 border-3 border-[#347ccb] border-t-transparent rounded-full animate-spin"></div>
-            <p id="status-text" class="text-[#808080] text-sm font-medium text-center max-w-md">Connecting to repository...</p>
-            <button id="retry-btn" onclick="init()" class="hidden btn-primary text-white text-xs px-4 py-2 rounded mt-2 uppercase">Retry Connection</button>
+        <div id="status-container" class="flex flex-col items-center justify-center py-24">
+            <div id="loader" class="w-12 h-12 border-4 border-[#347ccb]/20 border-t-[#347ccb] rounded-full animate-spin"></div>
+            <p id="status-text" class="mt-6 text-zinc-400 font-medium">Initializing library engine...</p>
+            <button id="retry-btn" onclick="init()" class="hidden btn-download text-white px-8 py-3 rounded-xl mt-6 font-bold uppercase tracking-widest text-xs transition-all">
+                <i class="fa-solid fa-rotate-right mr-2"></i>Retry Connection
+            </button>
         </div>
 
-        <div id="main-content" class="hidden">
-            <div class="flex items-center justify-between mb-6 border-b border-[#808080] overflow-x-auto custom-scrollbar">
-                <nav id="category-tabs" class="flex space-x-8 whitespace-nowrap"></nav>
+        <div id="main-content" class="hidden space-y-8">
+            <div class="border-b border-zinc-800 overflow-x-auto custom-scrollbar no-scrollbar">
+                <nav id="category-tabs" class="flex space-x-10 whitespace-nowrap px-2"></nav>
             </div>
 
-            <div class="mb-8">
-                <input type="text" id="search-input" placeholder="Search clients or files..." 
-                       class="w-full bg-[#1e2124] border border-[#808080] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#347ccb] text-[#cccccf]">
+            <div class="relative group">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-[#347ccb] transition-colors"></i>
+                <input type="text" id="search-input" placeholder="Search for clients, versions, or files..." 
+                       class="w-full bg-[#1e2124] border border-zinc-800 rounded-2xl pl-12 pr-4 py-5 text-zinc-200 focus:outline-none focus:border-[#347ccb] focus:ring-4 focus:ring-[#347ccb]/10 transition-all placeholder:text-zinc-600">
             </div>
 
-            <div id="client-container" class="space-y-12"></div>
+            <div id="client-container" class="space-y-16 pb-20"></div>
         </div>
     </div>
 
@@ -54,6 +86,8 @@
         
         let libraryTree = []; 
         let currentCategory = null;
+
+        const CATEGORY_ORDER = ["Popular Clients", "1_20", "1_19", "1_18", "1_17", "1_16"];
 
         function formatName(name) {
             if (!name) return "";
@@ -77,10 +111,9 @@
         }
 
         async function init() {
-            updateStatus("Connecting to CDN...");
             try {
                 const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
-                if (!response.ok) throw new Error("Manifest not found. Ensure GitHub Action has run.");
+                if (!response.ok) throw new Error("Manifest not found.");
                 
                 const rawPaths = await response.json();
                 const structured = {};
@@ -114,18 +147,24 @@
                     }
                 });
 
-                libraryTree = Object.entries(structured).map(([catName, clients]) => ({
-                    name: catName,
-                    displayName: formatName(catName),
-                    clients: Object.entries(clients).map(([cliName, data]) => ({
-                        displayName: formatName(cliName),
-                        iconUrl: data.icon,
-                        bannerUrl: data.banner,
-                        files: data.files
-                    })).filter(c => c.files.length > 0)
-                })).filter(cat => cat.clients.length > 0);
-
-                if (libraryTree.length === 0) throw new Error("No files found in library folders.");
+                libraryTree = Object.entries(structured)
+                    .sort((a, b) => {
+                        let idxA = CATEGORY_ORDER.indexOf(a[0]);
+                        let idxB = CATEGORY_ORDER.indexOf(b[0]);
+                        return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                    })
+                    .map(([catName, clients]) => ({
+                        name: catName,
+                        isVersion: catName.startsWith('1_'),
+                        displayName: catName.startsWith('1_') ? `Version: ${catName.replace('_', '.')}` : catName,
+                        clients: Object.entries(clients).map(([cliName, data]) => ({
+                            displayName: formatName(cliName),
+                            iconUrl: data.icon,
+                            bannerUrl: data.banner,
+                            files: data.files,
+                            isPopular: catName === "Popular Clients"
+                        })).filter(c => c.files.length > 0)
+                    })).filter(cat => cat.clients.length > 0);
 
                 document.getElementById('status-container').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
@@ -134,7 +173,7 @@
                 switchCategory(libraryTree[0].name);
 
             } catch (err) {
-                updateStatus(`Error: ${err.message}`, true);
+                updateStatus(err.message, true);
             }
         }
 
@@ -142,7 +181,7 @@
             const container = document.getElementById('category-tabs');
             container.innerHTML = libraryTree.map(cat => `
                 <button onclick="switchCategory('${cat.name}')" id="tab-${cat.name}" 
-                        class="pb-3 text-sm font-medium text-[#808080] hover:text-[#cccccf] transition-colors uppercase tracking-widest">
+                        class="category-btn pb-4 text-sm font-bold text-zinc-500 hover:text-white uppercase tracking-[0.2em]">
                     ${cat.displayName}
                 </button>
             `).join('');
@@ -150,9 +189,9 @@
 
         function switchCategory(name) {
             currentCategory = libraryTree.find(c => c.name === name);
-            document.querySelectorAll('#category-tabs button').forEach(btn => btn.classList.remove('tab-active', 'text-white'));
+            document.querySelectorAll('#category-tabs button').forEach(btn => btn.classList.remove('tab-active'));
             const activeTab = document.getElementById(`tab-${name}`);
-            if (activeTab) activeTab.classList.add('tab-active', 'text-white');
+            if (activeTab) activeTab.classList.add('tab-active');
             renderClients();
         }
 
@@ -164,28 +203,46 @@
             );
 
             if (filtered.length === 0) {
-                container.innerHTML = `<p class="text-center py-20 text-[#808080]">No results found.</p>`;
+                container.innerHTML = `<div class="text-center py-24"><i class="fa-solid fa-cloud-moon text-4xl text-zinc-800 mb-4 block"></i><p class="text-zinc-600">No results found in this category</p></div>`;
                 return;
             }
 
             container.innerHTML = filtered.map(client => `
-                <div class="space-y-4">
-                    <div class="flex items-center space-x-4">
-                        ${client.iconUrl ? `<img src="${client.iconUrl}" class="w-12 h-12 rounded-lg object-cover border border-[#808080]/20">` : 
-                          `<div class="w-12 h-12 bg-[#39393e] rounded-lg border border-[#808080]/20 flex items-center justify-center font-bold text-[#347ccb]">?</div>`}
-                        <h2 class="text-2xl font-bold text-white">${client.displayName}</h2>
+                <div class="space-y-6">
+                    <div class="flex items-center space-x-5">
+                        ${client.isPopular ? `
+                            <div class="relative w-14 h-14">
+                                ${client.iconUrl ? `<img src="${client.iconUrl}" class="w-14 h-14 rounded-2xl object-cover shadow-2xl border border-white/5 relative z-10">` : 
+                                `<div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center relative z-10"><i class="fa-solid fa-ghost text-zinc-600"></i></div>`}
+                                <div class="absolute inset-0 bg-[#347ccb]/40 blur-xl rounded-full"></div>
+                            </div>
+                        ` : ''}
+                        <div>
+                            <h2 class="text-2xl font-black text-white tracking-tight">${client.displayName}</h2>
+                            <div class="flex items-center text-[10px] text-zinc-600 uppercase font-bold tracking-widest mt-1">
+                                <i class="fa-solid fa-folder-open mr-2"></i> ${currentCategory.displayName}
+                                <span class="mx-2 text-zinc-800">|</span>
+                                <i class="fa-solid fa-file-code mr-2"></i> ${client.files.length} File(s)
+                            </div>
+                        </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         ${client.files.map(file => `
-                            <div class="glass-card rounded-xl p-5 flex items-center justify-between">
+                            <div class="glass-card rounded-2xl p-6 flex items-center justify-between group">
                                 ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="banner-bg">` : ''}
                                 <div class="card-content flex flex-col min-w-0">
-                                    <span class="text-sm font-bold text-white truncate">${file.display}</span>
-                                    <span class="text-[10px] text-[#808080] font-mono mt-1 truncate">${file.rawName}</span>
+                                    <div class="flex items-center text-white font-bold text-base truncate">
+                                        <i class="fa-solid fa-file-arrow-down mr-3 text-zinc-500 group-hover:text-[#347ccb] transition-colors"></i>
+                                        ${file.display}
+                                    </div>
+                                    <div class="text-[10px] text-zinc-500 font-mono mt-2 truncate opacity-60">
+                                        ${file.rawName}
+                                    </div>
                                 </div>
                                 <div class="card-content ml-4 flex-shrink-0">
                                     <a href="${file.url}" target="_blank" download="${file.rawName}"
-                                       class="btn-primary text-white text-[11px] font-black py-2 px-5 rounded-md uppercase transition-transform active:scale-95 inline-block">
+                                       class="btn-download text-white text-[11px] font-black py-3 px-6 rounded-xl uppercase transition-all active:scale-95 inline-flex items-center">
+                                        <i class="fa-solid fa-download mr-2"></i>
                                         Download
                                     </a>
                                 </div>
