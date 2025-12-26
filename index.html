@@ -55,6 +55,11 @@
         let libraryTree = []; 
         let currentCategory = null;
 
+        function formatName(name) {
+            if (!name) return "";
+            return name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        }
+
         function updateStatus(msg, isError = false) {
             const el = document.getElementById('status-text');
             const loader = document.getElementById('loader');
@@ -71,45 +76,63 @@
             }
         }
 
-        function formatName(name) {
-            let formatted = name.replace(/\.[^/.]+$/, "");
-            if (/^\d+(_\d+)+$/.test(formatted)) return "Version " + formatted.replace(/_/g, ".");
-            return formatted.replace(/[-_]/g, " ");
-        }
-
         async function init() {
-            updateStatus("Fetching library manifest...");
+            updateStatus("Connecting to CDN...");
             try {
                 const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
-                if (!response.ok) throw new Error("paths.json not found. Run the GitHub Action first.");
+                if (!response.ok) throw new Error("Manifest not found. Ensure GitHub Action has run.");
                 
-                const data = await response.json();
-                
-                libraryTree = Object.entries(data).map(([catKey, clients]) => ({
-                    name: catKey,
-                    displayName: formatName(catKey),
-                    clients: Object.entries(clients || {}).map(([clientKey, clientData]) => ({
-                        name: clientKey,
-                        displayName: formatName(clientKey),
-                        iconUrl: clientData.icon ? `${BASE_RAW_URL}/${clientData.icon}` : null,
-                        bannerUrl: clientData.banner ? `${BASE_RAW_URL}/${clientData.banner}` : null,
-                        files: (clientData.files || []).map(filePath => ({
-                            name: filePath.split('/').pop(),
-                            download_url: `${BASE_RAW_URL}/${filePath}`
-                        }))
-                    }))
-                }));
+                const rawPaths = await response.json();
+                const structured = {};
 
-                if (libraryTree.length === 0) {
-                    updateStatus("Library index is empty. Check your folder structure.", true);
-                    return;
-                }
+                rawPaths.forEach(path => {
+                    const parts = path.split('/');
+                    if (parts.length < 2) return;
+
+                    const category = parts[1];
+                    const fileName = parts[parts.length - 1];
+                    const clientName = parts.length > 3 ? parts[2] : fileName;
+
+                    if (!structured[category]) structured[category] = {};
+                    if (!structured[category][clientName]) {
+                        structured[category][clientName] = { icon: null, banner: null, files: [] };
+                    }
+
+                    const encodedPath = path.split('/').map(p => encodeURIComponent(p)).join('/');
+                    const fullUrl = `${BASE_RAW_URL}/${encodedPath}`;
+
+                    if (fileName.toLowerCase() === 'pack_icon.png') {
+                        structured[category][clientName].icon = fullUrl;
+                    } else if (fileName.toLowerCase() === 'pack_banner.png') {
+                        structured[category][clientName].banner = fullUrl;
+                    } else if (fileName.toLowerCase().match(/\.(zip|dll|so|apk|mcpack|mcaddon)$/)) {
+                        structured[category][clientName].files.push({
+                            display: formatName(fileName),
+                            rawName: fileName,
+                            url: fullUrl
+                        });
+                    }
+                });
+
+                libraryTree = Object.entries(structured).map(([catName, clients]) => ({
+                    name: catName,
+                    displayName: formatName(catName),
+                    clients: Object.entries(clients).map(([cliName, data]) => ({
+                        displayName: formatName(cliName),
+                        iconUrl: data.icon,
+                        bannerUrl: data.banner,
+                        files: data.files
+                    })).filter(c => c.files.length > 0)
+                })).filter(cat => cat.clients.length > 0);
+
+                if (libraryTree.length === 0) throw new Error("No files found in library folders.");
 
                 document.getElementById('status-container').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
 
                 renderTabs();
                 switchCategory(libraryTree[0].name);
+
             } catch (err) {
                 updateStatus(`Error: ${err.message}`, true);
             }
@@ -117,7 +140,6 @@
 
         function renderTabs() {
             const container = document.getElementById('category-tabs');
-            if (!container) return;
             container.innerHTML = libraryTree.map(cat => `
                 <button onclick="switchCategory('${cat.name}')" id="tab-${cat.name}" 
                         class="pb-3 text-sm font-medium text-[#808080] hover:text-[#cccccf] transition-colors uppercase tracking-widest">
@@ -128,7 +150,6 @@
 
         function switchCategory(name) {
             currentCategory = libraryTree.find(c => c.name === name);
-            if (!currentCategory) return;
             document.querySelectorAll('#category-tabs button').forEach(btn => btn.classList.remove('tab-active', 'text-white'));
             const activeTab = document.getElementById(`tab-${name}`);
             if (activeTab) activeTab.classList.add('tab-active', 'text-white');
@@ -137,36 +158,34 @@
 
         function renderClients(query = '') {
             const container = document.getElementById('client-container');
-            if (!container || !currentCategory) return;
-
-            const filteredClients = (currentCategory.clients || []).filter(c => 
+            const filtered = currentCategory.clients.filter(c => 
                 c.displayName.toLowerCase().includes(query.toLowerCase()) ||
-                c.files.some(f => f.name.toLowerCase().includes(query.toLowerCase()))
+                c.files.some(f => f.display.toLowerCase().includes(query.toLowerCase()))
             );
 
-            if (filteredClients.length === 0) {
+            if (filtered.length === 0) {
                 container.innerHTML = `<p class="text-center py-20 text-[#808080]">No results found.</p>`;
                 return;
             }
 
-            container.innerHTML = filteredClients.map(client => `
-                <div class="space-y-4 animate-in fade-in duration-500">
+            container.innerHTML = filtered.map(client => `
+                <div class="space-y-4">
                     <div class="flex items-center space-x-4">
-                        ${client.iconUrl ? `<img src="${client.iconUrl}" class="w-12 h-12 rounded-lg object-cover shadow-lg border border-[#808080]/30">` : 
-                          `<div class="w-12 h-12 bg-[#39393e] rounded-lg border border-[#808080]/30 flex items-center justify-center font-bold text-[#347ccb]">?</div>`}
+                        ${client.iconUrl ? `<img src="${client.iconUrl}" class="w-12 h-12 rounded-lg object-cover border border-[#808080]/20">` : 
+                          `<div class="w-12 h-12 bg-[#39393e] rounded-lg border border-[#808080]/20 flex items-center justify-center font-bold text-[#347ccb]">?</div>`}
                         <h2 class="text-2xl font-bold text-white">${client.displayName}</h2>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${(client.files || []).map(file => `
+                        ${client.files.map(file => `
                             <div class="glass-card rounded-xl p-5 flex items-center justify-between">
                                 ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="banner-bg">` : ''}
                                 <div class="card-content flex flex-col min-w-0">
-                                    <span class="text-sm font-bold text-white truncate">${formatName(file.name)}</span>
-                                    <span class="text-[10px] text-[#808080] font-mono mt-1">${file.name}</span>
+                                    <span class="text-sm font-bold text-white truncate">${file.display}</span>
+                                    <span class="text-[10px] text-[#808080] font-mono mt-1 truncate">${file.rawName}</span>
                                 </div>
-                                <div class="card-content flex items-center ml-4">
-                                    <a href="${file.download_url}" download="${file.name}"
-                                       class="btn-primary text-white text-[11px] font-black py-2 px-5 rounded-md transition-all active:scale-95 uppercase tracking-tighter">
+                                <div class="card-content ml-4 flex-shrink-0">
+                                    <a href="${file.url}" target="_blank" download="${file.rawName}"
+                                       class="btn-primary text-white text-[11px] font-black py-2 px-5 rounded-md uppercase transition-transform active:scale-95 inline-block">
                                         Download
                                     </a>
                                 </div>
@@ -177,10 +196,7 @@
             `).join('');
         }
 
-        document.getElementById('search-input')?.addEventListener('input', (e) => {
-            renderClients(e.target.value);
-        });
-
+        document.getElementById('search-input').addEventListener('input', (e) => renderClients(e.target.value));
         window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
