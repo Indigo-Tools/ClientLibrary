@@ -46,7 +46,7 @@
 
         <div id="status-container" class="flex flex-col items-center justify-center space-y-4 py-20">
             <div id="loader" class="w-10 h-10 border-3 border-[#347ccb] border-t-transparent rounded-full animate-spin"></div>
-            <p id="status-text" class="text-[#808080] text-sm font-medium">Synchronizing with Indigo-Tools...</p>
+            <p id="status-text" class="text-[#808080] text-sm font-medium">Fetching public repository data...</p>
         </div>
 
         <div id="main-content" class="hidden">
@@ -70,8 +70,6 @@
         const REPO_NAME = 'ClientLibrary';
         const ROOT_PATH = 'ClientLibrary';
         const BRANCH = 'main';
-        
-        const GITHUB_TOKEN = typeof __github_token !== 'undefined' ? __github_token : ''; 
 
         const ALLOWED_EXTENSIONS = ['.zip', '.dll', '.so', '.apk', '.mcpack', '.mcaddon'];
 
@@ -80,12 +78,10 @@
 
         async function fetchWithRetry(path, retries = 5, delay = 1000) {
             const url = `https://api.github.com/repos/${GITHUB_ORG}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`;
-            const headers = { 'Accept': 'application/vnd.github.v3+json' };
-            if (GITHUB_TOKEN) headers['Authorization'] = `token ${GITHUB_TOKEN}`;
-
+            
             for (let i = 0; i < retries; i++) {
                 try {
-                    const response = await fetch(url, { headers });
+                    const response = await fetch(url);
                     if (response.ok) return await response.json();
                     if (response.status !== 403 && response.status !== 429 && response.status !== 500) throw new Error();
                 } catch (err) {
@@ -107,16 +103,6 @@
         }
 
         async function init() {
-            if (!GITHUB_TOKEN) {
-                document.getElementById('status-container').innerHTML = `
-                    <div class="bg-red-500/10 text-red-500 p-4 rounded-lg border border-red-500/20 max-w-md text-center">
-                        <p class="font-bold mb-1">Missing Environment Variable</p>
-                        <p class="text-sm">Please set the __github_token environment variable to access the private repository.</p>
-                    </div>
-                `;
-                return;
-            }
-
             try {
                 const contents = await fetchWithRetry(ROOT_PATH);
                 archiveData = await Promise.all(contents.filter(f => f.type === 'dir').map(async (folder) => {
@@ -135,7 +121,7 @@
                 switchVersion('all');
 
             } catch (err) {
-                document.getElementById('status-container').innerHTML = `<p class="text-red-500">Failed to load repository. Check token permissions.</p>`;
+                document.getElementById('status-container').innerHTML = `<p class="text-red-500">Failed to load public repository.</p>`;
             }
         }
 
@@ -192,10 +178,10 @@
                             ${file.versionLabel ? `<span class="bg-[#347ccb]/10 text-[#347ccb] text-[9px] px-1.5 py-0.5 rounded border border-[#347ccb]/20 font-bold uppercase tracking-widest">v${file.versionLabel}</span>` : ''}
                         </div>
                     </div>
-                    <button onclick="downloadPrivateFile('${file.url}', '${file.name}')" 
-                            class="btn-primary text-white text-xs font-bold py-2 px-6 rounded-lg transition-all active:scale-95 shadow-sm">
+                    <a href="${file.download_url}" download="${file.name}"
+                       class="btn-primary text-white text-xs font-bold py-2 px-6 rounded-lg transition-all active:scale-95 shadow-sm text-center">
                         Download
-                    </button>
+                    </a>
                 </div>
             `).join('');
         }
@@ -203,26 +189,6 @@
         document.getElementById('search-input').addEventListener('input', (e) => {
             renderAssets(e.target.value);
         });
-
-        async function downloadPrivateFile(apiUrl, fileName) {
-            try {
-                const response = await fetch(apiUrl, {
-                    headers: {
-                        'Authorization': `token ${GITHUB_TOKEN}`,
-                        'Accept': 'application/vnd.github.v3.raw'
-                    }
-                });
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            } catch (error) {}
-        }
 
         window.addEventListener('DOMContentLoaded', init);
     </script>
