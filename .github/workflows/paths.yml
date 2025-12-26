@@ -2,8 +2,6 @@ name: Generate Library Index
 
 on:
   push:
-    branches:
-      - main
     paths:
       - 'ClientLibrary/**'
   workflow_dispatch:
@@ -20,10 +18,39 @@ jobs:
       - name: Generate paths.json
         run: |
           echo "Generating library index..."
-          # Find all files with allowed extensions, excluding the root and non-library files
-          # Format into a simple flat JSON array of paths
-          find ClientLibrary -type f \( -name "*.zip" -o -name "*.dll" -o -name "*.so" -o -name "*.apk" -o -name "*.mcpack" -o -name "*.mcaddon" -o -name "pack_icon.png" -o -name "pack_banner.png" \) | \
-          jq -R . | jq -s . > paths.json
+          
+          python3 -c '
+          import os
+          import json
+
+          root_dir = "ClientLibrary"
+          library = {}
+
+          if os.path.exists(root_dir):
+              for category in os.listdir(root_dir):
+                  cat_path = os.path.join(root_dir, category)
+                  if os.path.isdir(cat_path):
+                      library[category] = {}
+                      for client in os.listdir(cat_path):
+                          client_path = os.path.join(cat_path, client)
+                          if os.path.isdir(client_path):
+                              client_data = {"icon": None, "banner": None, "files": []}
+                              for root, _, files in os.walk(client_path):
+                                  for file in files:
+                                      full_path = os.path.join(root, file)
+                                      if file.lower() == "pack_icon.png":
+                                          client_data["icon"] = full_path
+                                      elif file.lower() == "pack_banner.png":
+                                          client_data["banner"] = full_path
+                                      elif file.lower().endswith((".zip", ".dll", ".so", ".apk", ".mcpack", ".mcaddon")):
+                                          client_data["files"].append(full_path)
+                              
+                              if client_data["files"]:
+                                  library[category][client] = client_data
+
+          with open("paths.json", "w") as f:
+              json.dump(library, f, indent=2)
+          '
 
       - name: Commit and Push
         run: |
