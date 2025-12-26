@@ -1,61 +1,45 @@
-name: Generate Library Index
+async function init() {
+            updateStatus("Fetching library manifest...");
+            try {
+                // Use cache busting to ensure we get the latest paths.json
+                const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error("paths.json not found on server.");
+                
+                const data = await response.json();
+                
+                // Construct tree with heavy null-checking
+                libraryTree = Object.entries(data || {}).map(([catKey, clients]) => {
+                    return {
+                        name: catKey,
+                        displayName: formatName(catKey),
+                        clients: Object.entries(clients || {}).map(([clientKey, clientData]) => {
+                            return {
+                                name: clientKey,
+                                displayName: formatName(clientKey),
+                                iconUrl: clientData.icon ? `${BASE_RAW_URL}/${clientData.icon}` : null,
+                                bannerUrl: clientData.banner ? `${BASE_RAW_URL}/${clientData.banner}` : null,
+                                files: Array.isArray(clientData.files) ? clientData.files.map(filePath => ({
+                                    name: filePath.split('/').pop(),
+                                    download_url: `${BASE_RAW_URL}/${filePath}`
+                                })) : []
+                            };
+                        })
+                    };
+                }).filter(cat => cat.clients.length > 0); // Only show categories with clients
 
-on:
-  push:
-    paths:
-      - 'ClientLibrary/**'
-  workflow_dispatch:
+                if (libraryTree.length === 0) {
+                    updateStatus("Library is empty. Ensure files are inside ClientLibrary/Category/ClientName/ folder.", true);
+                    return;
+                }
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+                document.getElementById('status-container').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
 
-      - name: Generate paths.json
-        run: |
-          echo "Generating library index..."
-          
-          python3 -c '
-          import os
-          import json
+                renderTabs();
+                switchCategory(libraryTree[0].name);
 
-          root_dir = "ClientLibrary"
-          library = {}
-
-          if os.path.exists(root_dir):
-              for category in os.listdir(root_dir):
-                  cat_path = os.path.join(root_dir, category)
-                  if os.path.isdir(cat_path):
-                      library[category] = {}
-                      for client in os.listdir(cat_path):
-                          client_path = os.path.join(cat_path, client)
-                          if os.path.isdir(client_path):
-                              client_data = {"icon": None, "banner": None, "files": []}
-                              for root, _, files in os.walk(client_path):
-                                  for file in files:
-                                      full_path = os.path.join(root, file)
-                                      if file.lower() == "pack_icon.png":
-                                          client_data["icon"] = full_path
-                                      elif file.lower() == "pack_banner.png":
-                                          client_data["banner"] = full_path
-                                      elif file.lower().endswith((".zip", ".dll", ".so", ".apk", ".mcpack", ".mcaddon")):
-                                          client_data["files"].append(full_path)
-                              
-                              if client_data["files"]:
-                                  library[category][client] = client_data
-
-          with open("paths.json", "w") as f:
-              json.dump(library, f, indent=2)
-          '
-
-      - name: Commit and Push
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add paths.json
-          git commit -m "chore: update library index [skip ci]" || exit 0
-          git push
+            } catch (err) {
+                console.error(err);
+                updateStatus(`Error: ${err.message}`, true);
+            }
+        }
