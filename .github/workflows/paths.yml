@@ -1,45 +1,62 @@
-async function init() {
-            updateStatus("Fetching library manifest...");
-            try {
-                // Use cache busting to ensure we get the latest paths.json
-                const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${new Date().getTime()}`);
-                if (!response.ok) throw new Error("paths.json not found on server.");
-                
-                const data = await response.json();
-                
-                // Construct tree with heavy null-checking
-                libraryTree = Object.entries(data || {}).map(([catKey, clients]) => {
-                    return {
-                        name: catKey,
-                        displayName: formatName(catKey),
-                        clients: Object.entries(clients || {}).map(([clientKey, clientData]) => {
-                            return {
-                                name: clientKey,
-                                displayName: formatName(clientKey),
-                                iconUrl: clientData.icon ? `${BASE_RAW_URL}/${clientData.icon}` : null,
-                                bannerUrl: clientData.banner ? `${BASE_RAW_URL}/${clientData.banner}` : null,
-                                files: Array.isArray(clientData.files) ? clientData.files.map(filePath => ({
-                                    name: filePath.split('/').pop(),
-                                    download_url: `${BASE_RAW_URL}/${filePath}`
-                                })) : []
-                            };
-                        })
-                    };
-                }).filter(cat => cat.clients.length > 0); // Only show categories with clients
+name: Generate Library Index
 
-                if (libraryTree.length === 0) {
-                    updateStatus("Library is empty. Ensure files are inside ClientLibrary/Category/ClientName/ folder.", true);
-                    return;
-                }
+on:
+  push:
+    paths:
+      - 'ClientLibrary/**'
+  workflow_dispatch:
 
-                document.getElementById('status-container').classList.add('hidden');
-                document.getElementById('main-content').classList.remove('hidden');
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-                renderTabs();
-                switchCategory(libraryTree[0].name);
+      - name: Generate paths.json
+        run: |
+          echo "Generating library index..."
+          
+          # Initialize an empty object
+          echo "{}" > paths.json
 
-            } catch (err) {
-                console.error(err);
-                updateStatus(`Error: ${err.message}`, true);
-            }
-        }
+          # Loop through Categories
+          # Example: ClientLibrary/Windows/
+          for cat_path in ClientLibrary/*/; do
+              [ -d "$cat_path" ] || continue
+              category=$(basename "$cat_path")
+              
+              # Add category to JSON
+              jq --arg cat "$category" '.[$cat] = {}' paths.json > tmp.json && mv tmp.json paths.json
+
+              # Loop through Clients
+              # Example: ClientLibrary/Windows/IndigoV1/
+              for client_path in "$cat_path"*/; do
+                  [ -d "$client_path" ] || continue
+                  client=$(basename "$client_path")
+
+                  # Find assets and files
+                  # Using find to get paths relative to repo root
+                  files_json=$(find "$client_path" -maxdepth 1 -type f \( -name "*.zip" -o -name "*.dll" -o -name "*.so" -o -name "*.apk" -o -name "*.mcpack" -o -name "*.mcaddon" \) | jq -R . | jq -s .)
+                  icon_path=$(find "$client_path" -maxdepth 1 -type f -iname "pack_icon.png" | head -n 1)
+                  banner_path=$(find "$client_path" -maxdepth 1 -type f -iname "pack_banner.png" | head -n 1)
+
+                  # Inject into the specific category and client key
+                  jq --arg cat "$category" \
+                     --arg cli "$client" \
+                     --arg ico "$icon_path" \
+                     --arg ban "$banner_path" \
+                     --argjson f "$files_json" \
+                     '.[$cat][$cli] = {"icon": $ico, "banner": $ban, "files": $f}' paths.json > tmp.json && mv tmp.json paths.json
+              done
+          done
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add paths.json
+          git commit -m "chore: update library index [skip ci]" || exit 0
+          git push
