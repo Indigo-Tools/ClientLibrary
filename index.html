@@ -15,12 +15,11 @@
             border: 1px solid #282a2d; 
             transition: all 0.2s ease;
             position: relative;
-            z-index: 10;
+            z-index: 20;
             overflow: hidden;
             border-radius: 1rem;
         }
 
-        /* Banner Card Logic */
         .banner-card {
             background: none !important;
             border: 1px solid #282a2d;
@@ -47,11 +46,10 @@
 
         .card-content { position: relative; z-index: 10; width: 100%; height: 100%; }
         
-        /* Dropdown CSS Implementation */
         .extension-dropdown {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease-out, opacity 0.2s;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             opacity: 0;
             background: #111315;
             border: 1px solid #232528;
@@ -60,20 +58,21 @@
             border-bottom-right-radius: 1rem;
             margin-top: -12px;
             position: relative;
-            z-index: 5;
+            z-index: 10;
         }
 
         .extension-dropdown.open {
-            max-height: 1000px; /* Large enough for many extensions */
+            max-height: 2000px;
             opacity: 1;
-            padding-top: 12px;
+            padding-top: 20px;
+            margin-bottom: 20px;
         }
 
         .extension-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem;
+            padding: 1.25rem;
             border-top: 1px solid #1e2022;
             transition: background 0.2s;
         }
@@ -143,6 +142,10 @@
             icon.classList.toggle('rotate-180');
         }
 
+        const versionSort = (a, b) => {
+            return b.rawName.localeCompare(a.rawName, undefined, { numeric: true, sensitivity: 'base' });
+        };
+
         async function init() {
             try {
                 const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
@@ -186,8 +189,8 @@
                             displayName: formatName(cliName),
                             iconUrl: data.icon,
                             bannerUrl: data.banner,
-                            files: data.files,
-                            extensions: data.extensions,
+                            files: data.files.sort(versionSort),
+                            extensions: data.extensions.sort(versionSort),
                             isPopular: catName === "Popular Clients"
                         })).filter(c => c.files.length > 0 || c.extensions.length > 0)
                     })).filter(cat => cat.clients.length > 0);
@@ -253,7 +256,7 @@
 
                                 ${client.extensions.length > 0 ? `
                                     <div class="relative">
-                                        <button onclick="toggleDropdown('${client.id}')" class="w-full glass-card p-4 flex items-center justify-between group">
+                                        <button onclick="toggleDropdown('${client.id}')" class="w-full glass-card p-4 flex items-center justify-between group active:scale-[0.98] transition-transform">
                                             <div class="flex items-center text-[10px] font-black uppercase tracking-widest text-[#347ccb]">
                                                 <i class="fa-solid fa-puzzle-piece mr-3 text-zinc-500"></i>
                                                 Extensions (${client.extensions.length})
@@ -264,7 +267,7 @@
                                             ${client.extensions.map(ext => `
                                                 <div class="extension-row transition-colors">
                                                     <div class="min-w-0 pr-4">
-                                                        <div class="text-xs font-bold text-zinc-300 truncate">${ext.display}</div>
+                                                        <div class="text-xs font-bold text-zinc-200 truncate">${ext.display}</div>
                                                         <div class="text-[9px] text-zinc-600 font-mono truncate">${ext.rawName}</div>
                                                     </div>
                                                     <a href="${ext.url}" target="_blank" class="btn-download text-white text-[9px] font-black py-2 px-4 rounded-lg uppercase inline-flex items-center active:scale-95 transition-all">
