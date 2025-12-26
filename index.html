@@ -62,7 +62,7 @@
         }
 
         .extension-dropdown.open {
-            max-height: 2000px;
+            max-height: 3000px;
             opacity: 1;
             padding-top: 20px;
             margin-bottom: 20px;
@@ -74,9 +74,9 @@
             justify-content: space-between;
             padding: 1.25rem;
             border-top: 1px solid #1e2022;
-            transition: background 0.2s;
+            position: relative;
+            overflow: hidden;
         }
-        .extension-row:hover { background: #1a1c1e; }
 
         .tab-active { border-bottom: 3px solid var(--accent); color: #ffffff !important; }
 
@@ -155,8 +155,10 @@
         function toggleDropdown(id) {
             const dropdown = document.getElementById('drop-' + id);
             const icon = document.getElementById('icon-' + id);
-            dropdown.classList.toggle('open');
-            icon.classList.toggle('rotate-180');
+            if (dropdown && icon) {
+                dropdown.classList.toggle('open');
+                icon.classList.toggle('rotate-180');
+            }
         }
 
         const smartSort = (a, b) => {
@@ -205,7 +207,8 @@
                         name: catName,
                         displayName: catName.startsWith('1_') ? `Version: ${catName.replace('_', '.')}` : catName,
                         clients: Object.entries(clients).map(([cliName, data]) => ({
-                            id: btoa(catName + cliName).replace(/[^a-zA-Z]/g, '').substring(0, 8),
+                            // Unique ID using category + client name to prevent dropdown collisions
+                            id: btoa(catName + cliName).replace(/[^a-zA-Z0-9]/g, '').substring(0, 12),
                             displayName: formatName(cliName),
                             iconUrl: data.icon,
                             bannerUrl: data.banner,
@@ -251,7 +254,7 @@
                         ${filtered.map(client => `
                             <div class="space-y-4">
                                 <div class="flex items-center space-x-4">
-                                    ${client.isPopular ? `<div class="relative w-12 h-12 flex-shrink-0"><img src="${client.iconUrl || ''}" class="w-full h-full rounded-xl object-cover border border-white/5 relative z-10"><div class="absolute inset-0 bg-[#347ccb]/20 blur-lg rounded-full"></div></div>` : ''}
+                                    ${client.iconUrl ? `<div class="relative w-12 h-12 flex-shrink-0"><img src="${client.iconUrl}" class="w-full h-full rounded-xl object-cover border border-white/5 relative z-10"><div class="absolute inset-0 bg-[#347ccb]/20 blur-lg rounded-full"></div></div>` : ''}
                                     <h2 class="text-xl font-black text-white tracking-tight truncate">${client.displayName}</h2>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -286,14 +289,20 @@
                                         </button>
                                         <div id="drop-${client.id}" class="extension-dropdown mx-2 shadow-2xl">
                                             ${client.extensions.map(ext => `
-                                                <div class="extension-row transition-colors">
-                                                    <div class="min-w-0 pr-4">
-                                                        <div class="text-xs font-bold text-zinc-200 truncate">${ext.display}</div>
-                                                        <div class="text-[9px] text-zinc-600 font-mono truncate">${ext.rawName}</div>
+                                                <div class="extension-row group/row">
+                                                    ${client.bannerUrl ? `
+                                                        <img src="${client.bannerUrl}" class="banner-img opacity-20 group-hover/row:opacity-40 transition-opacity">
+                                                        <div class="banner-gradient"></div>
+                                                    ` : ''}
+                                                    <div class="card-content flex items-center justify-between w-full">
+                                                        <div class="min-w-0 pr-4">
+                                                            <div class="text-xs font-bold text-zinc-200 truncate">${ext.display}</div>
+                                                            <div class="text-[9px] text-zinc-500 font-mono truncate">${ext.rawName}</div>
+                                                        </div>
+                                                        <a href="${ext.url}" target="_blank" class="btn-download text-white text-[9px] font-black py-2 px-4 rounded-lg uppercase inline-flex items-center active:scale-95 transition-all">
+                                                            <i class="fa-solid fa-download mr-2"></i>Download
+                                                        </a>
                                                     </div>
-                                                    <a href="${ext.url}" target="_blank" class="btn-download text-white text-[9px] font-black py-2 px-4 rounded-lg uppercase inline-flex items-center active:scale-95 transition-all">
-                                                        <i class="fa-solid fa-download mr-2"></i>Download
-                                                    </a>
                                                 </div>
                                             `).join('')}
                                         </div>
