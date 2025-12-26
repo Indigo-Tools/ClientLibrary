@@ -1,0 +1,34 @@
+name: Generate Library Index
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ClientLibrary/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Generate paths.json
+        run: |
+          echo "Generating library index..."
+          # Find all files with allowed extensions, excluding the root and non-library files
+          # Format into a simple flat JSON array of paths
+          find ClientLibrary -type f \( -name "*.zip" -o -name "*.dll" -o -name "*.so" -o -name "*.apk" -o -name "*.mcpack" -o -name "*.mcaddon" -o -name "pack_icon.png" -o -name "pack_banner.png" \) | \
+          jq -R . | jq -s . > paths.json
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add paths.json
+          git commit -m "chore: update library index [skip ci]" || exit 0
+          git push
