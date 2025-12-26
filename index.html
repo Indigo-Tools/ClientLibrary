@@ -17,15 +17,43 @@
             position: relative;
             z-index: 1;
             overflow: hidden;
+            border-radius: 1rem;
         }
 
+        /* Banner Card Logic - Removes Glass when banner exists */
+        .banner-card {
+            background: none !important;
+            border: 1px solid #282a2d;
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+        }
+
+        .banner-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        .banner-gradient {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(15,17,19,1) 0%, rgba(15,17,19,0.7) 40%, rgba(15,17,19,0.1) 100%);
+            z-index: 1;
+        }
+
+        .card-content { position: relative; z-index: 10; width: 100%; height: 100%; }
+        
         .tab-active { border-bottom: 3px solid var(--accent); color: #ffffff !important; }
 
         .btn-download {
             background-color: var(--accent);
             box-shadow: 0 0 15px rgba(52, 124, 203, 0.4);
-            position: relative;
-            z-index: 10;
+            white-space: nowrap;
         }
 
         .extension-container {
@@ -37,26 +65,8 @@
             margin-top: -10px;
         }
 
-        .banner-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover;
-            opacity: 0.3;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .card-gradient {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, rgba(22,24,26,1) 0%, rgba(22,24,26,0.8) 50%, rgba(22,24,26,0.2) 100%);
-            z-index: 1;
-        }
-
-        .card-content { position: relative; z-index: 5; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        
         .extension-row:hover { background: #1a1c1e; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="min-h-screen font-sans antialiased">
@@ -174,7 +184,7 @@
             const tabs = ["ALL", ...libraryTree.map(c => c.name)];
             container.innerHTML = tabs.map(t => {
                 const label = t === "ALL" ? "All" : (t.startsWith('1_') ? `Version: ${t.replace('_', '.')}` : t);
-                return `<button onclick="switchCategory('${t}')" id="tab-${t}" class="pb-3 text-xs font-bold text-zinc-500 hover:text-white uppercase tracking-widest">${label}</button>`;
+                return `<button onclick="switchCategory('${t}')" id="tab-${t}" class="pb-3 text-xs font-bold text-zinc-500 hover:text-white uppercase tracking-widest transition-colors">${label}</button>`;
             }).join('');
         }
 
@@ -202,23 +212,28 @@
                                     <h2 class="text-xl font-black text-white tracking-tight truncate">${client.displayName}</h2>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    ${client.files.map(file => `
-                                        <div class="glass-card rounded-xl p-6 group">
-                                            ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="banner-overlay"><div class="card-gradient"></div>` : ''}
+                                    ${client.files.map(file => {
+                                        const cardClass = client.bannerUrl ? 'banner-card' : 'glass-card';
+                                        return `
+                                        <div class="${cardClass} p-6 group">
+                                            ${client.bannerUrl ? `
+                                                <img src="${client.bannerUrl}" class="banner-img">
+                                                <div class="banner-gradient"></div>
+                                            ` : ''}
                                             <div class="card-content flex items-center justify-between">
                                                 <div class="min-w-0 pr-4">
                                                     <div class="text-white font-bold text-base truncate flex items-center"><i class="fa-solid fa-file-arrow-down mr-3 text-zinc-500"></i>${file.display}</div>
-                                                    <div class="text-[10px] text-zinc-500 font-mono mt-1 truncate">${file.rawName}</div>
+                                                    <div class="text-[10px] text-zinc-400 font-mono mt-1 truncate">${file.rawName}</div>
                                                 </div>
-                                                <a href="${file.url}" target="_blank" class="btn-download text-white text-[10px] font-black py-2.5 px-5 rounded-lg uppercase inline-flex items-center active:scale-95"><i class="fa-solid fa-download mr-2"></i>Download</a>
+                                                <a href="${file.url}" target="_blank" class="btn-download text-white text-[10px] font-black py-2.5 px-5 rounded-lg uppercase inline-flex items-center active:scale-95 transition-all"><i class="fa-solid fa-download mr-2"></i>Download</a>
                                             </div>
                                         </div>
-                                    `).join('')}
+                                    `}).join('')}
                                 </div>
 
                                 ${client.extensions.length > 0 ? `
                                     <div class="mt-[-8px]">
-                                        <button onclick="toggleDropdown('${client.id}')" class="w-full glass-card p-4 rounded-xl flex items-center justify-between group">
+                                        <button onclick="toggleDropdown('${client.id}')" class="w-full glass-card p-4 flex items-center justify-between group">
                                             <div class="flex items-center text-[10px] font-black uppercase tracking-widest text-[#347ccb]">
                                                 <i class="fa-solid fa-puzzle-piece mr-3 text-zinc-500"></i>
                                                 Extensions (${client.extensions.length})
@@ -232,7 +247,7 @@
                                                         <div class="text-xs font-bold text-zinc-300 truncate">${ext.display}</div>
                                                         <div class="text-[9px] text-zinc-600 font-mono truncate">${ext.rawName}</div>
                                                     </div>
-                                                    <a href="${ext.url}" target="_blank" class="btn-download text-white text-[9px] font-black py-2 px-4 rounded-lg uppercase inline-flex items-center active:scale-95">
+                                                    <a href="${ext.url}" target="_blank" class="btn-download text-white text-[9px] font-black py-2 px-4 rounded-lg uppercase inline-flex items-center active:scale-95 transition-all">
                                                         <i class="fa-solid fa-download mr-2"></i>Download
                                                     </a>
                                                 </div>
