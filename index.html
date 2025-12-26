@@ -88,9 +88,8 @@
         const GITHUB_ORG = 'Indigo-Tools'; 
         const REPO_NAME = 'ClientLibrary';
         const BRANCH = 'main';
-        const ALLOWED_EXTENSIONS = ['.zip', '.dll', '.so', '.apk', '.mcpack', '.mcaddon'];
+        const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
         
-        const apiCache = new Map();
         let libraryTree = []; 
         let currentCategory = null;
 
@@ -111,36 +110,6 @@
             }
         }
 
-        async function apiFetch(path, retries = 3) {
-            if (apiCache.has(path)) return apiCache.get(path);
-
-            const url = `https://api.github.com/repos/${GITHUB_ORG}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`;
-            
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const res = await fetch(url);
-                    
-                    if (res.status === 403) {
-                        const waitTime = (i + 1) * 2000;
-                        updateStatus(`Rate limited. Waiting ${waitTime/1000}s (Try ${i+1}/${retries})...`);
-                        await new Promise(resolve => setTimeout(resolve, waitTime));
-                        continue;
-                    }
-
-                    if (!res.ok) {
-                        const errorData = await res.json().catch(() => ({}));
-                        throw new Error(`HTTP ${res.status}: ${errorData.message || res.statusText}`);
-                    }
-
-                    const data = await res.json();
-                    apiCache.set(path, data);
-                    return data;
-                } catch (err) {
-                    if (i === retries - 1) throw err;
-                }
-            }
-        }
-
         function formatName(name) {
             let formatted = name.replace(/\.[^/.]+$/, "");
             if (/^\d+(_\d+)+$/.test(formatted)) {
@@ -149,63 +118,32 @@
             return formatted.replace(/[-_]/g, " ");
         }
 
-        async function processDirectory(dirPath, categoryObj) {
-            updateStatus(`Scanning: ${dirPath.split('/').pop()}...`);
-            const items = await apiFetch(dirPath);
-            const files = items.filter(i => i.type === 'file' && ALLOWED_EXTENSIONS.some(ext => i.name.toLowerCase().endsWith(ext)));
-            const icon = items.find(i => i.name.toLowerCase() === 'pack_icon.png');
-            const banner = items.find(i => i.name.toLowerCase() === 'pack_banner.png');
-            const subDirs = items.filter(i => i.type === 'dir' && !i.name.startsWith('.'));
-
-            if (files.length > 0) {
-                categoryObj.clients.push({
-                    name: dirPath.split('/').pop(),
-                    displayName: formatName(dirPath.split('/').pop()),
-                    files: files,
-                    iconUrl: icon ? icon.download_url : null,
-                    bannerUrl: banner ? banner.download_url : null
-                });
-            }
-
-            for (const sub of subDirs) {
-                await processDirectory(sub.path, categoryObj);
-            }
-        }
-
         async function init() {
-            libraryTree = [];
-            apiCache.clear();
-            updateStatus("Connecting to repository...");
+            updateStatus("Fetching library manifest...");
             
             try {
-                let startPoint = 'ClientLibrary/ClientLibrary';
-                let rootDirs;
+                const response = await fetch(`${BASE_RAW_URL}/paths.json`);
+                if (!response.ok) throw new Error("Could not find paths.json");
                 
-                try {
-                    rootDirs = await apiFetch(startPoint);
-                } catch (e) {
-                    updateStatus(`Path ${startPoint} failed, trying fallback...`);
-                    rootDirs = await apiFetch('ClientLibrary');
-                }
-
-                const categories = rootDirs.filter(f => f.type === 'dir' && !f.name.startsWith('.'));
-
-                for (const cat of categories) {
-                    const categoryObj = {
-                        name: cat.name,
-                        displayName: formatName(cat.name),
-                        clients: []
-                    };
-
-                    await processDirectory(cat.path, categoryObj);
-
-                    if (categoryObj.clients.length > 0) {
-                        libraryTree.push(categoryObj);
-                    }
-                }
+                const data = await response.json();
+                
+                libraryTree = Object.entries(data).map(([catKey, clients]) => ({
+                    name: catKey,
+                    displayName: formatName(catKey),
+                    clients: Object.entries(clients).map(([clientKey, clientData]) => ({
+                        name: clientKey,
+                        displayName: formatName(clientKey),
+                        iconUrl: clientData.icon ? `${BASE_RAW_URL}/${clientData.icon}` : null,
+                        bannerUrl: clientData.banner ? `${BASE_RAW_URL}/${clientData.banner}` : null,
+                        files: clientData.files.map(filePath => ({
+                            name: filePath.split('/').pop(),
+                            download_url: `${BASE_RAW_URL}/${filePath}`
+                        }))
+                    }))
+                }));
 
                 if (libraryTree.length === 0) {
-                    updateStatus("No valid client folders found.", true);
+                    updateStatus("Library is empty.", true);
                     return;
                 }
 
@@ -216,7 +154,7 @@
                 switchCategory(libraryTree[0].name);
 
             } catch (err) {
-                updateStatus(`Fetch Error: ${err.message}\nTry again in a few minutes.`, true);
+                updateStatus(`Error: ${err.message}`, true);
             }
         }
 
