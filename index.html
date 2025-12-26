@@ -3,78 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Indigo Client Library</title>
+    <title>Indigo Library</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        body { background-color: #121417; color: #a1a1aa; }
+        body { background-color: #0f1113; color: #a1a1aa; }
         .glass-card { 
-            background: #1e2124; 
-            border: 1px solid #323539; 
+            background: #16181a; 
+            border: 1px solid #282a2d; 
             transition: all 0.2s ease-in-out;
+            position: relative;
+            z-index: 1;
         }
         .glass-card:hover {
             border-color: #347ccb;
-            transform: translateY(-2px);
-            background: #23272a;
+            background: #1c1f22;
         }
         .tab-active { 
             border-bottom: 3px solid #347ccb; 
-            color: #ffffff; 
+            color: #ffffff !important; 
         }
         .custom-scrollbar::-webkit-scrollbar { height: 5px; width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #121417; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f1113; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f444a; border-radius: 10px; }
+        
         .btn-download {
             background-color: #347ccb;
-            box-shadow: 0 4px 14px 0 rgba(52, 124, 203, 0.39);
+            box-shadow: 0 0 15px rgba(52, 124, 203, 0.3);
         }
         .btn-download:hover {
-            background-color: #2b66a8;
-            box-shadow: 0 6px 20px rgba(52, 124, 203, 0.23);
+            background-color: #3d8be6;
+            transform: scale(1.02);
         }
+        
         .banner-bg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; opacity: 0.12; z-index: 0; filter: grayscale(100%) blur(1px);
+            object-fit: cover; opacity: 0.1; z-index: 0; pointer-events: none;
         }
-        .card-content { position: relative; z-index: 10; }
-        .category-btn { transition: all 0.3s ease; }
-        .category-btn:hover { color: white; }
+        .card-content { position: relative; z-index: 2; }
+        
+        /* Fixed overlay issues */
+        #main-content { position: relative; z-index: 10; }
+        .category-btn { transition: color 0.2s; }
     </style>
 </head>
-<body class="min-h-screen font-sans antialiased selection:bg-[#347ccb] selection:text-white">
+<body class="min-h-screen font-sans antialiased">
 
     <div class="max-w-6xl mx-auto px-6 py-16">
         <header class="text-center mb-16">
-            <div class="inline-block p-3 rounded-2xl bg-[#347ccb]/10 mb-4">
-                <i class="fa-solid fa-box-archive text-[#347ccb] text-3xl"></i>
+            <div class="inline-block p-4 rounded-2xl bg-[#347ccb]/10 mb-6">
+                <i class="fa-solid fa-box-open text-[#347ccb] text-4xl"></i>
             </div>
-            <h1 class="text-5xl font-black text-white mb-3 tracking-tight">Indigo Library</h1>
-            <p class="text-zinc-500 font-medium tracking-wide uppercase text-sm">
-                <i class="fa-solid fa-globe mr-2"></i>mca.glacierclient.xyz
+            <h1 class="text-5xl font-black text-white mb-2 tracking-tight">Indigo Library</h1>
+            <p class="text-zinc-500 font-bold uppercase text-xs tracking-[0.3em]">
+                mca.glacierclient.xyz
             </p>
         </header>
 
         <div id="status-container" class="flex flex-col items-center justify-center py-24">
             <div id="loader" class="w-12 h-12 border-4 border-[#347ccb]/20 border-t-[#347ccb] rounded-full animate-spin"></div>
-            <p id="status-text" class="mt-6 text-zinc-400 font-medium">Initializing library engine...</p>
-            <button id="retry-btn" onclick="init()" class="hidden btn-download text-white px-8 py-3 rounded-xl mt-6 font-bold uppercase tracking-widest text-xs transition-all">
-                <i class="fa-solid fa-rotate-right mr-2"></i>Retry Connection
-            </button>
+            <p id="status-text" class="mt-6 text-zinc-500 font-medium tracking-wide">Connecting to archive...</p>
         </div>
 
-        <div id="main-content" class="hidden space-y-8">
-            <div class="border-b border-zinc-800 overflow-x-auto custom-scrollbar no-scrollbar">
+        <div id="main-content" class="hidden space-y-10">
+            <div class="border-b border-zinc-800/50 overflow-x-auto custom-scrollbar">
                 <nav id="category-tabs" class="flex space-x-10 whitespace-nowrap px-2"></nav>
             </div>
 
             <div class="relative group">
-                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-[#347ccb] transition-colors"></i>
-                <input type="text" id="search-input" placeholder="Search for clients, versions, or files..." 
-                       class="w-full bg-[#1e2124] border border-zinc-800 rounded-2xl pl-12 pr-4 py-5 text-zinc-200 focus:outline-none focus:border-[#347ccb] focus:ring-4 focus:ring-[#347ccb]/10 transition-all placeholder:text-zinc-600">
+                <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600"></i>
+                <input type="text" id="search-input" placeholder="Search for clients or versions..." 
+                       class="w-full bg-[#16181a] border border-zinc-800 rounded-2xl pl-14 pr-6 py-5 text-white focus:outline-none focus:border-[#347ccb] transition-all placeholder:text-zinc-700">
             </div>
 
-            <div id="client-container" class="space-y-16 pb-20"></div>
+            <div id="client-container" class="space-y-20 pb-20"></div>
         </div>
     </div>
 
@@ -85,36 +87,18 @@
         const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
         
         let libraryTree = []; 
-        let currentCategory = null;
+        let currentCategory = null; // Can be "ALL" or a category object
 
-        const CATEGORY_ORDER = ["Popular Clients", "1_20", "1_19", "1_18", "1_17", "1_16"];
+        const CATEGORY_ORDER = ["ALL", "Popular Clients", "1_20", "1_19", "1_18", "1_17", "1_16"];
 
         function formatName(name) {
             if (!name) return "";
             return name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
         }
 
-        function updateStatus(msg, isError = false) {
-            const el = document.getElementById('status-text');
-            const loader = document.getElementById('loader');
-            const retryBtn = document.getElementById('retry-btn');
-            el.innerText = msg;
-            if (isError) {
-                el.classList.add('text-red-500');
-                loader.classList.add('hidden');
-                retryBtn.classList.remove('hidden');
-            } else {
-                el.classList.remove('text-red-500');
-                loader.classList.remove('hidden');
-                retryBtn.classList.add('hidden');
-            }
-        }
-
         async function init() {
             try {
                 const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
-                if (!response.ok) throw new Error("Manifest not found.");
-                
                 const rawPaths = await response.json();
                 const structured = {};
 
@@ -155,7 +139,6 @@
                     })
                     .map(([catName, clients]) => ({
                         name: catName,
-                        isVersion: catName.startsWith('1_'),
                         displayName: catName.startsWith('1_') ? `Version: ${catName.replace('_', '.')}` : catName,
                         clients: Object.entries(clients).map(([cliName, data]) => ({
                             displayName: formatName(cliName),
@@ -170,87 +153,97 @@
                 document.getElementById('main-content').classList.remove('hidden');
 
                 renderTabs();
-                switchCategory(libraryTree[0].name);
+                switchCategory("ALL");
 
             } catch (err) {
-                updateStatus(err.message, true);
+                document.getElementById('status-text').innerText = "Error: " + err.message;
             }
         }
 
         function renderTabs() {
             const container = document.getElementById('category-tabs');
-            container.innerHTML = libraryTree.map(cat => `
+            const allBtn = `<button onclick="switchCategory('ALL')" id="tab-ALL" class="category-btn pb-4 text-sm font-bold text-zinc-500 hover:text-white uppercase tracking-widest">All</button>`;
+            
+            container.innerHTML = allBtn + libraryTree.map(cat => `
                 <button onclick="switchCategory('${cat.name}')" id="tab-${cat.name}" 
-                        class="category-btn pb-4 text-sm font-bold text-zinc-500 hover:text-white uppercase tracking-[0.2em]">
+                        class="category-btn pb-4 text-sm font-bold text-zinc-500 hover:text-white uppercase tracking-widest">
                     ${cat.displayName}
                 </button>
             `).join('');
         }
 
         function switchCategory(name) {
-            currentCategory = libraryTree.find(c => c.name === name);
+            currentCategory = name;
             document.querySelectorAll('#category-tabs button').forEach(btn => btn.classList.remove('tab-active'));
-            const activeTab = document.getElementById(`tab-${name}`);
-            if (activeTab) activeTab.classList.add('tab-active');
+            document.getElementById(`tab-${name}`).classList.add('tab-active');
             renderClients();
         }
 
         function renderClients(query = '') {
             const container = document.getElementById('client-container');
-            const filtered = currentCategory.clients.filter(c => 
-                c.displayName.toLowerCase().includes(query.toLowerCase()) ||
-                c.files.some(f => f.display.toLowerCase().includes(query.toLowerCase()))
-            );
+            let html = '';
 
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-24"><i class="fa-solid fa-cloud-moon text-4xl text-zinc-800 mb-4 block"></i><p class="text-zinc-600">No results found in this category</p></div>`;
-                return;
-            }
+            // Decide which categories to show
+            const categoriesToShow = currentCategory === "ALL" ? libraryTree : libraryTree.filter(c => c.name === currentCategory);
 
-            container.innerHTML = filtered.map(client => `
-                <div class="space-y-6">
-                    <div class="flex items-center space-x-5">
-                        ${client.isPopular ? `
-                            <div class="relative w-14 h-14">
-                                ${client.iconUrl ? `<img src="${client.iconUrl}" class="w-14 h-14 rounded-2xl object-cover shadow-2xl border border-white/5 relative z-10">` : 
-                                `<div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center relative z-10"><i class="fa-solid fa-ghost text-zinc-600"></i></div>`}
-                                <div class="absolute inset-0 bg-[#347ccb]/40 blur-xl rounded-full"></div>
+            categoriesToShow.forEach(cat => {
+                const filteredClients = cat.clients.filter(c => 
+                    c.displayName.toLowerCase().includes(query.toLowerCase()) ||
+                    c.files.some(f => f.display.toLowerCase().includes(query.toLowerCase()))
+                );
+
+                if (filteredClients.length > 0) {
+                    html += `
+                        <div class="space-y-8">
+                            <div class="flex items-center space-x-4 opacity-50">
+                                <span class="h-px flex-1 bg-zinc-800"></span>
+                                <span class="text-[10px] font-black uppercase tracking-[0.4em]">${cat.displayName}</span>
+                                <span class="h-px flex-1 bg-zinc-800"></span>
                             </div>
-                        ` : ''}
-                        <div>
-                            <h2 class="text-2xl font-black text-white tracking-tight">${client.displayName}</h2>
-                            <div class="flex items-center text-[10px] text-zinc-600 uppercase font-bold tracking-widest mt-1">
-                                <i class="fa-solid fa-folder-open mr-2"></i> ${currentCategory.displayName}
-                                <span class="mx-2 text-zinc-800">|</span>
-                                <i class="fa-solid fa-file-code mr-2"></i> ${client.files.length} File(s)
-                            </div>
+                            ${filteredClients.map(client => `
+                                <div class="space-y-6">
+                                    <div class="flex items-center space-x-5">
+                                        ${client.isPopular ? `
+                                            <div class="relative w-14 h-14 flex-shrink-0">
+                                                <img src="${client.iconUrl || ''}" class="w-14 h-14 rounded-2xl object-cover shadow-2xl border border-white/5 relative z-10">
+                                                <div class="absolute inset-0 bg-[#347ccb]/30 blur-xl rounded-full"></div>
+                                            </div>
+                                        ` : ''}
+                                        <div>
+                                            <h2 class="text-2xl font-black text-white tracking-tight">${client.displayName}</h2>
+                                            <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">
+                                                <i class="fa-solid fa-layer-group mr-2"></i> ${cat.displayName} | ${client.files.length} Files
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        ${client.files.map(file => `
+                                            <div class="glass-card rounded-2xl p-6 flex items-center justify-between group">
+                                                ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="banner-bg">` : ''}
+                                                <div class="card-content flex flex-col min-w-0">
+                                                    <div class="text-white font-bold text-base truncate flex items-center">
+                                                        <i class="fa-solid fa-file-arrow-down mr-3 text-zinc-600 group-hover:text-[#347ccb] transition-colors"></i>
+                                                        ${file.display}
+                                                    </div>
+                                                    <div class="text-[10px] text-zinc-600 font-mono mt-2 truncate">${file.rawName}</div>
+                                                </div>
+                                                <div class="card-content ml-4 flex-shrink-0">
+                                                    <a href="${file.url}" target="_blank" download="${file.rawName}"
+                                                       class="btn-download text-white text-[11px] font-black py-3 px-6 rounded-xl uppercase transition-all inline-flex items-center">
+                                                        <i class="fa-solid fa-download mr-2"></i> Download
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        ${client.files.map(file => `
-                            <div class="glass-card rounded-2xl p-6 flex items-center justify-between group">
-                                ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="banner-bg">` : ''}
-                                <div class="card-content flex flex-col min-w-0">
-                                    <div class="flex items-center text-white font-bold text-base truncate">
-                                        <i class="fa-solid fa-file-arrow-down mr-3 text-zinc-500 group-hover:text-[#347ccb] transition-colors"></i>
-                                        ${file.display}
-                                    </div>
-                                    <div class="text-[10px] text-zinc-500 font-mono mt-2 truncate opacity-60">
-                                        ${file.rawName}
-                                    </div>
-                                </div>
-                                <div class="card-content ml-4 flex-shrink-0">
-                                    <a href="${file.url}" target="_blank" download="${file.rawName}"
-                                       class="btn-download text-white text-[11px] font-black py-3 px-6 rounded-xl uppercase transition-all active:scale-95 inline-flex items-center">
-                                        <i class="fa-solid fa-download mr-2"></i>
-                                        Download
-                                    </a>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('');
+                    `;
+                }
+            });
+
+            container.innerHTML = html || `<div class="text-center py-20 text-zinc-600">No results found.</div>`;
         }
 
         document.getElementById('search-input').addEventListener('input', (e) => renderClients(e.target.value));
