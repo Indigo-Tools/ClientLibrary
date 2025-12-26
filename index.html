@@ -13,6 +13,8 @@
         .glass-card {
             background: #39393e;
             border: 1px solid #808080;
+            position: relative;
+            overflow: hidden;
         }
         .tab-active {
             border-bottom: 2px solid #347ccb;
@@ -20,6 +22,7 @@
         }
         .custom-scrollbar::-webkit-scrollbar {
             height: 4px;
+            width: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
             background: #1e2124;
@@ -34,33 +37,49 @@
         .btn-primary:hover {
             background-color: #2b66a8;
         }
+        .banner-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.15;
+            z-index: 0;
+            filter: blur(2px);
+        }
+        .card-content {
+            position: relative;
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="min-h-screen font-sans antialiased">
 
-    <div class="max-w-4xl mx-auto px-4 py-12">
+    <div class="max-w-5xl mx-auto px-4 py-12">
         <header class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-white mb-4 tracking-tight">Client Library</h1>
-            <p class="text-[#808080]">Select a version to browse available client builds.</p>
+            <h1 class="text-4xl font-bold text-white mb-2 tracking-tight">Indigo Client Library</h1>
+            <p class="text-[#808080]">mca.glacierclient.xyz</p>
         </header>
 
         <div id="status-container" class="flex flex-col items-center justify-center space-y-4 py-20">
             <div id="loader" class="w-10 h-10 border-3 border-[#347ccb] border-t-transparent rounded-full animate-spin"></div>
-            <p id="status-text" class="text-[#808080] text-sm font-medium">Fetching public repository data...</p>
+            <p id="status-text" class="text-[#808080] text-sm font-medium text-center max-w-md">Connecting to repository...</p>
+            <button id="retry-btn" onclick="init()" class="hidden btn-primary text-white text-xs px-4 py-2 rounded mt-2 uppercase">Retry Connection</button>
         </div>
 
         <div id="main-content" class="hidden">
             <div class="flex items-center justify-between mb-6 border-b border-[#808080] overflow-x-auto custom-scrollbar">
-                <nav id="version-tabs" class="flex space-x-8 whitespace-nowrap">
+                <nav id="category-tabs" class="flex space-x-8 whitespace-nowrap">
                 </nav>
             </div>
 
-            <div class="mb-6">
-                <input type="text" id="search-input" placeholder="Filter assets..." 
-                       class="w-full bg-[#1e2124] border border-[#808080] rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#347ccb] text-[#cccccf]">
+            <div class="mb-8">
+                <input type="text" id="search-input" placeholder="Search clients or files..." 
+                       class="w-full bg-[#1e2124] border border-[#808080] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#347ccb] text-[#cccccf]">
             </div>
 
-            <div id="asset-list" class="space-y-3">
+            <div id="client-container" class="space-y-12">
             </div>
         </div>
     </div>
@@ -68,126 +87,200 @@
     <script>
         const GITHUB_ORG = 'Indigo-Tools'; 
         const REPO_NAME = 'ClientLibrary';
-        const ROOT_PATH = 'ClientLibrary';
         const BRANCH = 'main';
-
         const ALLOWED_EXTENSIONS = ['.zip', '.dll', '.so', '.apk', '.mcpack', '.mcaddon'];
+        
+        const apiCache = new Map();
+        let libraryTree = []; 
+        let currentCategory = null;
 
-        let archiveData = [];
-        let currentSelection = null;
+        function updateStatus(msg, isError = false) {
+            const el = document.getElementById('status-text');
+            const loader = document.getElementById('loader');
+            const retryBtn = document.getElementById('retry-btn');
+            
+            el.innerText = msg;
+            if (isError) {
+                el.classList.add('text-red-500');
+                loader.classList.add('hidden');
+                retryBtn.classList.remove('hidden');
+            } else {
+                el.classList.remove('text-red-500');
+                loader.classList.remove('hidden');
+                retryBtn.classList.add('hidden');
+            }
+        }
 
-        async function fetchWithRetry(path, retries = 5, delay = 1000) {
+        async function apiFetch(path, retries = 3) {
+            if (apiCache.has(path)) return apiCache.get(path);
+
             const url = `https://api.github.com/repos/${GITHUB_ORG}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`;
             
             for (let i = 0; i < retries; i++) {
                 try {
-                    const response = await fetch(url);
-                    if (response.ok) return await response.json();
-                    if (response.status !== 403 && response.status !== 429 && response.status !== 500) throw new Error();
+                    const res = await fetch(url);
+                    
+                    if (res.status === 403) {
+                        const waitTime = (i + 1) * 2000;
+                        updateStatus(`Rate limited. Waiting ${waitTime/1000}s (Try ${i+1}/${retries})...`);
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                        continue;
+                    }
+
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        throw new Error(`HTTP ${res.status}: ${errorData.message || res.statusText}`);
+                    }
+
+                    const data = await res.json();
+                    apiCache.set(path, data);
+                    return data;
                 } catch (err) {
                     if (i === retries - 1) throw err;
                 }
-                await new Promise(r => setTimeout(r, delay));
-                delay *= 2;
             }
         }
 
-        function formatDisplayName(name) {
-            return name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        function formatName(name) {
+            let formatted = name.replace(/\.[^/.]+$/, "");
+            if (/^\d+(_\d+)+$/.test(formatted)) {
+                return "Version " + formatted.replace(/_/g, ".");
+            }
+            return formatted.replace(/[-_]/g, " ");
         }
 
-        function isFileAllowed(fileName) {
-            const name = fileName.toLowerCase();
-            if (name.endsWith('.md')) return false;
-            return ALLOWED_EXTENSIONS.some(ext => name.endsWith(ext));
+        async function processDirectory(dirPath, categoryObj) {
+            updateStatus(`Scanning: ${dirPath.split('/').pop()}...`);
+            const items = await apiFetch(dirPath);
+            const files = items.filter(i => i.type === 'file' && ALLOWED_EXTENSIONS.some(ext => i.name.toLowerCase().endsWith(ext)));
+            const icon = items.find(i => i.name.toLowerCase() === 'pack_icon.png');
+            const banner = items.find(i => i.name.toLowerCase() === 'pack_banner.png');
+            const subDirs = items.filter(i => i.type === 'dir' && !i.name.startsWith('.'));
+
+            if (files.length > 0) {
+                categoryObj.clients.push({
+                    name: dirPath.split('/').pop(),
+                    displayName: formatName(dirPath.split('/').pop()),
+                    files: files,
+                    iconUrl: icon ? icon.download_url : null,
+                    bannerUrl: banner ? banner.download_url : null
+                });
+            }
+
+            for (const sub of subDirs) {
+                await processDirectory(sub.path, categoryObj);
+            }
         }
 
         async function init() {
+            libraryTree = [];
+            apiCache.clear();
+            updateStatus("Connecting to repository...");
+            
             try {
-                const contents = await fetchWithRetry(ROOT_PATH);
-                archiveData = await Promise.all(contents.filter(f => f.type === 'dir').map(async (folder) => {
-                    const files = await fetchWithRetry(folder.path);
-                    return {
-                        id: folder.name,
-                        label: folder.name.replace('_', '.'),
-                        files: files.filter(file => file.type === 'file' && isFileAllowed(file.name))
+                let startPoint = 'ClientLibrary/ClientLibrary';
+                let rootDirs;
+                
+                try {
+                    rootDirs = await apiFetch(startPoint);
+                } catch (e) {
+                    updateStatus(`Path ${startPoint} failed, trying fallback...`);
+                    rootDirs = await apiFetch('ClientLibrary');
+                }
+
+                const categories = rootDirs.filter(f => f.type === 'dir' && !f.name.startsWith('.'));
+
+                for (const cat of categories) {
+                    const categoryObj = {
+                        name: cat.name,
+                        displayName: formatName(cat.name),
+                        clients: []
                     };
-                }));
+
+                    await processDirectory(cat.path, categoryObj);
+
+                    if (categoryObj.clients.length > 0) {
+                        libraryTree.push(categoryObj);
+                    }
+                }
+
+                if (libraryTree.length === 0) {
+                    updateStatus("No valid client folders found.", true);
+                    return;
+                }
 
                 document.getElementById('status-container').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
 
                 renderTabs();
-                switchVersion('all');
+                switchCategory(libraryTree[0].name);
 
             } catch (err) {
-                document.getElementById('status-container').innerHTML = `<p class="text-red-500">Failed to load public repository.</p>`;
+                updateStatus(`Fetch Error: ${err.message}\nTry again in a few minutes.`, true);
             }
         }
 
         function renderTabs() {
-            const container = document.getElementById('version-tabs');
-            let tabsHtml = `
-                <button onclick="switchVersion('all')" id="tab-all" 
-                        class="pb-3 text-sm font-medium text-[#808080] hover:text-[#cccccf] transition-colors">
-                    All Files
-                </button>
-            `;
-            
-            tabsHtml += archiveData.map(v => `
-                <button onclick="switchVersion('${v.id}')" id="tab-${v.id}" 
-                        class="pb-3 text-sm font-medium text-[#808080] hover:text-[#cccccf] transition-colors">
-                    Version ${v.label}
+            const container = document.getElementById('category-tabs');
+            container.innerHTML = libraryTree.map(cat => `
+                <button onclick="switchCategory('${cat.name}')" id="tab-${cat.name}" 
+                        class="pb-3 text-sm font-medium text-[#808080] hover:text-[#cccccf] transition-colors uppercase tracking-widest">
+                    ${cat.displayName}
                 </button>
             `).join('');
-            
-            container.innerHTML = tabsHtml;
         }
 
-        function switchVersion(id) {
-            if (id === 'all') {
-                const allFiles = archiveData.flatMap(v => v.files.map(f => ({ ...f, versionLabel: v.label })));
-                currentSelection = { id: 'all', files: allFiles };
-            } else {
-                currentSelection = archiveData.find(v => v.id === id);
-            }
-
-            document.querySelectorAll('#version-tabs button').forEach(btn => btn.classList.remove('tab-active', 'text-white'));
-            const activeTab = document.getElementById(`tab-${id}`);
+        function switchCategory(name) {
+            currentCategory = libraryTree.find(c => c.name === name);
+            document.querySelectorAll('#category-tabs button').forEach(btn => btn.classList.remove('tab-active', 'text-white'));
+            const activeTab = document.getElementById(`tab-${name}`);
             if (activeTab) activeTab.classList.add('tab-active', 'text-white');
-            renderAssets();
+            renderClients();
         }
 
-        function renderAssets(filter = '') {
-            const container = document.getElementById('asset-list');
-            const filteredFiles = currentSelection.files.filter(f => 
-                f.name.toLowerCase().includes(filter.toLowerCase())
+        function renderClients(query = '') {
+            const container = document.getElementById('client-container');
+            const filteredClients = currentCategory.clients.filter(c => 
+                c.displayName.toLowerCase().includes(query.toLowerCase()) ||
+                c.files.some(f => f.name.toLowerCase().includes(query.toLowerCase()))
             );
 
-            if (filteredFiles.length === 0) {
-                container.innerHTML = `<p class="text-center py-10 text-[#808080] text-sm">No assets found matching your criteria.</p>`;
+            if (filteredClients.length === 0) {
+                container.innerHTML = `<p class="text-center py-20 text-[#808080]">No results found.</p>`;
                 return;
             }
 
-            container.innerHTML = filteredFiles.map(file => `
-                <div class="glass-card rounded-xl p-4 flex items-center justify-between">
-                    <div class="flex flex-col">
-                        <span class="text-sm font-semibold text-[#cccccf]">${formatDisplayName(file.name)}</span>
-                        <div class="flex items-center space-x-2 mt-1">
-                            <span class="text-[10px] text-[#808080] font-mono uppercase tracking-tighter">${file.name}</span>
-                            ${file.versionLabel ? `<span class="bg-[#347ccb]/10 text-[#347ccb] text-[9px] px-1.5 py-0.5 rounded border border-[#347ccb]/20 font-bold uppercase tracking-widest">v${file.versionLabel}</span>` : ''}
-                        </div>
+            container.innerHTML = filteredClients.map(client => `
+                <div class="space-y-4 animate-in fade-in duration-500">
+                    <div class="flex items-center space-x-4">
+                        ${client.iconUrl ? `<img src="${client.iconUrl}" class="w-12 h-12 rounded-lg object-cover shadow-lg border border-[#808080]/30">` : 
+                          `<div class="w-12 h-12 bg-[#39393e] rounded-lg border border-[#808080]/30 flex items-center justify-center font-bold text-[#347ccb]">?</div>`}
+                        <h2 class="text-2xl font-bold text-white">${client.displayName}</h2>
                     </div>
-                    <a href="${file.download_url}" download="${file.name}"
-                       class="btn-primary text-white text-xs font-bold py-2 px-6 rounded-lg transition-all active:scale-95 shadow-sm text-center">
-                        Download
-                    </a>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${client.files.map(file => `
+                            <div class="glass-card rounded-xl p-5 flex items-center justify-between">
+                                ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="banner-bg">` : ''}
+                                <div class="card-content flex flex-col min-w-0">
+                                    <span class="text-sm font-bold text-white truncate">${formatName(file.name)}</span>
+                                    <span class="text-[10px] text-[#808080] font-mono mt-1">${file.name}</span>
+                                </div>
+                                <div class="card-content flex items-center ml-4">
+                                    <a href="${file.download_url}" download="${file.name}"
+                                       class="btn-primary text-white text-[11px] font-black py-2 px-5 rounded-md transition-all active:scale-95 uppercase tracking-tighter">
+                                        Download
+                                    </a>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             `).join('');
         }
 
         document.getElementById('search-input').addEventListener('input', (e) => {
-            renderAssets(e.target.value);
+            renderClients(e.target.value);
         });
 
         window.addEventListener('DOMContentLoaded', init);
