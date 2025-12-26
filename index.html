@@ -6,52 +6,16 @@
     <title>Client Library Archive</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            background-color: #1e2124;
-            color: #cccccf;
-        }
-        .glass-card {
-            background: #39393e;
-            border: 1px solid #808080;
-            position: relative;
-            overflow: hidden;
-        }
-        .tab-active {
-            border-bottom: 2px solid #347ccb;
-            color: #ffffff;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 4px;
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1e2124;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #808080;
-            border-radius: 10px;
-        }
-        .btn-primary {
-            background-color: #347ccb;
-        }
-        .btn-primary:hover {
-            background-color: #2b66a8;
-        }
-        .banner-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.15;
-            z-index: 0;
-            filter: blur(2px);
-        }
-        .card-content {
-            position: relative;
-            z-index: 10;
-        }
+        body { background-color: #1e2124; color: #cccccf; }
+        .glass-card { background: #39393e; border: 1px solid #808080; position: relative; overflow: hidden; }
+        .tab-active { border-bottom: 2px solid #347ccb; color: #ffffff; }
+        .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e2124; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #808080; border-radius: 10px; }
+        .btn-primary { background-color: #347ccb; }
+        .btn-primary:hover { background-color: #2b66a8; }
+        .banner-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.15; z-index: 0; filter: blur(2px); }
+        .card-content { position: relative; z-index: 10; }
     </style>
 </head>
 <body class="min-h-screen font-sans antialiased">
@@ -70,8 +34,7 @@
 
         <div id="main-content" class="hidden">
             <div class="flex items-center justify-between mb-6 border-b border-[#808080] overflow-x-auto custom-scrollbar">
-                <nav id="category-tabs" class="flex space-x-8 whitespace-nowrap">
-                </nav>
+                <nav id="category-tabs" class="flex space-x-8 whitespace-nowrap"></nav>
             </div>
 
             <div class="mb-8">
@@ -79,8 +42,7 @@
                        class="w-full bg-[#1e2124] border border-[#808080] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#347ccb] text-[#cccccf]">
             </div>
 
-            <div id="client-container" class="space-y-12">
-            </div>
+            <div id="client-container" class="space-y-12"></div>
         </div>
     </div>
 
@@ -97,7 +59,6 @@
             const el = document.getElementById('status-text');
             const loader = document.getElementById('loader');
             const retryBtn = document.getElementById('retry-btn');
-            
             el.innerText = msg;
             if (isError) {
                 el.classList.add('text-red-500');
@@ -112,30 +73,27 @@
 
         function formatName(name) {
             let formatted = name.replace(/\.[^/.]+$/, "");
-            if (/^\d+(_\d+)+$/.test(formatted)) {
-                return "Version " + formatted.replace(/_/g, ".");
-            }
+            if (/^\d+(_\d+)+$/.test(formatted)) return "Version " + formatted.replace(/_/g, ".");
             return formatted.replace(/[-_]/g, " ");
         }
 
         async function init() {
             updateStatus("Fetching library manifest...");
-            
             try {
-                const response = await fetch(`${BASE_RAW_URL}/paths.json`);
-                if (!response.ok) throw new Error("Could not find paths.json");
+                const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
+                if (!response.ok) throw new Error("paths.json not found. Run the GitHub Action first.");
                 
                 const data = await response.json();
                 
                 libraryTree = Object.entries(data).map(([catKey, clients]) => ({
                     name: catKey,
                     displayName: formatName(catKey),
-                    clients: Object.entries(clients).map(([clientKey, clientData]) => ({
+                    clients: Object.entries(clients || {}).map(([clientKey, clientData]) => ({
                         name: clientKey,
                         displayName: formatName(clientKey),
                         iconUrl: clientData.icon ? `${BASE_RAW_URL}/${clientData.icon}` : null,
                         bannerUrl: clientData.banner ? `${BASE_RAW_URL}/${clientData.banner}` : null,
-                        files: clientData.files.map(filePath => ({
+                        files: (clientData.files || []).map(filePath => ({
                             name: filePath.split('/').pop(),
                             download_url: `${BASE_RAW_URL}/${filePath}`
                         }))
@@ -143,7 +101,7 @@
                 }));
 
                 if (libraryTree.length === 0) {
-                    updateStatus("Library is empty.", true);
+                    updateStatus("Library index is empty. Check your folder structure.", true);
                     return;
                 }
 
@@ -152,7 +110,6 @@
 
                 renderTabs();
                 switchCategory(libraryTree[0].name);
-
             } catch (err) {
                 updateStatus(`Error: ${err.message}`, true);
             }
@@ -160,6 +117,7 @@
 
         function renderTabs() {
             const container = document.getElementById('category-tabs');
+            if (!container) return;
             container.innerHTML = libraryTree.map(cat => `
                 <button onclick="switchCategory('${cat.name}')" id="tab-${cat.name}" 
                         class="pb-3 text-sm font-medium text-[#808080] hover:text-[#cccccf] transition-colors uppercase tracking-widest">
@@ -170,6 +128,7 @@
 
         function switchCategory(name) {
             currentCategory = libraryTree.find(c => c.name === name);
+            if (!currentCategory) return;
             document.querySelectorAll('#category-tabs button').forEach(btn => btn.classList.remove('tab-active', 'text-white'));
             const activeTab = document.getElementById(`tab-${name}`);
             if (activeTab) activeTab.classList.add('tab-active', 'text-white');
@@ -178,7 +137,9 @@
 
         function renderClients(query = '') {
             const container = document.getElementById('client-container');
-            const filteredClients = currentCategory.clients.filter(c => 
+            if (!container || !currentCategory) return;
+
+            const filteredClients = (currentCategory.clients || []).filter(c => 
                 c.displayName.toLowerCase().includes(query.toLowerCase()) ||
                 c.files.some(f => f.name.toLowerCase().includes(query.toLowerCase()))
             );
@@ -195,9 +156,8 @@
                           `<div class="w-12 h-12 bg-[#39393e] rounded-lg border border-[#808080]/30 flex items-center justify-center font-bold text-[#347ccb]">?</div>`}
                         <h2 class="text-2xl font-bold text-white">${client.displayName}</h2>
                     </div>
-                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${client.files.map(file => `
+                        ${(client.files || []).map(file => `
                             <div class="glass-card rounded-xl p-5 flex items-center justify-between">
                                 ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="banner-bg">` : ''}
                                 <div class="card-content flex flex-col min-w-0">
@@ -217,7 +177,7 @@
             `).join('');
         }
 
-        document.getElementById('search-input').addEventListener('input', (e) => {
+        document.getElementById('search-input')?.addEventListener('input', (e) => {
             renderClients(e.target.value);
         });
 
