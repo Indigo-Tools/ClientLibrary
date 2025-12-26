@@ -162,7 +162,7 @@
         }
 
         const smartSort = (a, b) => {
-            return b.rawName.localeCompare(a.rawName, undefined, { 
+            return a.rawName.localeCompare(b.rawName, undefined, { 
                 numeric: true, 
                 sensitivity: 'base' 
             });
@@ -206,16 +206,19 @@
                     .map(([catName, clients]) => ({
                         name: catName,
                         displayName: catName.startsWith('1_') ? `Version: ${catName.replace('_', '.')}` : catName,
-                        clients: Object.entries(clients).map(([cliName, data]) => ({
-                            // Unique ID using category + client name to prevent dropdown collisions
-                            id: btoa(catName + cliName).replace(/[^a-zA-Z0-9]/g, '').substring(0, 12),
-                            displayName: formatName(cliName),
-                            iconUrl: data.icon,
-                            bannerUrl: data.banner,
-                            files: data.files.sort(smartSort),
-                            extensions: data.extensions.sort(smartSort),
-                            isPopular: catName === "Popular Clients"
-                        })).filter(c => c.files.length > 0 || c.extensions.length > 0)
+                        clients: Object.entries(clients)
+                            .map(([cliName, data]) => ({
+                                // Enhanced ID generation to ensure absolute uniqueness per category/client
+                                id: 'client_' + Math.random().toString(36).substr(2, 9) + '_' + cliName.replace(/[^a-zA-Z0-9]/g, ''),
+                                displayName: formatName(cliName),
+                                iconUrl: data.icon,
+                                bannerUrl: data.banner,
+                                files: data.files.sort(smartSort),
+                                extensions: data.extensions.sort(smartSort),
+                                isPopular: catName === "Popular Clients"
+                            }))
+                            .filter(c => c.files.length > 0 || c.extensions.length > 0)
+                            .sort((a, b) => a.displayName.localeCompare(b.displayName))
                     })).filter(cat => cat.clients.length > 0);
 
                 document.getElementById('status-container').classList.add('hidden');
