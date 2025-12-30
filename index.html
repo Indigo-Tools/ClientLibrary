@@ -9,18 +9,15 @@
   <style>
     :root { 
         --accent: #347ccb; 
-        --accent-glow: rgba(52, 124, 203, 0.4);
         --bg: #0f1113; 
-        --card: #16181a; 
-        --card-glow: rgba(22, 24, 26, 0.8);
+        --card: #1a1c1e; 
     }
     
     body { 
         background-color: var(--bg); 
-        color: #a1a1aa; 
+        color: #d1d5db; 
         overflow-x: hidden;
         -webkit-tap-highlight-color: transparent;
-        -webkit-touch-callout: none;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     }
     
@@ -30,32 +27,22 @@
     
     .glass-card { 
         background: var(--card); 
-        border: 1px solid rgba(40, 42, 45, 0.8);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        z-index: 20;
-        overflow: hidden;
-        border-radius: 0.875rem;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
-                    0 2px 4px -1px rgba(0, 0, 0, 0.06),
-                    0 0 0 0px rgba(52, 124, 203, 0);
+        border: 1px solid rgba(55, 65, 81, 0.5);
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
     }
     
     .glass-card:hover {
         border-color: rgba(52, 124, 203, 0.3);
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 
-                    0 0 20px -5px var(--accent-glow);
-        transform: translateY(-2px);
+        transform: translateY(-1px);
     }
     
     .banner-card {
-        background: none !important;
-        border: 1px solid rgba(40, 42, 45, 0.8);
+        background: linear-gradient(135deg, rgba(26, 28, 30, 0.9) 0%, rgba(26, 28, 30, 0.7) 100%);
+        border: 1px solid rgba(55, 65, 81, 0.5);
+        border-radius: 0.75rem;
         position: relative;
         overflow: hidden;
-        border-radius: 0.875rem;
-        backdrop-filter: blur(10px);
     }
     
     .banner-img {
@@ -65,17 +52,12 @@
         height: 100%;
         object-fit: cover;
         z-index: 0;
-        transition: transform 0.5s ease;
-    }
-    
-    .banner-card:hover .banner-img {
-        transform: scale(1.05);
     }
     
     .banner-gradient {
         position: absolute;
         inset: 0;
-        background: linear-gradient(90deg, rgba(15,17,19,0.95) 0%, rgba(15,17,19,0.7) 40%, rgba(15,17,19,0.1) 100%);
+        background: linear-gradient(90deg, rgba(15,17,19,0.9) 0%, rgba(15,17,19,0.7) 100%);
         z-index: 1;
     }
     
@@ -89,25 +71,19 @@
     .extension-dropdown {
         max-height: 0;
         overflow: hidden;
-        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s ease;
         opacity: 0;
-        background: rgba(17, 19, 21, 0.95);
-        border: 1px solid rgba(35, 37, 40, 0.8);
+        background: rgba(26, 28, 30, 0.95);
+        border: 1px solid rgba(55, 65, 81, 0.5);
         border-top: none;
-        border-bottom-left-radius: 1rem;
-        border-bottom-right-radius: 1rem;
-        margin-top: -8px;
-        position: relative;
-        z-index: 10;
-        backdrop-filter: blur(10px);
+        border-radius: 0 0 0.75rem 0.75rem;
+        margin-top: -1px;
     }
     
     .extension-dropdown.open {
         max-height: 5000px;
         opacity: 1;
-        padding-top: 16px;
-        margin-bottom: 16px;
-        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+        padding: 1rem 0;
     }
     
     .extension-row {
@@ -115,70 +91,31 @@
         align-items: center;
         justify-content: space-between;
         padding: 1rem;
-        border-top: 1px solid rgba(30, 32, 34, 0.5);
-        position: relative;
-        overflow: hidden;
-        transition: all 0.2s ease;
+        border-top: 1px solid rgba(55, 65, 81, 0.3);
+        transition: background 0.2s ease;
     }
     
     .extension-row:hover {
         background: rgba(255, 255, 255, 0.02);
-        border-top-color: rgba(52, 124, 203, 0.3);
     }
     
     .tab-active { 
-        position: relative;
-        color: #ffffff !important; 
-        text-shadow: 0 0 10px rgba(52, 124, 203, 0.5);
-    }
-    
-    .tab-active::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 80%;
-        height: 3px;
-        background: linear-gradient(90deg, transparent, var(--accent), transparent);
-        border-radius: 3px;
-        box-shadow: 0 0 15px var(--accent-glow);
-        animation: tabGlow 2s ease-in-out infinite alternate;
-    }
-    
-    @keyframes tabGlow {
-        0% { opacity: 0.7; }
-        100% { opacity: 1; }
+        background: rgba(52, 124, 203, 0.1) !important;
+        color: white !important;
+        border: 1px solid rgba(52, 124, 203, 0.3) !important;
     }
     
     .btn-download {
-        background: linear-gradient(135deg, var(--accent) 0%, #2a68a8 100%);
-        box-shadow: 0 4px 15px rgba(52, 124, 203, 0.3);
-        white-space: nowrap;
-        touch-action: manipulation;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #347ccb 0%, #2a68a8 100%);
+        color: white;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
     }
     
-    .btn-download::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: all 0.6s ease;
-    }
-    
-    .btn-download:hover::before {
-        left: 100%;
-    }
-    
-    .btn-download:hover, .btn-download:active {
-        box-shadow: 0 6px 25px rgba(52, 124, 203, 0.5);
+    .btn-download:hover {
         transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(52, 124, 203, 0.3);
     }
     
     .section-divider {
@@ -186,71 +123,60 @@
         align-items: center;
         text-align: center;
         margin: 1.5rem 0 1rem 0;
-        opacity: 0.6;
+        color: #6b7280;
     }
     
     .section-divider::before, .section-divider::after {
         content: '';
         flex: 1;
         height: 1px;
-        background: linear-gradient(90deg, transparent, #282a2d, transparent);
+        background: rgba(55, 65, 81, 0.5);
     }
     
     .section-divider span {
         padding: 0 1rem;
         background: var(--bg);
-        position: relative;
     }
     
     .show-more-btn {
-        background: rgba(26, 28, 30, 0.8);
-        border: 1px solid rgba(40, 42, 45, 0.8);
-        color: #a1a1aa;
-        padding: 0.875rem;
+        background: rgba(26, 28, 30, 0.7);
+        border: 1px solid rgba(55, 65, 81, 0.5);
+        color: #9ca3af;
         border-radius: 0.625rem;
         width: 100%;
         font-size: 0.75rem;
-        font-weight: 800;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
-        transition: all 0.3s ease;
+        letter-spacing: 0.05em;
+        transition: all 0.2s ease;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
         min-height: 44px;
-        touch-action: manipulation;
-        backdrop-filter: blur(10px);
     }
     
-    .show-more-btn:hover, .show-more-btn:active { 
-        background: rgba(35, 37, 40, 0.9); 
+    .show-more-btn:hover { 
+        background: rgba(55, 65, 81, 0.3); 
         color: white; 
-        border-color: rgba(52, 124, 203, 0.3);
-        box-shadow: 0 0 20px rgba(52, 124, 203, 0.2);
     }
     
     .client-collapse-btn {
         padding: 0.5rem 0.875rem;
         border-radius: 0.5rem;
-        background: rgba(26, 28, 30, 0.8);
-        border: 1px solid rgba(40, 42, 45, 0.8);
-        font-size: 0.6875rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #71717a;
-        transition: all 0.3s ease;
+        background: rgba(26, 28, 30, 0.7);
+        border: 1px solid rgba(55, 65, 81, 0.5);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #9ca3af;
+        transition: all 0.2s ease;
         min-height: 36px;
         min-width: 44px;
-        touch-action: manipulation;
-        backdrop-filter: blur(10px);
     }
     
-    .client-collapse-btn:hover, .client-collapse-btn:active { 
+    .client-collapse-btn:hover { 
         color: white; 
-        border-color: rgba(52, 124, 203, 0.3);
-        background: rgba(35, 37, 40, 0.9);
+        background: rgba(55, 65, 81, 0.3);
     }
     
     ::-webkit-scrollbar {
@@ -264,101 +190,26 @@
     }
     
     ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, var(--accent), #2a68a8);
+        background: #347ccb;
         border-radius: 3px;
     }
     
-    ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, var(--accent), #1e5a9c);
-    }
-    
-    @media (max-width: 768px) {
-        .glass-card, .banner-card {
-            border-radius: 0.75rem;
-        }
-        
-        .extension-dropdown {
-            border-radius: 0.75rem;
-            margin-left: 0;
-            margin-right: 0;
-        }
-        
-        .tab-active::after {
-            width: 60%;
-            height: 2px;
-        }
-        
-        #category-tabs {
-            padding-bottom: 0.5rem;
-            scroll-padding-left: 1rem;
-            scroll-behavior: smooth;
-        }
-        
-        #category-tabs button {
-            flex-shrink: 0;
-        }
-        
-        .glass-card:hover {
-            transform: translateY(-1px);
-        }
-        
-        .btn-download:hover {
-            transform: translateY(0);
-        }
-    }
-    
-    #category-tabs-container {
-        position: relative;
-    }
-    
-    #category-tabs {
-        display: flex;
-        overflow-x: auto;
-        scrollbar-width: none;
+    .scrollbar-hide {
         -ms-overflow-style: none;
-        padding: 0.5rem 0;
-        gap: 0.5rem;
+        scrollbar-width: none;
     }
     
-    #category-tabs::-webkit-scrollbar {
+    .scrollbar-hide::-webkit-scrollbar {
         display: none;
     }
     
-    #category-tabs button {
-        white-space: nowrap;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        transition: all 0.2s ease;
-        background: rgba(22, 24, 26, 0.5);
-        border: 1px solid transparent;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    
-    #category-tabs button:hover {
-        background: rgba(35, 37, 40, 0.8);
-        border-color: rgba(52, 124, 203, 0.2);
-    }
-    
     #loader {
-        position: relative;
         width: 40px;
         height: 40px;
-        border-width: 3px;
-        animation: spin 1s linear infinite;
-    }
-    
-    #loader::before {
-        content: '';
-        position: absolute;
-        top: -3px;
-        left: -3px;
-        right: -3px;
-        bottom: -3px;
+        border: 3px solid rgba(52, 124, 203, 0.2);
+        border-top-color: #347ccb;
         border-radius: 50%;
-        background: conic-gradient(from 0deg, transparent, var(--accent), transparent);
-        animation: spin 1.5s linear infinite;
-        z-index: -1;
+        animation: spin 1s linear infinite;
     }
     
     @keyframes spin {
@@ -366,48 +217,19 @@
         100% { transform: rotate(360deg); }
     }
     
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
     
-    .animate-fadeInUp {
-        animation: fadeInUp 0.5s ease-out forwards;
-    }
-    
-    .gradient-text {
-        background: linear-gradient(135deg, #ffffff 0%, var(--accent) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    
-    .pb-safe {
-        padding-bottom: env(safe-area-inset-bottom, 1rem);
-    }
-    
-    .pt-safe {
-        padding-top: env(safe-area-inset-top, 0);
-    }
-    
-    .will-change-transform {
-        will-change: transform;
-    }
-    
-    .backface-hidden {
-        backface-visibility: hidden;
+    #main-content {
+        animation: fadeIn 0.3s ease-out;
     }
     
     .client-description {
         max-height: 0;
         overflow: hidden;
-        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s ease;
         opacity: 0;
     }
     
@@ -418,31 +240,19 @@
     }
     
     .description-content {
-        background: rgba(22, 24, 26, 0.5);
-        border: 1px solid rgba(40, 42, 45, 0.5);
+        background: rgba(26, 28, 30, 0.7);
+        border: 1px solid rgba(55, 65, 81, 0.5);
         border-radius: 0.75rem;
         padding: 1.25rem;
         line-height: 1.6;
         font-size: 0.875rem;
         color: #d1d5db;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .description-content::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
-        background: linear-gradient(to bottom, var(--accent), #2a68a8);
     }
     
     .description-toggle-btn {
         background: transparent;
         border: none;
-        color: var(--accent);
+        color: #347ccb;
         font-size: 0.75rem;
         font-weight: 600;
         display: flex;
@@ -450,7 +260,7 @@
         gap: 0.5rem;
         padding: 0.5rem 1rem;
         border-radius: 0.5rem;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         cursor: pointer;
     }
     
@@ -465,52 +275,249 @@
     .description-toggle-btn.expanded i {
         transform: rotate(180deg);
     }
+    
+    /* Screenshots Modal */
+    .screenshots-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .screenshots-modal.active {
+        display: flex;
+    }
+    
+    .screenshot-content {
+        max-width: 90vw;
+        max-height: 90vh;
+        position: relative;
+    }
+    
+    .screenshot-img {
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: 0.5rem;
+    }
+    
+    .screenshot-close {
+        position: absolute;
+        top: -40px;
+        right: 0;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+    
+    .screenshot-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .screenshot-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+    
+    .screenshot-nav:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .screenshot-prev {
+        left: -50px;
+    }
+    
+    .screenshot-next {
+        right: -50px;
+    }
+    
+    .screenshot-counter {
+        position: absolute;
+        bottom: -40px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: white;
+        font-size: 0.875rem;
+    }
+    
+    .screenshot-thumbnails {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding: 0.5rem 0;
+    }
+    
+    .screenshot-thumbnail {
+        width: 80px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: all 0.2s ease;
+    }
+    
+    .screenshot-thumbnail:hover {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    
+    .screenshot-thumbnail.active {
+        opacity: 1;
+        border: 2px solid #347ccb;
+    }
+    
+    @media (max-width: 768px) {
+        .glass-card, .banner-card {
+            border-radius: 0.625rem;
+        }
+        
+        .extension-dropdown {
+            border-radius: 0 0 0.625rem 0.625rem;
+        }
+        
+        #category-tabs {
+            padding-bottom: 0.5rem;
+        }
+        
+        .screenshot-nav {
+            width: 32px;
+            height: 32px;
+        }
+        
+        .screenshot-prev {
+            left: 10px;
+        }
+        
+        .screenshot-next {
+            right: 10px;
+        }
+    }
+    
+    #category-tabs-container {
+        position: relative;
+    }
+    
+    #category-tabs {
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding: 0.5rem 0;
+        gap: 0.5rem;
+    }
+    
+    #category-tabs button {
+        white-space: nowrap;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #9ca3af;
+        transition: all 0.2s ease;
+        background: rgba(26, 28, 30, 0.7);
+        border: 1px solid rgba(55, 65, 81, 0.3);
+    }
+    
+    #category-tabs button:hover {
+        background: rgba(55, 65, 81, 0.3);
+        color: white;
+    }
   </style>
 </head>
 
-<body class="min-h-screen font-sans antialiased">
-
-  <div class="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-16 pb-safe">
-    <header class="text-center mb-6 sm:mb-10 pt-safe animate-fadeInUp">
-      <div class="inline-flex items-center justify-center p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#347ccb]/20 to-[#347ccb]/5 mb-3 sm:mb-4 relative overflow-hidden group">
-        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#347ccb]/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-        <i class="fa-solid fa-box-open text-[#347ccb] text-2xl sm:text-3xl relative z-10"></i>
+<body class="min-h-screen font-sans antialiased bg-[#0f1113] text-gray-300">
+  
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    
+    <!-- Header -->
+    <header class="text-center mb-8 sm:mb-12">
+      <div class="inline-flex items-center justify-center p-3 rounded-xl bg-gradient-to-br from-[#347ccb]/15 to-[#347ccb]/5 mb-4">
+        <i class="fa-solid fa-box-open text-[#347ccb] text-2xl"></i>
       </div>
-      <h1 class="text-2xl sm:text-5xl font-black text-white mb-1 sm:mb-2 tracking-tight gradient-text">Indigo Library</h1>
-      <p class="text-zinc-500 font-bold uppercase text-[0.625rem] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em]">mca.glacierclient.xyz</p>
+      <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2">Indigo Library</h1>
+      <p class="text-gray-500 text-xs font-medium tracking-wider">mca.glacierclient.xyz</p>
     </header>
 
-    <div id="status-container" class="flex flex-col items-center justify-center py-16 sm:py-20">
-      <div id="loader" class="w-8 sm:w-10 h-8 sm:h-10 border-3 sm:border-4 border-[#347ccb]/20 border-t-[#347ccb] rounded-full animate-spin"></div>
-      <p id="status-text" class="mt-3 sm:mt-4 text-zinc-500 text-sm font-medium">Indexing Library...</p>
+    <!-- Loading State -->
+    <div id="status-container" class="flex flex-col items-center justify-center py-16">
+      <div id="loader" class="w-10 h-10 border-3 border-[#347ccb]/30 border-t-[#347ccb] rounded-full animate-spin"></div>
+      <p id="status-text" class="mt-4 text-gray-500">Indexing Library...</p>
     </div>
 
-    <div id="main-content" class="hidden space-y-6 sm:space-y-8">
-      <div class="sticky top-0 z-50 bg-gradient-to-b from-[#0f1113]/95 to-[#0f1113]/80 backdrop-blur-xl border-b border-zinc-800/30 shadow-xl">
-        <div class="max-w-6xl mx-auto px-3 sm:px-6">
-          <div id="category-tabs-container" class="relative">
-            <div id="category-tabs" class="py-2">
-            </div>
-            <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0f1113]/95 to-transparent pointer-events-none hidden sm:block"></div>
-            <div class="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#0f1113]/95 to-transparent pointer-events-none hidden sm:block"></div>
-          </div>
+    <!-- Main Content -->
+    <div id="main-content" class="hidden">
+      
+      <!-- Category Navigation -->
+      <div class="sticky top-0 z-40 bg-[#0f1113]/90 backdrop-blur-md border-b border-gray-800/50 mb-6">
+        <div id="category-tabs-container" class="relative">
+          <div id="category-tabs" class="flex overflow-x-auto py-3 gap-2 scrollbar-hide"></div>
+          <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#0f1113] to-transparent pointer-events-none"></div>
         </div>
       </div>
 
-      <div class="max-w-2xl mx-auto w-full px-3 sm:px-0 animate-fadeInUp" style="animation-delay: 0.1s">
-        <div class="relative group">
-          <i class="fa-solid fa-magnifying-glass absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-hover:text-[#347ccb] transition-colors duration-300"></i>
-          <input type="text" id="search-input" placeholder="Search archive, versions, or extensions..." class="w-full bg-[#16181a]/80 border border-zinc-800/50 rounded-xl sm:rounded-2xl pl-12 sm:pl-14 pr-4 sm:pr-6 py-3 sm:py-4 text-white focus:outline-none focus:border-[#347ccb] text-sm sm:text-base focus:ring-2 focus:ring-[#347ccb]/30 transition-all duration-300 backdrop-blur-sm">
-          <div class="absolute right-3 top-1/2 -translate-y-1/2">
-            <span class="text-xs text-zinc-500 hidden sm:block">⌘K</span>
-          </div>
+      <!-- Search Bar -->
+      <div class="max-w-2xl mx-auto mb-8">
+        <div class="relative">
+          <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+          <input type="text" id="search-input" 
+                 placeholder="Search clients, versions, or extensions..." 
+                 class="w-full bg-[#1a1c1e] border border-gray-800 rounded-lg pl-12 pr-4 py-3 text-white focus:outline-none focus:border-[#347ccb] focus:ring-1 focus:ring-[#347ccb]/30">
         </div>
       </div>
 
-      <div id="client-container" class="space-y-8 sm:space-y-12 pb-16 sm:pb-20 px-3 sm:px-0"></div>
+      <!-- Client Container -->
+      <div id="client-container" class="space-y-8 pb-12"></div>
+
     </div>
   </div>
- <script>
+
+  <!-- Screenshots Modal -->
+  <div id="screenshots-modal" class="screenshots-modal">
+    <div class="screenshot-content">
+      <button class="screenshot-close" onclick="closeScreenshots()">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      
+      <button class="screenshot-nav screenshot-prev" onclick="prevScreenshot()">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      
+      <button class="screenshot-nav screenshot-next" onclick="nextScreenshot()">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+      
+      <img id="screenshot-main" class="screenshot-img" src="" alt="Screenshot">
+      
+      <div id="screenshot-counter" class="screenshot-counter"></div>
+      
+      <div id="screenshot-thumbnails" class="screenshot-thumbnails mt-4"></div>
+    </div>
+  </div>
+
+  <script>
     const GITHUB_ORG = 'Indigo-Tools';
     const REPO_NAME = 'ClientLibrary';
     const BRANCH = 'main';
@@ -530,9 +537,32 @@
         'trash': { bg: 'from-rose-500/20 to-red-500/20', text: 'text-rose-300', border: 'border-rose-500/30', icon: 'fa-trash' }
     };
 
+    // Screenshots state
+    let currentScreenshots = [];
+    let currentScreenshotIndex = 0;
+    let currentClientId = '';
+
     function formatName(name) {
         if (!name) return "";
         return name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes) return null;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        if (bytes === 0) return '0 B';
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+    }
+
+    async function getFileSize(url) {
+        try {
+            const response = await fetch(url, { method: 'HEAD' });
+            const size = response.headers.get('content-length');
+            return size ? parseInt(size) : null;
+        } catch {
+            return null;
+        }
     }
 
     function toggleDropdown(id) {
@@ -560,6 +590,69 @@
         if (expandedDescriptions.has(clientId)) expandedDescriptions.delete(clientId);
         else expandedDescriptions.add(clientId);
         renderClients(document.getElementById('search-input').value);
+    }
+
+    // Screenshots functions
+    function openScreenshots(clientId, screenshots, index = 0) {
+        currentScreenshots = screenshots;
+        currentScreenshotIndex = index;
+        currentClientId = clientId;
+        
+        const modal = document.getElementById('screenshots-modal');
+        const mainImg = document.getElementById('screenshot-main');
+        const counter = document.getElementById('screenshot-counter');
+        const thumbnails = document.getElementById('screenshot-thumbnails');
+        
+        if (screenshots.length > 0) {
+            mainImg.src = screenshots[index].url;
+            counter.textContent = `${index + 1} / ${screenshots.length}`;
+            
+            // Create thumbnails
+            thumbnails.innerHTML = screenshots.map((screenshot, i) => `
+                <img src="${screenshot.url}" 
+                     class="screenshot-thumbnail ${i === index ? 'active' : ''}" 
+                     onclick="showScreenshot(${i})"
+                     alt="Thumbnail ${i + 1}">
+            `).join('');
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeScreenshots() {
+        const modal = document.getElementById('screenshots-modal');
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        currentScreenshots = [];
+        currentScreenshotIndex = 0;
+        currentClientId = '';
+    }
+
+    function showScreenshot(index) {
+        if (index >= 0 && index < currentScreenshots.length) {
+            currentScreenshotIndex = index;
+            const mainImg = document.getElementById('screenshot-main');
+            const counter = document.getElementById('screenshot-counter');
+            const thumbnails = document.querySelectorAll('.screenshot-thumbnail');
+            
+            mainImg.src = currentScreenshots[index].url;
+            counter.textContent = `${index + 1} / ${currentScreenshots.length}`;
+            
+            thumbnails.forEach((thumb, i) => {
+                thumb.classList.toggle('active', i === index);
+            });
+        }
+    }
+
+    function nextScreenshot() {
+        const nextIndex = (currentScreenshotIndex + 1) % currentScreenshots.length;
+        showScreenshot(nextIndex);
+    }
+
+    function prevScreenshot() {
+        const prevIndex = currentScreenshotIndex === 0 ? currentScreenshots.length - 1 : currentScreenshotIndex - 1;
+        showScreenshot(prevIndex);
     }
 
     const smartSort = (a, b) => {
@@ -599,6 +692,7 @@
             const rawPaths = await response.json();
             const structured = {};
             const descriptionPromises = [];
+            const sizePromises = [];
 
             rawPaths.forEach(path => {
                 const parts = path.split('/');
@@ -614,7 +708,9 @@
                         icon: null,
                         banner: null,
                         description: null,
+                        author: null,
                         tags: [],
+                        screenshots: [],
                         files: [],
                         extensions: []
                     };
@@ -630,10 +726,7 @@
                     structured[category][clientName].banner = fullUrl;
                 } else if (lowerName === 'description.txt' || lowerName === 'description.md') {
                     const descPromise = fetch(fullUrl)
-                        .then(res => {
-                            if (!res.ok) throw new Error(`Failed to fetch description: ${res.status}`);
-                            return res.text();
-                        })
+                        .then(res => res.ok ? res.text() : null)
                         .then(text => {
                             if (text) {
                                 structured[category][clientName].description = text;
@@ -641,6 +734,23 @@
                         })
                         .catch(() => {});
                     descriptionPromises.push(descPromise);
+                } else if (lowerName === 'author.json' || lowerName === 'creator.json') {
+                    const authorPromise = fetch(fullUrl)
+                        .then(res => res.ok ? res.json() : null)
+                        .then(author => {
+                            if (author) {
+                                structured[category][clientName].author = author;
+                            }
+                        })
+                        .catch(() => {});
+                    descriptionPromises.push(authorPromise);
+                } else if (lowerName.match(/\.(png|jpg|jpeg|gif|webp)$/) && 
+                          (parts.some(p => p.toLowerCase() === 'screenshots') || 
+                           fileName.toLowerCase().includes('screenshot'))) {
+                    structured[category][clientName].screenshots.push({
+                        url: fullUrl,
+                        name: fileName
+                    });
                 } else if (lowerName === 'working' || lowerName === 'legacy' || lowerName === 'trash') {
                     const tag = lowerName;
                     if (!structured[category][clientName].tags.includes(tag)) {
@@ -660,8 +770,15 @@
                         const fileObj = { 
                             display: formatName(fileName), 
                             rawName: fileName, 
-                            url: fullUrl 
+                            url: fullUrl,
+                            size: null
                         };
+                        
+                        // Add file size fetch
+                        const sizePromise = getFileSize(fullUrl).then(size => {
+                            fileObj.size = formatFileSize(size);
+                        }).catch(() => {});
+                        sizePromises.push(sizePromise);
                         
                         if (isExtension) {
                             structured[category][clientName].extensions.push(fileObj);
@@ -673,6 +790,7 @@
             });
 
             await Promise.allSettled(descriptionPromises);
+            await Promise.allSettled(sizePromises);
 
             const optifineClients = {};
 
@@ -686,7 +804,9 @@
                                 icon: data.icon,
                                 banner: data.banner,
                                 description: data.description,
+                                author: data.author,
                                 tags: [...data.tags],
+                                screenshots: [...data.screenshots],
                                 files: [...data.files],
                                 extensions: [...data.extensions],
                                 originalCategory: category
@@ -694,6 +814,7 @@
                         } else {
                             optifineClients[clientName].files.push(...data.files);
                             optifineClients[clientName].extensions.push(...data.extensions);
+                            optifineClients[clientName].screenshots.push(...data.screenshots);
                             optifineClients[clientName].tags = [...new Set([...optifineClients[clientName].tags, ...data.tags])];
                         }
                     }
@@ -723,7 +844,9 @@
                                 iconUrl: data.icon,
                                 bannerUrl: data.banner,
                                 description: data.description,
+                                author: data.author,
                                 tags: [...new Set(data.tags)].sort(),
+                                screenshots: data.screenshots,
                                 files: data.files.sort(smartSort),
                                 extensions: data.extensions.sort(smartSort),
                                 isPopular: catName === "Popular Clients",
@@ -759,13 +882,8 @@
 
                 const mainContent = document.getElementById('main-content');
                 mainContent.style.opacity = '0';
-                mainContent.style.transform = 'translateY(20px)';
-                
-                requestAnimationFrame(() => {
-                    mainContent.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                    mainContent.style.opacity = '1';
-                    mainContent.style.transform = 'translateY(0)';
-                });
+                mainContent.style.transition = 'opacity 0.3s ease';
+                mainContent.style.opacity = '1';
             }, 200);
         } catch (err) {
             document.getElementById('status-text').textContent = "Failed to load library. Please check connection.";
@@ -788,7 +906,7 @@
             return `
                 <button onclick="switchCategory('${t}')" 
                         id="tab-${t}" 
-                        class="pb-2 sm:pb-3 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white uppercase tracking-wide transition-colors duration-200 whitespace-nowrap px-3 sm:px-4">
+                        class="text-sm font-medium text-gray-400 hover:text-white transition-colors duration-200 whitespace-nowrap px-3 sm:px-4">
                     ${displayName}
                 </button>
             `;
@@ -817,12 +935,12 @@
 
         if (toShow.length === 0) {
             container.innerHTML = `
-                <div class="text-center py-12 sm:py-20">
+                <div class="text-center py-12">
                     <div class="inline-flex p-4 rounded-xl bg-gradient-to-br from-[#347ccb]/10 to-transparent mb-4">
                         <i class="fa-solid fa-search text-[#347ccb] text-2xl"></i>
                     </div>
                     <h3 class="text-lg font-semibold text-white mb-2">No content available</h3>
-                    <p class="text-zinc-500 text-sm">This category is empty</p>
+                    <p class="text-gray-500 text-sm">This category is empty</p>
                 </div>
             `;
             return;
@@ -834,6 +952,10 @@
             const filteredClients = cat.clients.map(client => {
                 const clientMatch = client.displayName.toLowerCase().includes(q);
                 const descriptionMatch = client.description && client.description.toLowerCase().includes(q);
+                const authorMatch = client.author && (
+                    (client.author.name && client.author.name.toLowerCase().includes(q)) ||
+                    (client.author.website && client.author.website.toLowerCase().includes(q))
+                );
                 const tagMatch = client.tags.some(tag => tag.toLowerCase().includes(q));
                 const fileMatch = client.files.some(f =>
                     f.display.toLowerCase().includes(q) ||
@@ -844,12 +966,13 @@
                     e.rawName.toLowerCase().includes(q)
                 );
 
-                if (clientMatch || descriptionMatch || tagMatch || fileMatch || extensionMatch || !q) {
+                if (clientMatch || descriptionMatch || authorMatch || tagMatch || fileMatch || extensionMatch || !q) {
                     const matchingFiles = q ? client.files.filter(f =>
                         f.display.toLowerCase().includes(q) ||
                         f.rawName.toLowerCase().includes(q) ||
                         clientMatch ||
                         descriptionMatch ||
+                        authorMatch ||
                         tagMatch
                     ) : client.files;
                     
@@ -858,6 +981,7 @@
                         e.rawName.toLowerCase().includes(q) ||
                         clientMatch ||
                         descriptionMatch ||
+                        authorMatch ||
                         tagMatch
                     ) : client.extensions;
 
@@ -868,9 +992,9 @@
 
             if (filteredClients.length > 0) {
                 html += `
-                <div class="space-y-4 sm:space-y-6">
+                <div class="space-y-6">
                     <div class="section-divider">
-                        <span class="text-[0.625rem] sm:text-xs font-bold uppercase tracking-widest text-zinc-400">
+                        <span class="text-sm font-semibold uppercase tracking-wider text-gray-500">
                             ${cat.displayName}
                         </span>
                     </div>
@@ -883,45 +1007,46 @@
                         const filesToDisplay = isFilesExpanded ? client.matchingFiles : client.matchingFiles.slice(0, 5);
                         const isDescriptionExpanded = expandedDescriptions.has(client.id);
                         const hasDescription = client.description && client.description.trim().length > 0;
+                        const hasAuthor = client.author && Object.keys(client.author).length > 0;
+                        const hasScreenshots = client.screenshots && client.screenshots.length > 0;
 
                         return `
-                        <div class="space-y-3 sm:space-y-4">
+                        <div class="space-y-4">
                             <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3 sm:space-x-4 max-w-[70%]">
+                                <div class="flex items-center space-x-3 max-w-[70%]">
                                     ${client.iconUrl ? `
                                         <div class="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
                                             <img src="${client.iconUrl}" 
-                                                 class="w-full h-full rounded-lg sm:rounded-xl object-cover border border-white/5 relative z-10"
+                                                 class="w-full h-full rounded-lg object-cover border border-white/5 relative z-10"
                                                  alt="${client.displayName} icon"
                                                  loading="lazy"
                                                  onerror="this.style.display='none'">
-                                            <div class="absolute inset-0 bg-gradient-to-br from-[#347ccb]/30 to-transparent blur-xl rounded-full opacity-50"></div>
                                         </div>
                                     ` : ''}
                                     <div class="min-w-0">
-                                        <h2 class="text-lg sm:text-xl font-bold text-white tracking-tight truncate">
+                                        <h2 class="text-lg sm:text-xl font-semibold text-white truncate">
                                             ${client.displayName}
                                         </h2>
                                         <div class="flex flex-wrap gap-1 mt-1">
                                             ${client.isPopular ? `
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border border-yellow-500/30">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-500/10 text-yellow-300 border border-yellow-500/20">
                                                     <i class="fa-solid fa-star mr-1 text-xs"></i>Popular
                                                 </span>
                                             ` : ''}
                                             ${client.isOptifine ? `
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 border border-emerald-500/30">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
                                                     <i class="fa-solid fa-bolt mr-1 text-xs"></i>Performance
                                                 </span>
                                             ` : ''}
                                             ${client.originalCategory && client.isOptifine ? `
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-300 border border-purple-500/30">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/10 text-purple-300 border border-purple-500/20">
                                                     <i class="fa-solid fa-layer-group mr-1 text-xs"></i>${client.originalCategory}
                                                 </span>
                                             ` : ''}
                                             ${client.tags.map(tag => {
-                                                const tagConfig = TAG_COLORS[tag] || { bg: 'from-gray-500/20 to-gray-500/20', text: 'text-gray-300', border: 'border-gray-500/30', icon: 'fa-tag' };
+                                                const tagConfig = TAG_COLORS[tag] || { bg: 'from-gray-500/10 to-gray-500/10', text: 'text-gray-300', border: 'border-gray-500/20', icon: 'fa-tag' };
                                                 return `
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r ${tagConfig.bg} ${tagConfig.text} border ${tagConfig.border}">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r ${tagConfig.bg} ${tagConfig.text} border ${tagConfig.border}">
                                                         <i class="fa-solid ${tagConfig.icon} mr-1 text-xs"></i>${tag.charAt(0).toUpperCase() + tag.slice(1)}
                                                     </span>
                                                 `;
@@ -933,15 +1058,83 @@
                                         class="client-collapse-btn">
                                     ${isHidden ?
                                         '<i class="fa-solid fa-eye mr-1 sm:mr-2"></i><span class="hidden sm:inline">Show</span>' :
-                                        '<i class="fa-solid fa-eye-slash mr-1 sm:mr-2"></i><span class="hidden sm:inline">Collapse</span>'
+                                        '<i class="fa-solid fa-eye-slash mr-1 sm:mr-2"></i><span class="hidden sm:inline">Hide</span>'
                                     }
                                 </button>
                             </div>
 
+                            <!-- Author Info -->
+                            ${hasAuthor && !isHidden ? `
+                                <div class="bg-[#1a1c1e] border border-gray-800/50 rounded-lg p-4">
+                                    <div class="flex items-start gap-3">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2 mb-2">
+                                                <i class="fa-solid fa-user text-[#347ccb]"></i>
+                                                <span class="font-medium text-white">${client.author.name || 'Unknown Author'}</span>
+                                            </div>
+                                            ${client.author.website ? `
+                                                <div class="flex items-center gap-2 text-sm">
+                                                    <i class="fa-solid fa-globe text-gray-500"></i>
+                                                    <a href="${client.author.website}" target="_blank" class="text-[#347ccb] hover:underline truncate">
+                                                        ${client.author.website.replace(/^https?:\/\//, '')}
+                                                    </a>
+                                                </div>
+                                            ` : ''}
+                                            ${client.author.discord ? `
+                                                <div class="flex items-center gap-2 text-sm mt-1">
+                                                    <i class="fa-brands fa-discord text-gray-500"></i>
+                                                    <span class="text-gray-300">${client.author.discord}</span>
+                                                </div>
+                                            ` : ''}
+                                            ${client.author.github ? `
+                                                <div class="flex items-center gap-2 text-sm mt-1">
+                                                    <i class="fa-brands fa-github text-gray-500"></i>
+                                                    <a href="https://github.com/${client.author.github}" target="_blank" class="text-[#347ccb] hover:underline">
+                                                        @${client.author.github}
+                                                    </a>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Screenshots -->
+                            ${hasScreenshots && !isHidden ? `
+                                <div class="bg-[#1a1c1e] border border-gray-800/50 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid fa-images text-[#347ccb]"></i>
+                                            <span class="font-medium text-white">Screenshots (${client.screenshots.length})</span>
+                                        </div>
+                                        <button onclick="openScreenshots('${client.id}', ${JSON.stringify(client.screenshots)})" 
+                                                class="text-sm text-[#347ccb] hover:underline">
+                                            View All
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        ${client.screenshots.slice(0, 3).map((screenshot, idx) => `
+                                            <div class="relative aspect-video rounded-lg overflow-hidden cursor-pointer group"
+                                                 onclick="openScreenshots('${client.id}', ${JSON.stringify(client.screenshots)}, ${idx})">
+                                                <img src="${screenshot.url}" 
+                                                     alt="Screenshot ${idx + 1}"
+                                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200">
+                                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200"></div>
+                                                ${idx === 2 && client.screenshots.length > 3 ? `
+                                                    <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                        <span class="text-white font-medium">+${client.screenshots.length - 3} more</span>
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
                             ${hasDescription && !isHidden ? `
                                 <div class="${isDescriptionExpanded ? 'expanded' : ''} client-description">
                                     <div class="description-content">
-                                        ${client.description.split('\n').map(line => `<p class="mb-3 last:mb-0">${line}</p>`).join('')}
+                                        ${client.description.split('\n').map(line => `<p class="mb-2 last:mb-0">${line}</p>`).join('')}
                                     </div>
                                 </div>
                                 <button onclick="toggleDescription('${client.id}')" 
@@ -951,9 +1144,9 @@
                                 </button>
                             ` : ''}
 
-                            <div class="${isHidden ? 'hidden' : ''} space-y-3 sm:space-y-4">
+                            <div class="${isHidden ? 'hidden' : ''} space-y-4">
                                 ${client.matchingFiles.length > 0 ? `
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         ${filesToDisplay.map(file => {
                                             const cardClass = client.bannerUrl ? 'banner-card' : 'glass-card';
                                             const isMobile = window.innerWidth < 768;
@@ -964,20 +1157,26 @@
                                                     <img src="${client.bannerUrl}" class="banner-img" alt="${client.displayName} banner" loading="lazy">
                                                     <div class="banner-gradient"></div>
                                                 ` : ''}
-                                                <div class="card-content flex ${isMobile ? 'flex-col items-start' : 'items-center justify-between'} gap-3 sm:gap-0 p-4 sm:p-6">
+                                                <div class="card-content flex ${isMobile ? 'flex-col items-start' : 'items-center justify-between'} gap-3 p-4 sm:p-6">
                                                     <div class="min-w-0 ${isMobile ? 'w-full' : 'pr-4'}">
-                                                        <div class="text-white font-bold text-sm sm:text-base truncate flex items-center">
-                                                            <i class="fa-solid fa-file-arrow-down mr-2 sm:mr-3 text-zinc-500"></i>
+                                                        <div class="text-white font-semibold text-sm sm:text-base truncate flex items-center">
+                                                            <i class="fa-solid fa-file-arrow-down mr-2 text-gray-500"></i>
                                                             ${file.display}
                                                         </div>
-                                                        <div class="text-[0.625rem] sm:text-[10px] text-zinc-400 font-mono mt-0.5 truncate opacity-75">
+                                                        <div class="text-xs text-gray-400 font-mono mt-0.5 truncate">
                                                             ${file.rawName}
                                                         </div>
+                                                        ${file.size ? `
+                                                            <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                                                                <i class="fa-solid fa-weight-scale"></i>
+                                                                <span>${file.size}</span>
+                                                            </div>
+                                                        ` : ''}
                                                     </div>
                                                     <a href="${file.url}" 
                                                        target="_blank" 
-                                                       class="btn-download text-white text-xs sm:text-sm font-semibold py-2.5 px-4 sm:px-5 rounded-lg uppercase inline-flex items-center justify-center ${isMobile ? 'w-full mt-3' : ''}">
-                                                        <i class="fa-solid fa-download mr-1.5 sm:mr-2"></i>Download
+                                                       class="btn-download text-white text-sm font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center ${isMobile ? 'w-full mt-3' : ''}">
+                                                        <i class="fa-solid fa-download mr-1.5"></i>Download
                                                     </a>
                                                 </div>
                                             </div>
@@ -997,18 +1196,20 @@
 
                                 ${client.matchingExtensions.length > 0 ? `
                                     <div class="relative">
-                                        <div class="section-divider text-[0.625rem] sm:text-[10px] font-bold uppercase tracking-widest text-zinc-700">
-                                            Extensions & Add-ons
+                                        <div class="section-divider">
+                                            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                                Extensions & Add-ons
+                                            </span>
                                         </div>
                                         <button onclick="toggleDropdown('${client.id}')" 
-                                                class="w-full glass-card p-3 sm:p-4 flex items-center justify-between group">
-                                            <div class="flex items-center text-xs sm:text-sm font-semibold uppercase tracking-wide text-[#347ccb]">
-                                                <i class="fa-solid fa-puzzle-piece mr-2 sm:mr-3 text-zinc-500"></i>
+                                                class="w-full glass-card p-3 sm:p-4 flex items-center justify-between">
+                                            <div class="flex items-center text-sm font-semibold text-[#347ccb]">
+                                                <i class="fa-solid fa-puzzle-piece mr-2 text-gray-500"></i>
                                                 Extensions (${client.matchingExtensions.length})
                                             </div>
-                                            <i id="icon-${client.id}" class="fa-solid fa-chevron-down text-zinc-600"></i>
+                                            <i id="icon-${client.id}" class="fa-solid fa-chevron-down text-gray-600"></i>
                                         </button>
-                                        <div id="drop-${client.id}" class="extension-dropdown mx-0 sm:mx-2">
+                                        <div id="drop-${client.id}" class="extension-dropdown">
                                             ${client.matchingExtensions.map(ext => {
                                                 const isMobile = window.innerWidth < 768;
                                                 return `
@@ -1017,19 +1218,25 @@
                                                         <img src="${client.bannerUrl}" class="banner-img opacity-20" loading="lazy">
                                                         <div class="banner-gradient"></div>
                                                     ` : ''}
-                                                    <div class="card-content flex ${isMobile ? 'flex-col items-start' : 'items-center justify-between'} w-full gap-3 sm:gap-0">
+                                                    <div class="card-content flex ${isMobile ? 'flex-col items-start' : 'items-center justify-between'} w-full gap-3">
                                                         <div class="min-w-0 ${isMobile ? 'w-full' : 'pr-4'}">
-                                                            <div class="text-sm sm:text-base font-semibold text-zinc-200 truncate">
+                                                            <div class="text-sm font-semibold text-gray-200 truncate">
                                                                 ${ext.display}
                                                             </div>
-                                                            <div class="text-[0.625rem] sm:text-xs text-zinc-500 font-mono truncate opacity-75">
+                                                            <div class="text-xs text-gray-400 font-mono truncate">
                                                                 ${ext.rawName}
                                                             </div>
+                                                            ${ext.size ? `
+                                                                <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                                                                    <i class="fa-solid fa-weight-scale"></i>
+                                                                    <span>${ext.size}</span>
+                                                                </div>
+                                                            ` : ''}
                                                         </div>
                                                         <a href="${ext.url}" 
                                                            target="_blank" 
-                                                           class="btn-download text-white text-xs sm:text-sm font-semibold py-2.5 px-4 rounded-lg uppercase inline-flex items-center justify-center ${isMobile ? 'w-full mt-2' : ''}">
-                                                            <i class="fa-solid fa-download mr-1.5 sm:mr-2"></i>Download
+                                                           class="btn-download text-white text-sm font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center ${isMobile ? 'w-full mt-2' : ''}">
+                                                            <i class="fa-solid fa-download mr-1.5"></i>Download
                                                         </a>
                                                     </div>
                                                 </div>
@@ -1045,12 +1252,12 @@
         });
 
         container.innerHTML = html || `
-            <div class="text-center py-12 sm:py-20">
+            <div class="text-center py-12">
                 <div class="inline-flex p-4 rounded-xl bg-gradient-to-br from-[#347ccb]/10 to-transparent mb-4">
                     <i class="fa-solid fa-search text-[#347ccb] text-2xl"></i>
                 </div>
                 <h3 class="text-lg font-semibold text-white mb-2">No results found</h3>
-                <p class="text-zinc-500 text-sm">Try a different search term or browse the categories above</p>
+                <p class="text-gray-500 text-sm">Try a different search term or browse the categories above</p>
             </div>
         `;
     }
@@ -1063,6 +1270,13 @@
         }, 150);
     });
     
+    // Close modal on ESC key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeScreenshots();
+        }
+    });
+    
     document.addEventListener('DOMContentLoaded', init);
     
     let lastTouchEnd = 0;
@@ -1073,6 +1287,6 @@
         }
         lastTouchEnd = now;
     }, { passive: false });
-</script>
+  </script>
 </body>
 </html>

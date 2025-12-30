@@ -17,8 +17,9 @@ jobs:
 
       - name: Generate paths.json
         run: |
-          echo "Generating library index with tags support..."
-          # Find all valid library files including tag files
+          echo "Generating comprehensive library index..."
+          
+          # Find all valid library files including support files
           find ClientLibrary -type f \( \
             -name "*.zip" -o \
             -name "*.dll" -o \
@@ -27,21 +28,50 @@ jobs:
             -name "*.mcpack" -o \
             -name "*.mcaddon" -o \
             -name "pack_icon.png" -o \
+            -name "pack_banner.png" -o \
             -name "description.txt" -o \
             -name "description.md" -o \
-            -name "pack_banner.png" -o \
+            -name "author.json" -o \
+            -name "*.png" -o \
+            -name "*.jpg" -o \
+            -name "*.jpeg" -o \
+            -name "*.gif" -o \
+            -name "*.webp" -o \
             -name "working" -o \
             -name "legacy" -o \
             -name "trash" \
           \) | \
           jq -R . | jq -s . > paths.json
           
-          echo "Generated paths.json with $(wc -l < paths.json) entries"
+          # Count and log statistics
+          TOTAL_PATHS=$(wc -l < paths.json)
+          echo "Generated paths.json with $TOTAL_PATHS total entries"
+          
+          # Count by file type
+          echo "File type breakdown:"
+          grep -i "\.zip\"" paths.json | wc -l | xargs echo "  ZIP files:"
+          grep -i "\.dll\"" paths.json | wc -l | xargs echo "  DLL files:"
+          grep -i "\.so\"" paths.json | wc -l | xargs echo "  SO files:"
+          grep -i "\.apk\"" paths.json | wc -l | xargs echo "  APK files:"
+          grep -i "\.mcpack\"" paths.json | wc -l | xargs echo "  MCPack files:"
+          grep -i "\.mcaddon\"" paths.json | wc -l | xargs echo "  MCAddon files:"
+          grep -i "pack_icon\.png\"" paths.json | wc -l | xargs echo "  Icons:"
+          grep -i "pack_banner\.png\"" paths.json | wc -l | xargs echo "  Banners:"
+          grep -i "description\." paths.json | wc -l | xargs echo "  Descriptions:"
+          grep -i "author\.json\"" paths.json | wc -l | xargs echo "  Author files:"
+          grep -i "\.png\"" paths.json | grep -v "pack_icon\|pack_banner" | wc -l | xargs echo "  PNG images:"
+          grep -i "\.jpg\"" paths.json | wc -l | xargs echo "  JPG images:"
+          grep -i "\.jpeg\"" paths.json | wc -l | xargs echo "  JPEG images:"
+          grep -i "\.gif\"" paths.json | wc -l | xargs echo "  GIF images:"
+          grep -i "\.webp\"" paths.json | wc -l | xargs echo "  WebP images:"
+          grep -i "\"working\"" paths.json | wc -l | xargs echo "  Working tags:"
+          grep -i "\"legacy\"" paths.json | wc -l | xargs echo "  Legacy tags:"
+          grep -i "\"trash\"" paths.json | wc -l | xargs echo "  Trash tags:"
 
       - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add paths.json
-          git commit -m "chore: update library index with tag support [skip ci]" || exit 0
+          git commit -m "chore: update comprehensive library index [skip ci]" || exit 0
           git push
