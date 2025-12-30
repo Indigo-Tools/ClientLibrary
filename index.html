@@ -1,872 +1,866 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Indigo Library</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <style>
-        :root { 
-            --accent: #347ccb; 
-            --accent-glow: rgba(52, 124, 203, 0.4);
-            --bg: #0f1113; 
-            --card: #16181a; 
-            --card-glow: rgba(22, 24, 26, 0.8);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>Indigo Library</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    :root { 
+        --accent: #347ccb; 
+        --accent-glow: rgba(52, 124, 203, 0.4);
+        --bg: #0f1113; 
+        --card: #16181a; 
+        --card-glow: rgba(22, 24, 26, 0.8);
+    }
+    
+    body { 
+        background-color: var(--bg); 
+        color: #a1a1aa; 
+        overflow-x: hidden;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+    
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    .glass-card { 
+        background: var(--card); 
+        border: 1px solid rgba(40, 42, 45, 0.8);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        z-index: 20;
+        overflow: hidden;
+        border-radius: 0.875rem;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+                    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+                    0 0 0 0px rgba(52, 124, 203, 0);
+    }
+    
+    .glass-card:hover {
+        border-color: rgba(52, 124, 203, 0.3);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 
+                    0 0 20px -5px var(--accent-glow);
+        transform: translateY(-2px);
+    }
+    
+    .banner-card {
+        background: none !important;
+        border: 1px solid rgba(40, 42, 45, 0.8);
+        position: relative;
+        overflow: hidden;
+        border-radius: 0.875rem;
+        backdrop-filter: blur(10px);
+    }
+    
+    .banner-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+        transition: transform 0.5s ease;
+    }
+    
+    .banner-card:hover .banner-img {
+        transform: scale(1.05);
+    }
+    
+    .banner-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(15,17,19,0.95) 0%, rgba(15,17,19,0.7) 40%, rgba(15,17,19,0.1) 100%);
+        z-index: 1;
+    }
+    
+    .card-content { 
+        position: relative; 
+        z-index: 10; 
+        width: 100%; 
+        height: 100%; 
+    }
+    
+    .extension-dropdown {
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 0;
+        background: rgba(17, 19, 21, 0.95);
+        border: 1px solid rgba(35, 37, 40, 0.8);
+        border-top: none;
+        border-bottom-left-radius: 1rem;
+        border-bottom-right-radius: 1rem;
+        margin-top: -8px;
+        position: relative;
+        z-index: 10;
+        backdrop-filter: blur(10px);
+    }
+    
+    .extension-dropdown.open {
+        max-height: 5000px;
+        opacity: 1;
+        padding-top: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+    }
+    
+    .extension-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-top: 1px solid rgba(30, 32, 34, 0.5);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+    
+    .extension-row:hover {
+        background: rgba(255, 255, 255, 0.02);
+        border-top-color: rgba(52, 124, 203, 0.3);
+    }
+    
+    .tab-active { 
+        position: relative;
+        color: #ffffff !important; 
+        text-shadow: 0 0 10px rgba(52, 124, 203, 0.5);
+    }
+    
+    .tab-active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        border-radius: 3px;
+        box-shadow: 0 0 15px var(--accent-glow);
+        animation: tabGlow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes tabGlow {
+        0% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+    
+    .btn-download {
+        background: linear-gradient(135deg, var(--accent) 0%, #2a68a8 100%);
+        box-shadow: 0 4px 15px rgba(52, 124, 203, 0.3);
+        white-space: nowrap;
+        touch-action: manipulation;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-download::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: all 0.6s ease;
+    }
+    
+    .btn-download:hover::before {
+        left: 100%;
+    }
+    
+    .btn-download:hover, .btn-download:active {
+        box-shadow: 0 6px 25px rgba(52, 124, 203, 0.5);
+        transform: translateY(-1px);
+    }
+    
+    .section-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 1.5rem 0 1rem 0;
+        opacity: 0.6;
+    }
+    
+    .section-divider::before, .section-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #282a2d, transparent);
+    }
+    
+    .section-divider span {
+        padding: 0 1rem;
+        background: var(--bg);
+        position: relative;
+    }
+    
+    .show-more-btn {
+        background: rgba(26, 28, 30, 0.8);
+        border: 1px solid rgba(40, 42, 45, 0.8);
+        color: #a1a1aa;
+        padding: 0.875rem;
+        border-radius: 0.625rem;
+        width: 100%;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        touch-action: manipulation;
+        backdrop-filter: blur(10px);
+    }
+    
+    .show-more-btn:hover, .show-more-btn:active { 
+        background: rgba(35, 37, 40, 0.9); 
+        color: white; 
+        border-color: rgba(52, 124, 203, 0.3);
+        box-shadow: 0 0 20px rgba(52, 124, 203, 0.2);
+    }
+    
+    .client-collapse-btn {
+        padding: 0.5rem 0.875rem;
+        border-radius: 0.5rem;
+        background: rgba(26, 28, 30, 0.8);
+        border: 1px solid rgba(40, 42, 45, 0.8);
+        font-size: 0.6875rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #71717a;
+        transition: all 0.3s ease;
+        min-height: 36px;
+        min-width: 44px;
+        touch-action: manipulation;
+        backdrop-filter: blur(10px);
+    }
+    
+    .client-collapse-btn:hover, .client-collapse-btn:active { 
+        color: white; 
+        border-color: rgba(52, 124, 203, 0.3);
+        background: rgba(35, 37, 40, 0.9);
+    }
+    
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: rgba(15, 17, 19, 0.5);
+        border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, var(--accent), #2a68a8);
+        border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, var(--accent), #1e5a9c);
+    }
+    
+    @media (max-width: 768px) {
+        .glass-card, .banner-card {
+            border-radius: 0.75rem;
         }
         
-        body { 
-            background-color: var(--bg); 
-            color: #a1a1aa; 
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        .extension-dropdown {
+            border-radius: 0.75rem;
+            margin-left: 0;
+            margin-right: 0;
         }
-
-        /* Smooth scroll behavior */
-        html {
+        
+        .tab-active::after {
+            width: 60%;
+            height: 2px;
+        }
+        
+        #category-tabs {
+            padding-bottom: 0.5rem;
+            scroll-padding-left: 1rem;
             scroll-behavior: smooth;
         }
-
-        /* Enhanced glass card with glow */
-        .glass-card { 
-            background: var(--card); 
-            border: 1px solid rgba(40, 42, 45, 0.8);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            z-index: 20;
-            overflow: hidden;
-            border-radius: 0.875rem;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
-                        0 2px 4px -1px rgba(0, 0, 0, 0.06),
-                        0 0 0 0px rgba(52, 124, 203, 0);
+        
+        #category-tabs button {
+            flex-shrink: 0;
         }
-
+        
         .glass-card:hover {
-            border-color: rgba(52, 124, 203, 0.3);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 
-                        0 0 20px -5px var(--accent-glow);
-            transform: translateY(-2px);
-        }
-
-        .banner-card {
-            background: none !important;
-            border: 1px solid rgba(40, 42, 45, 0.8);
-            position: relative;
-            overflow: hidden;
-            border-radius: 0.875rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .banner-img {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 0;
-            transition: transform 0.5s ease;
-        }
-
-        .banner-card:hover .banner-img {
-            transform: scale(1.05);
-        }
-
-        .banner-gradient {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, rgba(15,17,19,0.95) 0%, rgba(15,17,19,0.7) 40%, rgba(15,17,19,0.1) 100%);
-            z-index: 1;
-        }
-
-        .card-content { 
-            position: relative; 
-            z-index: 10; 
-            width: 100%; 
-            height: 100%; 
-        }
-
-        /* Extension dropdown with enhanced animation */
-        .extension-dropdown {
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 0;
-            background: rgba(17, 19, 21, 0.95);
-            border: 1px solid rgba(35, 37, 40, 0.8);
-            border-top: none;
-            border-bottom-left-radius: 1rem;
-            border-bottom-right-radius: 1rem;
-            margin-top: -8px;
-            position: relative;
-            z-index: 10;
-            backdrop-filter: blur(10px);
-        }
-
-        .extension-dropdown.open {
-            max-height: 5000px;
-            opacity: 1;
-            padding-top: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
-        }
-
-        .extension-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem;
-            border-top: 1px solid rgba(30, 32, 34, 0.5);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-
-        .extension-row:hover {
-            background: rgba(255, 255, 255, 0.02);
-            border-top-color: rgba(52, 124, 203, 0.3);
-        }
-
-        /* Enhanced tab styling with glow */
-        .tab-active { 
-            position: relative;
-            color: #ffffff !important; 
-            text-shadow: 0 0 10px rgba(52, 124, 203, 0.5);
-        }
-
-        .tab-active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-            border-radius: 3px;
-            box-shadow: 0 0 15px var(--accent-glow);
-            animation: tabGlow 2s ease-in-out infinite alternate;
-        }
-
-        @keyframes tabGlow {
-            0% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        /* Enhanced download button with glow */
-        .btn-download {
-            background: linear-gradient(135deg, var(--accent) 0%, #2a68a8 100%);
-            box-shadow: 0 4px 15px rgba(52, 124, 203, 0.3);
-            white-space: nowrap;
-            touch-action: manipulation;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .btn-download::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: all 0.6s ease;
-        }
-
-        .btn-download:hover::before {
-            left: 100%;
-        }
-
-        .btn-download:hover, .btn-download:active {
-            box-shadow: 0 6px 25px rgba(52, 124, 203, 0.5);
             transform: translateY(-1px);
         }
-
-        /* Enhanced section divider */
-        .section-divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            margin: 1.5rem 0 1rem 0;
-            opacity: 0.6;
-        }
-
-        .section-divider::before, .section-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #282a2d, transparent);
-        }
-
-        .section-divider span {
-            padding: 0 1rem;
-            background: var(--bg);
-            position: relative;
-        }
-
-        /* Enhanced show more button */
-        .show-more-btn {
-            background: rgba(26, 28, 30, 0.8);
-            border: 1px solid rgba(40, 42, 45, 0.8);
-            color: #a1a1aa;
-            padding: 0.875rem;
-            border-radius: 0.625rem;
-            width: 100%;
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 44px;
-            touch-action: manipulation;
-            backdrop-filter: blur(10px);
-        }
         
-        .show-more-btn:hover, .show-more-btn:active { 
-            background: rgba(35, 37, 40, 0.9); 
-            color: white; 
-            border-color: rgba(52, 124, 203, 0.3);
-            box-shadow: 0 0 20px rgba(52, 124, 203, 0.2);
+        .btn-download:hover {
+            transform: translateY(0);
         }
-
-        /* Enhanced collapse button */
-        .client-collapse-btn {
-            padding: 0.5rem 0.875rem;
-            border-radius: 0.5rem;
-            background: rgba(26, 28, 30, 0.8);
-            border: 1px solid rgba(40, 42, 45, 0.8);
-            font-size: 0.6875rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #71717a;
-            transition: all 0.3s ease;
-            min-height: 36px;
-            min-width: 44px;
-            touch-action: manipulation;
-            backdrop-filter: blur(10px);
-        }
-        
-        .client-collapse-btn:hover, .client-collapse-btn:active { 
-            color: white; 
-            border-color: rgba(52, 124, 203, 0.3);
-            background: rgba(35, 37, 40, 0.9);
-        }
-
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(15, 17, 19, 0.5);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, var(--accent), #2a68a8);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, var(--accent), #1e5a9c);
-        }
-
-        /* Mobile optimizations */
-        @media (max-width: 768px) {
-            .glass-card, .banner-card {
-                border-radius: 0.75rem;
-            }
-            
-            .extension-dropdown {
-                border-radius: 0.75rem;
-                margin-left: 0;
-                margin-right: 0;
-            }
-            
-            .tab-active::after {
-                width: 60%;
-                height: 2px;
-            }
-            
-            /* Enhanced mobile navigation */
-            #category-tabs {
-                padding-bottom: 0.5rem;
-                scroll-padding-left: 1rem;
-                scroll-behavior: smooth;
-            }
-            
-            #category-tabs button {
-                flex-shrink: 0;
-            }
-            
-            /* Optimized animations for mobile */
-            .glass-card:hover {
-                transform: translateY(-1px);
-            }
-            
-            .btn-download:hover {
-                transform: translateY(0);
-            }
-        }
-
-        /* Category tabs container - fixed horizontal scroll */
-        #category-tabs-container {
-            position: relative;
-        }
-
-        #category-tabs {
-            display: flex;
-            overflow-x: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            padding: 0.5rem 0;
-            gap: 0.5rem;
-        }
-
-        #category-tabs::-webkit-scrollbar {
-            display: none;
-        }
-
-        #category-tabs button {
-            white-space: nowrap;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-            background: rgba(22, 24, 26, 0.5);
-            border: 1px solid transparent;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        #category-tabs button:hover {
-            background: rgba(35, 37, 40, 0.8);
-            border-color: rgba(52, 124, 203, 0.2);
-        }
-
-        /* Loading animation enhancement */
-        #loader {
-            position: relative;
-            width: 40px;
-            height: 40px;
-            border-width: 3px;
-            animation: spin 1s linear infinite;
-        }
-
-        #loader::before {
-            content: '';
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            border-radius: 50%;
-            background: conic-gradient(from 0deg, transparent, var(--accent), transparent);
-            animation: spin 1.5s linear infinite;
-            z-index: -1;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Smooth fade in animation */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-fadeInUp {
-            animation: fadeInUp 0.5s ease-out forwards;
-        }
-
-        /* Gradient text for headings */
-        .gradient-text {
-            background: linear-gradient(135deg, #ffffff 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* Safe area insets */
-        .pb-safe {
-            padding-bottom: env(safe-area-inset-bottom, 1rem);
-        }
-        
-        .pt-safe {
-            padding-top: env(safe-area-inset-top, 0);
-        }
-
-        /* Performance optimizations */
-        .will-change-transform {
-            will-change: transform;
-        }
-        
-        .backface-hidden {
-            backface-visibility: hidden;
-        }
-
-        /* Description styles */
-        .client-description {
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    #category-tabs-container {
+        position: relative;
+    }
+    
+    #category-tabs {
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        padding: 0.5rem 0;
+        gap: 0.5rem;
+    }
+    
+    #category-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    #category-tabs button {
+        white-space: nowrap;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        background: rgba(22, 24, 26, 0.5);
+        border: 1px solid transparent;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    #category-tabs button:hover {
+        background: rgba(35, 37, 40, 0.8);
+        border-color: rgba(52, 124, 203, 0.2);
+    }
+    
+    #loader {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        border-width: 3px;
+        animation: spin 1s linear infinite;
+    }
+    
+    #loader::before {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, transparent, var(--accent), transparent);
+        animation: spin 1.5s linear infinite;
+        z-index: -1;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeInUp {
+        from {
             opacity: 0;
+            transform: translateY(20px);
         }
-
-        .client-description.expanded {
-            max-height: 500px;
+        to {
             opacity: 1;
-            margin-top: 1rem;
+            transform: translateY(0);
         }
-
-        .description-content {
-            background: rgba(22, 24, 26, 0.5);
-            border: 1px solid rgba(40, 42, 45, 0.5);
-            border-radius: 0.75rem;
-            padding: 1.25rem;
-            line-height: 1.6;
-            font-size: 0.875rem;
-            color: #d1d5db;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .description-content::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: linear-gradient(to bottom, var(--accent), #2a68a8);
-        }
-
-        .description-toggle-btn {
-            background: transparent;
-            border: none;
-            color: var(--accent);
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .description-toggle-btn:hover {
-            background: rgba(52, 124, 203, 0.1);
-        }
-
-        .description-toggle-btn i {
-            transition: transform 0.3s ease;
-        }
-
-        .description-toggle-btn.expanded i {
-            transform: rotate(180deg);
-        }
-    </style>
+    }
+    
+    .animate-fadeInUp {
+        animation: fadeInUp 0.5s ease-out forwards;
+    }
+    
+    .gradient-text {
+        background: linear-gradient(135deg, #ffffff 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 1rem);
+    }
+    
+    .pt-safe {
+        padding-top: env(safe-area-inset-top, 0);
+    }
+    
+    .will-change-transform {
+        will-change: transform;
+    }
+    
+    .backface-hidden {
+        backface-visibility: hidden;
+    }
+    
+    .client-description {
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 0;
+    }
+    
+    .client-description.expanded {
+        max-height: 500px;
+        opacity: 1;
+        margin-top: 1rem;
+    }
+    
+    .description-content {
+        background: rgba(22, 24, 26, 0.5);
+        border: 1px solid rgba(40, 42, 45, 0.5);
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        line-height: 1.6;
+        font-size: 0.875rem;
+        color: #d1d5db;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .description-content::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--accent), #2a68a8);
+    }
+    
+    .description-toggle-btn {
+        background: transparent;
+        border: none;
+        color: var(--accent);
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .description-toggle-btn:hover {
+        background: rgba(52, 124, 203, 0.1);
+    }
+    
+    .description-toggle-btn i {
+        transition: transform 0.3s ease;
+    }
+    
+    .description-toggle-btn.expanded i {
+        transform: rotate(180deg);
+    }
+  </style>
 </head>
+
 <body class="min-h-screen font-sans antialiased">
 
-    <div class="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-16 pb-safe">
-        <header class="text-center mb-6 sm:mb-10 pt-safe animate-fadeInUp">
-            <div class="inline-flex items-center justify-center p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#347ccb]/20 to-[#347ccb]/5 mb-3 sm:mb-4 relative overflow-hidden group">
-                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#347ccb]/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                <i class="fa-solid fa-box-open text-[#347ccb] text-2xl sm:text-3xl relative z-10"></i>
-            </div>
-            <h1 class="text-2xl sm:text-5xl font-black text-white mb-1 sm:mb-2 tracking-tight gradient-text">Indigo Library</h1>
-            <p class="text-zinc-500 font-bold uppercase text-[0.625rem] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em]">mca.glacierclient.xyz</p>
-        </header>
+  <div class="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-16 pb-safe">
+    <header class="text-center mb-6 sm:mb-10 pt-safe animate-fadeInUp">
+      <div class="inline-flex items-center justify-center p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#347ccb]/20 to-[#347ccb]/5 mb-3 sm:mb-4 relative overflow-hidden group">
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#347ccb]/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+        <i class="fa-solid fa-box-open text-[#347ccb] text-2xl sm:text-3xl relative z-10"></i>
+      </div>
+      <h1 class="text-2xl sm:text-5xl font-black text-white mb-1 sm:mb-2 tracking-tight gradient-text">Indigo Library</h1>
+      <p class="text-zinc-500 font-bold uppercase text-[0.625rem] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em]">mca.glacierclient.xyz</p>
+    </header>
 
-        <div id="status-container" class="flex flex-col items-center justify-center py-16 sm:py-20">
-            <div id="loader" class="w-8 sm:w-10 h-8 sm:h-10 border-3 sm:border-4 border-[#347ccb]/20 border-t-[#347ccb] rounded-full animate-spin"></div>
-            <p id="status-text" class="mt-3 sm:mt-4 text-zinc-500 text-sm font-medium">Indexing Library...</p>
-        </div>
-
-        <div id="main-content" class="hidden space-y-6 sm:space-y-8">
-            <!-- Enhanced sticky header with blur -->
-            <div class="sticky top-0 z-50 bg-gradient-to-b from-[#0f1113]/95 to-[#0f1113]/80 backdrop-blur-xl border-b border-zinc-800/30 shadow-xl">
-                <div class="max-w-6xl mx-auto px-3 sm:px-6">
-                    <!-- Category tabs with horizontal scroll -->
-                    <div id="category-tabs-container" class="relative">
-                        <div id="category-tabs" class="py-2">
-                            <!-- Tabs will be dynamically inserted here -->
-                        </div>
-                        <!-- Gradient fade on edges for mobile -->
-                        <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0f1113]/95 to-transparent pointer-events-none hidden sm:block"></div>
-                        <div class="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#0f1113]/95 to-transparent pointer-events-none hidden sm:block"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Search bar with enhanced styling -->
-            <div class="max-w-2xl mx-auto w-full px-3 sm:px-0 animate-fadeInUp" style="animation-delay: 0.1s">
-                <div class="relative group">
-                    <i class="fa-solid fa-magnifying-glass absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-hover:text-[#347ccb] transition-colors duration-300"></i>
-                    <input type="text" id="search-input" placeholder="Search archive, versions, or extensions..." 
-                           class="w-full bg-[#16181a]/80 border border-zinc-800/50 rounded-xl sm:rounded-2xl pl-12 sm:pl-14 pr-4 sm:pr-6 py-3 sm:py-4 text-white focus:outline-none focus:border-[#347ccb] text-sm sm:text-base focus:ring-2 focus:ring-[#347ccb]/30 transition-all duration-300 backdrop-blur-sm">
-                    <div class="absolute right-3 top-1/2 -translate-y-1/2">
-                        <span class="text-xs text-zinc-500 hidden sm:block">⌘K</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Main content area -->
-            <div id="client-container" class="space-y-8 sm:space-y-12 pb-16 sm:pb-20 px-3 sm:px-0"></div>
-        </div>
+    <div id="status-container" class="flex flex-col items-center justify-center py-16 sm:py-20">
+      <div id="loader" class="w-8 sm:w-10 h-8 sm:h-10 border-3 sm:border-4 border-[#347ccb]/20 border-t-[#347ccb] rounded-full animate-spin"></div>
+      <p id="status-text" class="mt-3 sm:mt-4 text-zinc-500 text-sm font-medium">Indexing Library...</p>
     </div>
 
-    <script>
-        const GITHUB_ORG = 'Indigo-Tools'; 
-        const REPO_NAME = 'ClientLibrary';
-        const BRANCH = 'main';
-        const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
+    <div id="main-content" class="hidden space-y-6 sm:space-y-8">
+      <div class="sticky top-0 z-50 bg-gradient-to-b from-[#0f1113]/95 to-[#0f1113]/80 backdrop-blur-xl border-b border-zinc-800/30 shadow-xl">
+        <div class="max-w-6xl mx-auto px-3 sm:px-6">
+          <div id="category-tabs-container" class="relative">
+            <div id="category-tabs" class="py-2">
+            </div>
+            <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0f1113]/95 to-transparent pointer-events-none hidden sm:block"></div>
+            <div class="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#0f1113]/95 to-transparent pointer-events-none hidden sm:block"></div>
+          </div>
+        </div>
+      </div>
 
-        let libraryTree = []; 
-        let currentCategory = "ALL";
-        const CATEGORY_ORDER = ["ALL", "Popular Clients", "1_20", "1_19", "1_18", "1_17", "1_16"];
+      <div class="max-w-2xl mx-auto w-full px-3 sm:px-0 animate-fadeInUp" style="animation-delay: 0.1s">
+        <div class="relative group">
+          <i class="fa-solid fa-magnifying-glass absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-hover:text-[#347ccb] transition-colors duration-300"></i>
+          <input type="text" id="search-input" placeholder="Search archive, versions, or extensions..." class="w-full bg-[#16181a]/80 border border-zinc-800/50 rounded-xl sm:rounded-2xl pl-12 sm:pl-14 pr-4 sm:pr-6 py-3 sm:py-4 text-white focus:outline-none focus:border-[#347ccb] text-sm sm:text-base focus:ring-2 focus:ring-[#347ccb]/30 transition-all duration-300 backdrop-blur-sm">
+          <div class="absolute right-3 top-1/2 -translate-y-1/2">
+            <span class="text-xs text-zinc-500 hidden sm:block">⌘K</span>
+          </div>
+        </div>
+      </div>
 
-        const expandedFiles = new Set();
-        const hiddenClients = new Set();
-        const expandedDescriptions = new Set();
-
-        function formatName(name) {
-            if (!name) return "";
-            return name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+      <div id="client-container" class="space-y-8 sm:space-y-12 pb-16 sm:pb-20 px-3 sm:px-0"></div>
+    </div>
+  </div>
+  <script>
+    const GITHUB_ORG = 'Indigo-Tools';
+    const REPO_NAME = 'ClientLibrary';
+    const BRANCH = 'main';
+    const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
+    
+    let libraryTree = [];
+    let currentCategory = "ALL";
+    const CATEGORY_ORDER = ["ALL", "Popular Clients", "1_20", "1_19", "1_18", "1_17", "1_16"];
+    
+    const expandedFiles = new Set();
+    const hiddenClients = new Set();
+    const expandedDescriptions = new Set();
+    
+    function formatName(name) {
+        if (!name) return "";
+        return name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+    }
+    
+    function toggleDropdown(id) {
+        const dropdown = document.getElementById('drop-' + id);
+        const icon = document.getElementById('icon-' + id);
+        if (dropdown && icon) {
+            dropdown.classList.toggle('open');
+            icon.classList.toggle('rotate-180');
         }
-
-        function toggleDropdown(id) {
-            const dropdown = document.getElementById('drop-' + id);
-            const icon = document.getElementById('icon-' + id);
-            if (dropdown && icon) {
-                dropdown.classList.toggle('open');
-                icon.classList.toggle('rotate-180');
-                
-                // Add animation class for smooth transition
-                dropdown.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-            }
-        }
-
-        function toggleFileList(clientId) {
-            if (expandedFiles.has(clientId)) expandedFiles.delete(clientId);
-            else expandedFiles.add(clientId);
-            renderClients(document.getElementById('search-input').value);
-        }
-
-        function toggleClientVisibility(clientId) {
-            if (hiddenClients.has(clientId)) hiddenClients.delete(clientId);
-            else hiddenClients.add(clientId);
-            renderClients(document.getElementById('search-input').value);
-        }
-
-        function toggleDescription(clientId) {
-            if (expandedDescriptions.has(clientId)) expandedDescriptions.delete(clientId);
-            else expandedDescriptions.add(clientId);
-            renderClients(document.getElementById('search-input').value);
-        }
-
-        const smartSort = (a, b) => {
-            return a.rawName.localeCompare(b.rawName, undefined, { 
-                numeric: true, 
-                sensitivity: 'base' 
-            });
-        };
-
-        async function fetchDescription(category, clientName) {
-            try {
-                const descriptionUrl = `${BASE_RAW_URL}/${encodeURIComponent(category)}/${encodeURIComponent(clientName)}/description.txt`;
-                const response = await fetch(descriptionUrl);
-                if (response.ok) {
-                    return await response.text();
+    }
+    
+    function toggleFileList(clientId) {
+        if (expandedFiles.has(clientId)) expandedFiles.delete(clientId);
+        else expandedFiles.add(clientId);
+        renderClients(document.getElementById('search-input').value);
+    }
+    
+    function toggleClientVisibility(clientId) {
+        if (hiddenClients.has(clientId)) hiddenClients.delete(clientId);
+        else hiddenClients.add(clientId);
+        renderClients(document.getElementById('search-input').value);
+    }
+    
+    function toggleDescription(clientId) {
+        if (expandedDescriptions.has(clientId)) expandedDescriptions.delete(clientId);
+        else expandedDescriptions.add(clientId);
+        renderClients(document.getElementById('search-input').value);
+    }
+    
+    const smartSort = (a, b) => {
+        return a.rawName.localeCompare(b.rawName, undefined, {
+            numeric: true,
+            sensitivity: 'base'
+        });
+    };
+    
+    async function init() {
+        try {
+            const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
+            const rawPaths = await response.json();
+            const structured = {};
+            const descriptionPromises = [];
+    
+            rawPaths.forEach(path => {
+                const parts = path.split('/');
+                if (parts.length < 3) return;
+    
+                const category = parts[1];
+                const fileName = parts[parts.length - 1];
+                const clientName = parts[2];
+    
+                if (!structured[category]) structured[category] = {};
+                if (!structured[category][clientName]) {
+                    structured[category][clientName] = {
+                        icon: null,
+                        banner: null,
+                        description: null,
+                        files: [],
+                        extensions: []
+                    };
                 }
-            } catch (err) {
-                console.warn(`No description found for ${clientName} in ${category}`);
-            }
-            return null;
-        }
-
-        async function init() {
-            try {
-                const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
-                const rawPaths = await response.json();
-                const structured = {};
-
-                rawPaths.forEach(path => {
-                    const parts = path.split('/');
-                    if (parts.length < 3) return;
-
-                    const category = parts[1];
-                    const fileName = parts[parts.length - 1];
-                    const extIdx = parts.findIndex(p => p.toLowerCase() === 'extensions');
-                    const isExtension = extIdx !== -1;
-                    const clientName = parts[2];
-
-                    if (!structured[category]) structured[category] = {};
-                    if (!structured[category][clientName]) {
-                        structured[category][clientName] = { 
-                            icon: null, 
-                            banner: null, 
-                            description: null,
-                            files: [], 
-                            extensions: [] 
-                        };
-                    }
-
-                    const encodedPath = path.split('/').map(p => encodeURIComponent(p)).join('/');
-                    const fullUrl = `${BASE_RAW_URL}/${encodedPath}`;
-
-                    if (fileName.toLowerCase() === 'pack_icon.png') structured[category][clientName].icon = fullUrl;
-                    else if (fileName.toLowerCase() === 'pack_banner.png') structured[category][clientName].banner = fullUrl;
-                    else if (fileName.toLowerCase() === 'description.txt') {
-                        // We'll fetch descriptions separately
-                        structured[category][clientName].descriptionUrl = fullUrl;
-                    }
-                    else if (fileName.toLowerCase().match(/\.(zip|dll|so|apk|mcpack|mcaddon)$/)) {
-                        const fileObj = { display: formatName(fileName), rawName: fileName, url: fullUrl };
-                        if (isExtension) structured[category][clientName].extensions.push(fileObj);
-                        else structured[category][clientName].files.push(fileObj);
-                    }
-                });
-
-                // Create library tree structure
-                libraryTree = await Promise.all(
-                    Object.entries(structured)
-                        .sort((a, b) => (CATEGORY_ORDER.indexOf(a[0]) || 99) - (CATEGORY_ORDER.indexOf(b[0]) || 99))
-                        .map(async ([catName, clients]) => {
-                            // Process each client and fetch description
-                            const clientEntries = await Promise.all(
-                                Object.entries(clients).map(async ([cliName, data]) => {
-                                    let description = null;
-                                    if (data.descriptionUrl) {
-                                        description = await fetchDescription(catName, cliName);
-                                    }
-                                    
-                                    return {
-                                        id: 'client_' + cliName.replace(/[^a-zA-Z0-9]/g, '') + '_' + catName.replace(/[^a-zA-Z0-9]/g, ''),
-                                        displayName: formatName(cliName),
-                                        iconUrl: data.icon,
-                                        bannerUrl: data.banner,
-                                        description: description,
-                                        files: data.files.sort(smartSort),
-                                        extensions: data.extensions.sort(smartSort),
-                                        isPopular: catName === "Popular Clients"
-                                    };
-                                })
-                            );
-
-                            return {
-                                name: catName,
-                                displayName: catName.startsWith('1_') ? `Version: ${catName.replace('_', '.')}` : catName,
-                                clients: clientEntries
-                                    .filter(c => c.files.length > 0 || c.extensions.length > 0)
-                                    .sort((a, b) => a.displayName.localeCompare(b.displayName))
-                            };
+    
+                const encodedPath = path.split('/').map(p => encodeURIComponent(p)).join('/');
+                const fullUrl = `${BASE_RAW_URL}/${encodedPath}`;
+                const lowerName = fileName.toLowerCase();
+    
+                if (lowerName === 'pack_icon.png') {
+                    structured[category][clientName].icon = fullUrl;
+                } else if (lowerName === 'pack_banner.png') {
+                    structured[category][clientName].banner = fullUrl;
+                } else if (lowerName === 'description.txt' || lowerName === 'description.md') {
+                    const descPromise = fetch(fullUrl)
+                        .then(res => {
+                            if (!res.ok) throw new Error(`Failed to fetch description: ${res.status}`);
+                            return res.text();
                         })
-                );
-
-                // Filter out categories with no clients
-                libraryTree = libraryTree.filter(cat => cat.clients.length > 0);
-
-                // Add fade in animation
-                document.getElementById('status-container').style.opacity = '0';
-                document.getElementById('status-container').style.transition = 'opacity 0.3s ease';
-                
-                setTimeout(() => {
-                    document.getElementById('status-container').classList.add('hidden');
-                    document.getElementById('main-content').classList.remove('hidden');
-                    renderTabs();
-                    switchCategory("ALL");
+                        .then(text => {
+                            if (text) {
+                                structured[category][clientName].description = text;
+                            }
+                        })
+                        .catch(() => {});
+                    descriptionPromises.push(descPromise);
+                } else {
+                    const isExtension = parts.some(p => p.toLowerCase() === 'extensions');
                     
-                    // Animate main content in
-                    const mainContent = document.getElementById('main-content');
-                    mainContent.style.opacity = '0';
-                    mainContent.style.transform = 'translateY(20px)';
-                    
-                    setTimeout(() => {
-                        mainContent.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                        mainContent.style.opacity = '1';
-                        mainContent.style.transform = 'translateY(0)';
-                    }, 50);
-                }, 300);
-            } catch (err) { 
-                console.error(err);
-                document.getElementById('status-text').textContent = "Failed to load library. Please check connection.";
-                document.getElementById('loader').classList.add('hidden');
-            }
-        }
-
-        function renderTabs() {
-            const container = document.getElementById('category-tabs');
-            const tabs = ["ALL", ...libraryTree.map(c => c.name)];
-            
-            container.innerHTML = tabs.map(t => {
-                let label = t === "ALL" ? "All" : t;
-                if (t.startsWith('1_')) {
-                    label = t.replace('_', '.');
-                }
-                
-                const displayName = t.startsWith('1_') ? `Version: ${label}` : label;
-                
-                return `
-                    <button onclick="switchCategory('${t}')" 
-                            id="tab-${t}" 
-                            class="pb-2 sm:pb-3 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white uppercase tracking-wide transition-colors duration-200 whitespace-nowrap px-3 sm:px-4">
-                        ${displayName}
-                    </button>
-                `;
-            }).join('');
-        }
-
-        function switchCategory(name) {
-            currentCategory = name;
-            
-            // Update active tab with animation
-            document.querySelectorAll('#category-tabs button').forEach(btn => {
-                btn.classList.remove('tab-active');
-                btn.style.transform = 'translateY(0)';
-            });
-            
-            const activeTab = document.getElementById(`tab-${name}`);
-            activeTab.classList.add('tab-active');
-            activeTab.style.transform = 'translateY(-1px)';
-            
-            // Render clients with animation
-            renderClients();
-            
-            // Scroll to top on mobile
-            if (window.innerWidth < 768) {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }
-
-        function renderClients(query = '') {
-            const container = document.getElementById('client-container');
-            let html = '';
-            const q = query.toLowerCase();
-            const toShow = currentCategory === "ALL" ? libraryTree : libraryTree.filter(c => c.name === currentCategory);
-
-            toShow.forEach((cat, catIndex) => {
-                const filteredClients = cat.clients.map(client => {
-                    const clientMatch = client.displayName.toLowerCase().includes(q);
-                    const descriptionMatch = client.description && client.description.toLowerCase().includes(q);
-                    const matchingFiles = client.files.filter(f => 
-                        f.display.toLowerCase().includes(q) || 
-                        f.rawName.toLowerCase().includes(q) || 
-                        clientMatch ||
-                        descriptionMatch
-                    );
-                    const matchingExtensions = client.extensions.filter(e => 
-                        e.display.toLowerCase().includes(q) || 
-                        e.rawName.toLowerCase().includes(q) || 
-                        clientMatch ||
-                        descriptionMatch
-                    );
-
-                    if (matchingFiles.length > 0 || matchingExtensions.length > 0 || descriptionMatch) {
-                        return { ...client, matchingFiles, matchingExtensions };
-                    }
-                    return null;
-                }).filter(c => c !== null);
-
-                if (filteredClients.length > 0) {
-                    html += `
-                    <div class="space-y-4 sm:space-y-6 animate-fadeInUp" style="animation-delay: ${catIndex * 0.05}s">
-                        <div class="section-divider">
-                            <span class="text-[0.625rem] sm:text-xs font-bold uppercase tracking-widest text-zinc-400">
-                                ${cat.displayName}
-                            </span>
-                        </div>
+                    if (lowerName.match(/\.(zip|dll|so|apk|mcpack|mcaddon)$/)) {
+                        const fileObj = { 
+                            display: formatName(fileName), 
+                            rawName: fileName, 
+                            url: fullUrl 
+                        };
                         
-                        ${filteredClients.map((client, clientIndex) => {
-                            const isSearching = q.length > 0;
-                            const isHidden = hiddenClients.has(client.id);
-                            const hasManyFiles = client.matchingFiles.length > 5;
-                            const isFilesExpanded = expandedFiles.has(client.id) || isSearching;
-                            const filesToDisplay = isFilesExpanded ? client.matchingFiles : client.matchingFiles.slice(0, 5);
-                            const isDescriptionExpanded = expandedDescriptions.has(client.id);
-                            
-                            return `
-                            <div class="space-y-3 sm:space-y-4" style="animation-delay: ${(catIndex + clientIndex) * 0.05 + 0.1}s">
-                                <div class="flex items-center justify-between backface-hidden">
-                                    <div class="flex items-center space-x-3 sm:space-x-4 max-w-[70%]">
-                                        ${client.iconUrl ? `
-                                            <div class="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 group">
-                                                <img src="${client.iconUrl}" 
-                                                     class="w-full h-full rounded-lg sm:rounded-xl object-cover border border-white/5 relative z-10 transition-transform duration-300 group-hover:scale-105"
-                                                     alt="${client.displayName} icon">
-                                                <div class="absolute inset-0 bg-gradient-to-br from-[#347ccb]/30 to-transparent blur-xl rounded-full opacity-50 group-hover:opacity-70 transition-opacity duration-300"></div>
-                                            </div>
+                        if (isExtension) {
+                            structured[category][clientName].extensions.push(fileObj);
+                        } else {
+                            structured[category][clientName].files.push(fileObj);
+                        }
+                    }
+                }
+            });
+    
+            await Promise.allSettled(descriptionPromises);
+    
+            libraryTree = Object.entries(structured)
+                .sort((a, b) => {
+                    const aIndex = CATEGORY_ORDER.indexOf(a[0]);
+                    const bIndex = CATEGORY_ORDER.indexOf(b[0]);
+                    if (aIndex === -1 && bIndex === -1) return a[0].localeCompare(b[0]);
+                    if (aIndex === -1) return 1;
+                    if (bIndex === -1) return -1;
+                    return aIndex - bIndex;
+                })
+                .map(([catName, clients]) => {
+                    const sortedClients = Object.entries(clients)
+                        .map(([cliName, data]) => ({
+                            id: 'client_' + cliName.replace(/[^a-zA-Z0-9]/g, '_') + '_' + catName.replace(/[^a-zA-Z0-9]/g, '_'),
+                            displayName: formatName(cliName),
+                            rawName: cliName,
+                            iconUrl: data.icon,
+                            bannerUrl: data.banner,
+                            description: data.description,
+                            files: data.files.sort(smartSort),
+                            extensions: data.extensions.sort(smartSort),
+                            isPopular: catName === "Popular Clients"
+                        }))
+                        .filter(c => c.files.length > 0 || c.extensions.length > 0)
+                        .sort((a, b) => a.displayName.localeCompare(b.displayName));
+    
+                    return {
+                        name: catName,
+                        displayName: catName.startsWith('1_') ? `Version: ${catName.replace('_', '.')}` : catName,
+                        clients: sortedClients
+                    };
+                })
+                .filter(cat => cat.clients.length > 0);
+    
+            document.getElementById('status-container').style.opacity = '0';
+            document.getElementById('status-container').style.transition = 'opacity 0.3s ease';
+    
+            setTimeout(() => {
+                document.getElementById('status-container').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                renderTabs();
+                switchCategory("ALL");
+    
+                const mainContent = document.getElementById('main-content');
+                mainContent.style.opacity = '0';
+                mainContent.style.transform = 'translateY(20px)';
+                
+                requestAnimationFrame(() => {
+                    mainContent.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    mainContent.style.opacity = '1';
+                    mainContent.style.transform = 'translateY(0)';
+                });
+            }, 200);
+        } catch (err) {
+            document.getElementById('status-text').textContent = "Failed to load library. Please check connection.";
+            document.getElementById('loader').classList.add('hidden');
+        }
+    }
+    
+    function renderTabs() {
+        const container = document.getElementById('category-tabs');
+        const tabs = ["ALL", ...libraryTree.map(c => c.name)];
+        
+        container.innerHTML = tabs.map(t => {
+            let label = t === "ALL" ? "All" : t;
+            if (t.startsWith('1_')) {
+                label = t.replace('_', '.');
+            }
+            
+            const displayName = t.startsWith('1_') ? `Version: ${label}` : label;
+            
+            return `
+                <button onclick="switchCategory('${t}')" 
+                        id="tab-${t}" 
+                        class="pb-2 sm:pb-3 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white uppercase tracking-wide transition-colors duration-200 whitespace-nowrap px-3 sm:px-4">
+                    ${displayName}
+                </button>
+            `;
+        }).join('');
+    }
+    
+    function switchCategory(name) {
+        currentCategory = name;
+        
+        document.querySelectorAll('#category-tabs button').forEach(btn => {
+            btn.classList.remove('tab-active');
+        });
+        
+        document.getElementById(`tab-${name}`).classList.add('tab-active');
+        renderClients();
+        
+        if (window.innerWidth < 768) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+    
+    function renderClients(query = '') {
+        const container = document.getElementById('client-container');
+        const q = query.toLowerCase().trim();
+        const toShow = currentCategory === "ALL" ? libraryTree : libraryTree.filter(c => c.name === currentCategory);
+    
+        if (toShow.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12 sm:py-20">
+                    <div class="inline-flex p-4 rounded-xl bg-gradient-to-br from-[#347ccb]/10 to-transparent mb-4">
+                        <i class="fa-solid fa-search text-[#347ccb] text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-white mb-2">No content available</h3>
+                    <p class="text-zinc-500 text-sm">This category is empty</p>
+                </div>
+            `;
+            return;
+        }
+    
+        let html = '';
+        
+        toShow.forEach(cat => {
+            const filteredClients = cat.clients.map(client => {
+                const clientMatch = client.displayName.toLowerCase().includes(q);
+                const descriptionMatch = client.description && client.description.toLowerCase().includes(q);
+                const fileMatch = client.files.some(f =>
+                    f.display.toLowerCase().includes(q) ||
+                    f.rawName.toLowerCase().includes(q)
+                );
+                const extensionMatch = client.extensions.some(e =>
+                    e.display.toLowerCase().includes(q) ||
+                    e.rawName.toLowerCase().includes(q)
+                );
+    
+                if (clientMatch || descriptionMatch || fileMatch || extensionMatch || !q) {
+                    const matchingFiles = q ? client.files.filter(f =>
+                        f.display.toLowerCase().includes(q) ||
+                        f.rawName.toLowerCase().includes(q) ||
+                        clientMatch ||
+                        descriptionMatch
+                    ) : client.files;
+                    
+                    const matchingExtensions = q ? client.extensions.filter(e =>
+                        e.display.toLowerCase().includes(q) ||
+                        e.rawName.toLowerCase().includes(q) ||
+                        clientMatch ||
+                        descriptionMatch
+                    ) : client.extensions;
+    
+                    return { ...client, matchingFiles, matchingExtensions };
+                }
+                return null;
+            }).filter(c => c !== null);
+    
+            if (filteredClients.length > 0) {
+                html += `
+                <div class="space-y-4 sm:space-y-6">
+                    <div class="section-divider">
+                        <span class="text-[0.625rem] sm:text-xs font-bold uppercase tracking-widest text-zinc-400">
+                            ${cat.displayName}
+                        </span>
+                    </div>
+                    
+                    ${filteredClients.map(client => {
+                        const isSearching = !!q;
+                        const isHidden = hiddenClients.has(client.id);
+                        const hasManyFiles = client.matchingFiles.length > 5;
+                        const isFilesExpanded = expandedFiles.has(client.id) || isSearching;
+                        const filesToDisplay = isFilesExpanded ? client.matchingFiles : client.matchingFiles.slice(0, 5);
+                        const isDescriptionExpanded = expandedDescriptions.has(client.id);
+                        const hasDescription = client.description && client.description.trim().length > 0;
+    
+                        return `
+                        <div class="space-y-3 sm:space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3 sm:space-x-4 max-w-[70%]">
+                                    ${client.iconUrl ? `
+                                        <div class="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
+                                            <img src="${client.iconUrl}" 
+                                                 class="w-full h-full rounded-lg sm:rounded-xl object-cover border border-white/5 relative z-10"
+                                                 alt="${client.displayName} icon"
+                                                 loading="lazy"
+                                                 onerror="this.style.display='none'">
+                                            <div class="absolute inset-0 bg-gradient-to-br from-[#347ccb]/30 to-transparent blur-xl rounded-full opacity-50"></div>
+                                        </div>
+                                    ` : ''}
+                                    <div class="min-w-0">
+                                        <h2 class="text-lg sm:text-xl font-bold text-white tracking-tight truncate">
+                                            ${client.displayName}
+                                        </h2>
+                                        ${client.isPopular ? `
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border border-yellow-500/30 mt-1">
+                                                <i class="fa-solid fa-star mr-1 text-xs"></i>Popular
+                                            </span>
                                         ` : ''}
-                                        <div class="min-w-0">
-                                            <h2 class="text-lg sm:text-xl font-bold text-white tracking-tight truncate">
-                                                ${client.displayName}
-                                            </h2>
-                                            ${client.isPopular ? `
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border border-yellow-500/30 mt-1">
-                                                    <i class="fa-solid fa-star mr-1 text-xs"></i>Popular
-                                                </span>
-                                            ` : ''}
-                                        </div>
                                     </div>
-                                    <button onclick="toggleClientVisibility('${client.id}')" 
-                                            class="client-collapse-btn will-change-transform hover:scale-105 active:scale-95">
-                                        ${isHidden ? 
-                                            '<i class="fa-solid fa-eye mr-1 sm:mr-2"></i><span class="hidden sm:inline">Show</span>' : 
-                                            '<i class="fa-solid fa-eye-slash mr-1 sm:mr-2"></i><span class="hidden sm:inline">Collapse</span>'
-                                        }
-                                    </button>
                                 </div>
-
-                                ${client.description && !isHidden ? `
-                                    <div class="${isDescriptionExpanded ? 'expanded' : ''} client-description">
-                                        <div class="description-content">
-                                            ${client.description.split('\n').map(line => `<p class="mb-2 last:mb-0">${line}</p>`).join('')}
-                                        </div>
-                                        <button onclick="toggleDescription('${client.id}')" 
-                                                class="description-toggle-btn ${isDescriptionExpanded ? 'expanded' : ''} mt-2">
-                                            ${isDescriptionExpanded ? 'Hide Description' : 'Show Description'}
-                                            <i class="fa-solid fa-chevron-down text-xs"></i>
-                                        </button>
+                                <button onclick="toggleClientVisibility('${client.id}')" 
+                                        class="client-collapse-btn">
+                                    ${isHidden ?
+                                        '<i class="fa-solid fa-eye mr-1 sm:mr-2"></i><span class="hidden sm:inline">Show</span>' :
+                                        '<i class="fa-solid fa-eye-slash mr-1 sm:mr-2"></i><span class="hidden sm:inline">Collapse</span>'
+                                    }
+                                </button>
+                            </div>
+    
+                            ${hasDescription && !isHidden ? `
+                                <div class="${isDescriptionExpanded ? 'expanded' : ''} client-description">
+                                    <div class="description-content">
+                                        ${client.description.split('\n').map(line => `<p class="mb-3 last:mb-0">${line}</p>`).join('')}
                                     </div>
-                                ` : ''}
-
-                                <div class="${isHidden ? 'hidden' : ''} space-y-3 sm:space-y-4">
+                                </div>
+                                <button onclick="toggleDescription('${client.id}')" 
+                                        class="description-toggle-btn ${isDescriptionExpanded ? 'expanded' : ''} mt-2">
+                                    ${isDescriptionExpanded ? 'Hide Description' : 'Show Description'}
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </button>
+                            ` : ''}
+    
+                            <div class="${isHidden ? 'hidden' : ''} space-y-3 sm:space-y-4">
+                                ${client.matchingFiles.length > 0 ? `
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                                        ${filesToDisplay.map((file, fileIndex) => {
+                                        ${filesToDisplay.map(file => {
                                             const cardClass = client.bannerUrl ? 'banner-card' : 'glass-card';
                                             const isMobile = window.innerWidth < 768;
-                                            
+    
                                             return `
-                                            <div class="${cardClass} will-change-transform backface-hidden"
-                                                 style="animation-delay: ${(catIndex + clientIndex + fileIndex) * 0.03 + 0.2}s">
+                                            <div class="${cardClass}">
                                                 ${client.bannerUrl ? `
-                                                    <img src="${client.bannerUrl}" class="banner-img" alt="${client.displayName} banner">
+                                                    <img src="${client.bannerUrl}" class="banner-img" alt="${client.displayName} banner" loading="lazy">
                                                     <div class="banner-gradient"></div>
                                                 ` : ''}
                                                 <div class="card-content flex ${isMobile ? 'flex-col items-start' : 'items-center justify-between'} gap-3 sm:gap-0 p-4 sm:p-6">
                                                     <div class="min-w-0 ${isMobile ? 'w-full' : 'pr-4'}">
                                                         <div class="text-white font-bold text-sm sm:text-base truncate flex items-center">
-                                                            <i class="fa-solid fa-file-arrow-down mr-2 sm:mr-3 text-zinc-500 group-hover:text-[#347ccb] transition-colors duration-300"></i>
+                                                            <i class="fa-solid fa-file-arrow-down mr-2 sm:mr-3 text-zinc-500"></i>
                                                             ${file.display}
                                                         </div>
                                                         <div class="text-[0.625rem] sm:text-[10px] text-zinc-400 font-mono mt-0.5 truncate opacity-75">
@@ -875,145 +869,105 @@
                                                     </div>
                                                     <a href="${file.url}" 
                                                        target="_blank" 
-                                                       class="btn-download text-white text-xs sm:text-sm font-semibold py-2.5 px-4 sm:px-5 rounded-lg uppercase inline-flex items-center justify-center active:scale-95 transition-all duration-300 ${isMobile ? 'w-full mt-3' : ''}">
+                                                       class="btn-download text-white text-xs sm:text-sm font-semibold py-2.5 px-4 sm:px-5 rounded-lg uppercase inline-flex items-center justify-center ${isMobile ? 'w-full mt-3' : ''}">
                                                         <i class="fa-solid fa-download mr-1.5 sm:mr-2"></i>Download
                                                     </a>
                                                 </div>
                                             </div>
                                         `}).join('')}
                                     </div>
-
-                                    ${hasManyFiles && !isSearching ? `
-                                        <button onclick="toggleFileList('${client.id}')" 
-                                                class="show-more-btn will-change-transform hover:scale-[1.02] active:scale-95">
-                                            ${isFilesExpanded ? 
-                                                '<i class="fa-solid fa-angles-up"></i> <span>Show Less</span>' : 
-                                                `<i class="fa-solid fa-angles-down"></i> <span>Show ${client.matchingFiles.length - 5} more files</span>`
-                                            }
-                                        </button>
-                                    ` : ''}
-
-                                    ${client.matchingExtensions.length > 0 ? `
-                                        <div class="relative backface-hidden">
-                                            <div class="section-divider text-[0.625rem] sm:text-[10px] font-bold uppercase tracking-widest text-zinc-700">
-                                                Extensions & Add-ons
-                                            </div>
-                                            <button onclick="toggleDropdown('${client.id}')" 
-                                                    class="w-full glass-card p-3 sm:p-4 flex items-center justify-between group active:scale-[0.98] transition-transform duration-300 will-change-transform">
-                                                <div class="flex items-center text-xs sm:text-sm font-semibold uppercase tracking-wide text-[#347ccb]">
-                                                    <i class="fa-solid fa-puzzle-piece mr-2 sm:mr-3 text-zinc-500 group-hover:text-[#347ccb] transition-colors duration-300"></i>
-                                                    Extensions (${client.matchingExtensions.length})
-                                                </div>
-                                                <i id="icon-${client.id}" class="fa-solid fa-chevron-down text-zinc-600 transition-all duration-300 group-hover:text-[#347ccb]"></i>
-                                            </button>
-                                            <div id="drop-${client.id}" class="extension-dropdown mx-0 sm:mx-2 shadow-2xl">
-                                                ${client.matchingExtensions.map((ext, extIndex) => {
-                                                    const isMobile = window.innerWidth < 768;
-                                                    return `
-                                                    <div class="extension-row group/row will-change-transform hover:scale-[1.01]"
-                                                         style="animation-delay: ${extIndex * 0.05}s">
-                                                        ${client.bannerUrl ? `
-                                                            <img src="${client.bannerUrl}" class="banner-img opacity-20 group-hover/row:opacity-40 transition-opacity duration-300">
-                                                            <div class="banner-gradient"></div>
-                                                        ` : ''}
-                                                        <div class="card-content flex ${isMobile ? 'flex-col items-start' : 'items-center justify-between'} w-full gap-3 sm:gap-0">
-                                                            <div class="min-w-0 ${isMobile ? 'w-full' : 'pr-4'}">
-                                                                <div class="text-sm sm:text-base font-semibold text-zinc-200 truncate group-hover/row:text-white transition-colors duration-300">
-                                                                    ${ext.display}
-                                                                </div>
-                                                                <div class="text-[0.625rem] sm:text-xs text-zinc-500 font-mono truncate opacity-75">
-                                                                    ${ext.rawName}
-                                                                </div>
-                                                            </div>
-                                                            <a href="${ext.url}" 
-                                                               target="_blank" 
-                                                               class="btn-download text-white text-xs sm:text-sm font-semibold py-2.5 px-4 rounded-lg uppercase inline-flex items-center justify-center active:scale-95 transition-all duration-300 ${isMobile ? 'w-full mt-2' : ''}">
-                                                                <i class="fa-solid fa-download mr-1.5 sm:mr-2"></i>Download
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                `}).join('')}
-                                            </div>
+                                ` : ''}
+    
+                                ${hasManyFiles && !isSearching && client.matchingFiles.length > 5 ? `
+                                    <button onclick="toggleFileList('${client.id}')" 
+                                            class="show-more-btn">
+                                        ${isFilesExpanded ?
+                                            '<i class="fa-solid fa-angles-up"></i> <span>Show Less</span>' :
+                                            `<i class="fa-solid fa-angles-down"></i> <span>Show ${client.matchingFiles.length - 5} more</span>`
+                                        }
+                                    </button>
+                                ` : ''}
+    
+                                ${client.matchingExtensions.length > 0 ? `
+                                    <div class="relative">
+                                        <div class="section-divider text-[0.625rem] sm:text-[10px] font-bold uppercase tracking-widest text-zinc-700">
+                                            Extensions & Add-ons
                                         </div>
-                                    ` : ''}
-                                </div>
+                                        <button onclick="toggleDropdown('${client.id}')" 
+                                                class="w-full glass-card p-3 sm:p-4 flex items-center justify-between group">
+                                            <div class="flex items-center text-xs sm:text-sm font-semibold uppercase tracking-wide text-[#347ccb]">
+                                                <i class="fa-solid fa-puzzle-piece mr-2 sm:mr-3 text-zinc-500"></i>
+                                                Extensions (${client.matchingExtensions.length})
+                                            </div>
+                                            <i id="icon-${client.id}" class="fa-solid fa-chevron-down text-zinc-600"></i>
+                                        </button>
+                                        <div id="drop-${client.id}" class="extension-dropdown mx-0 sm:mx-2">
+                                            ${client.matchingExtensions.map(ext => {
+                                                const isMobile = window.innerWidth < 768;
+                                                return `
+                                                <div class="extension-row">
+                                                    ${client.bannerUrl ? `
+                                                        <img src="${client.bannerUrl}" class="banner-img opacity-20" loading="lazy">
+                                                        <div class="banner-gradient"></div>
+                                                    ` : ''}
+                                                    <div class="card-content flex ${isMobile ? 'flex-col items-start' : 'items-center justify-between'} w-full gap-3 sm:gap-0">
+                                                        <div class="min-w-0 ${isMobile ? 'w-full' : 'pr-4'}">
+                                                            <div class="text-sm sm:text-base font-semibold text-zinc-200 truncate">
+                                                                ${ext.display}
+                                                            </div>
+                                                            <div class="text-[0.625rem] sm:text-xs text-zinc-500 font-mono truncate opacity-75">
+                                                                ${ext.rawName}
+                                                            </div>
+                                                        </div>
+                                                        <a href="${ext.url}" 
+                                                           target="_blank" 
+                                                           class="btn-download text-white text-xs sm:text-sm font-semibold py-2.5 px-4 rounded-lg uppercase inline-flex items-center justify-center ${isMobile ? 'w-full mt-2' : ''}">
+                                                            <i class="fa-solid fa-download mr-1.5 sm:mr-2"></i>Download
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            `}).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
                             </div>
-                        `;}).join('')}
-                    </div>`;
-                }
-            });
-            
-            container.innerHTML = html || `
-                <div class="text-center py-12 sm:py-20 animate-fadeInUp">
-                    <div class="inline-flex p-4 rounded-xl bg-gradient-to-br from-[#347ccb]/10 to-transparent mb-4">
-                        <i class="fa-solid fa-search text-[#347ccb] text-2xl"></i>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">No results found</h3>
-                    <p class="text-zinc-500 text-sm">Try a different search term or browse the categories above</p>
+                        </div>
+                    `; }).join('')}
+                </div>`;
+            }
+        });
+    
+        container.innerHTML = html || `
+            <div class="text-center py-12 sm:py-20">
+                <div class="inline-flex p-4 rounded-xl bg-gradient-to-br from-[#347ccb]/10 to-transparent mb-4">
+                    <i class="fa-solid fa-search text-[#347ccb] text-2xl"></i>
                 </div>
-            `;
-            
-            // Add intersection observer for lazy loading animations
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.1 });
-            
-            // Observe all newly added client cards
-            document.querySelectorAll('#client-container > div').forEach(el => {
-                el.style.opacity = '0';
-                el.style.transform = 'translateY(20px)';
-                el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                observer.observe(el);
-            });
+                <h3 class="text-lg font-semibold text-white mb-2">No results found</h3>
+                <p class="text-zinc-500 text-sm">Try a different search term or browse the categories above</p>
+            </div>
+        `;
+    }
+    
+    let searchDebounce;
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            renderClients(e.target.value);
+        }, 150);
+    });
+    
+    document.addEventListener('DOMContentLoaded', init);
+    
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
         }
-
-        // Debounced search input
-        let searchTimeout;
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                renderClients(e.target.value);
-            }, 200);
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-                e.preventDefault();
-                document.getElementById('search-input').focus();
-            }
-            
-            if (e.key === 'Escape') {
-                document.getElementById('search-input').blur();
-            }
-        });
-
-        // Handle resize
-        window.addEventListener('resize', () => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                renderClients(document.getElementById('search-input').value);
-            }, 100);
-        });
-
-        // Initialize
-        window.addEventListener('DOMContentLoaded', init);
-        
-        // Prevent zoom on double-tap
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', (e) => {
-            const now = Date.now();
-            if (now - lastTouchEnd <= 300) {
-                e.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, { passive: false });
-    </script>
+        lastTouchEnd = now;
+    }, { passive: false });
+  </script>
 </body>
 </html>
+
+
