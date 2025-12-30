@@ -510,25 +510,31 @@
       <div id="client-container" class="space-y-8 sm:space-y-12 pb-16 sm:pb-20 px-3 sm:px-0"></div>
     </div>
   </div>
-  <script>
+ <script>
     const GITHUB_ORG = 'Indigo-Tools';
     const REPO_NAME = 'ClientLibrary';
     const BRANCH = 'main';
     const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
-    
+
     let libraryTree = [];
     let currentCategory = "ALL";
-    const CATEGORY_ORDER = ["ALL", "Popular Clients", "1_20", "1_19", "1_18", "1_17", "1_16"];
-    
+    const CATEGORY_ORDER = ["ALL", "Popular Clients", "Optifine Packs", "1_20", "1_19", "1_18", "1_17", "1_16"];
+
     const expandedFiles = new Set();
     const hiddenClients = new Set();
     const expandedDescriptions = new Set();
-    
+
+    const TAG_COLORS = {
+        'working': { bg: 'from-emerald-500/20 to-green-500/20', text: 'text-emerald-300', border: 'border-emerald-500/30', icon: 'fa-check-circle' },
+        'legacy': { bg: 'from-amber-500/20 to-orange-500/20', text: 'text-amber-300', border: 'border-amber-500/30', icon: 'fa-history' },
+        'trash': { bg: 'from-rose-500/20 to-red-500/20', text: 'text-rose-300', border: 'border-rose-500/30', icon: 'fa-trash' }
+    };
+
     function formatName(name) {
         if (!name) return "";
         return name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
     }
-    
+
     function toggleDropdown(id) {
         const dropdown = document.getElementById('drop-' + id);
         const icon = document.getElementById('icon-' + id);
@@ -537,62 +543,87 @@
             icon.classList.toggle('rotate-180');
         }
     }
-    
+
     function toggleFileList(clientId) {
         if (expandedFiles.has(clientId)) expandedFiles.delete(clientId);
         else expandedFiles.add(clientId);
         renderClients(document.getElementById('search-input').value);
     }
-    
+
     function toggleClientVisibility(clientId) {
         if (hiddenClients.has(clientId)) hiddenClients.delete(clientId);
         else hiddenClients.add(clientId);
         renderClients(document.getElementById('search-input').value);
     }
-    
+
     function toggleDescription(clientId) {
         if (expandedDescriptions.has(clientId)) expandedDescriptions.delete(clientId);
         else expandedDescriptions.add(clientId);
         renderClients(document.getElementById('search-input').value);
     }
-    
+
     const smartSort = (a, b) => {
         return a.rawName.localeCompare(b.rawName, undefined, {
             numeric: true,
             sensitivity: 'base'
         });
     };
-    
+
+    function isOptifinePack(clientName, description) {
+        const nameLower = clientName.toLowerCase();
+        const descLower = description ? description.toLowerCase() : '';
+        
+        const optifineKeywords = ['opti', 'fps', 'performance', 'boost', 'optimize', 'optimization'];
+        
+        return optifineKeywords.some(keyword => 
+            nameLower.includes(keyword) || descLower.includes(keyword)
+        );
+    }
+
+    function detectTags(parts) {
+        const tags = [];
+        const tagFiles = ['working', 'legacy', 'trash'];
+        
+        tagFiles.forEach(tag => {
+            if (parts.some(part => part.toLowerCase() === tag)) {
+                tags.push(tag);
+            }
+        });
+        
+        return tags;
+    }
+
     async function init() {
         try {
             const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
             const rawPaths = await response.json();
             const structured = {};
             const descriptionPromises = [];
-    
+
             rawPaths.forEach(path => {
                 const parts = path.split('/');
                 if (parts.length < 3) return;
-    
+
                 const category = parts[1];
                 const fileName = parts[parts.length - 1];
                 const clientName = parts[2];
-    
+
                 if (!structured[category]) structured[category] = {};
                 if (!structured[category][clientName]) {
                     structured[category][clientName] = {
                         icon: null,
                         banner: null,
                         description: null,
+                        tags: [],
                         files: [],
                         extensions: []
                     };
                 }
-    
+
                 const encodedPath = path.split('/').map(p => encodeURIComponent(p)).join('/');
                 const fullUrl = `${BASE_RAW_URL}/${encodedPath}`;
                 const lowerName = fileName.toLowerCase();
-    
+
                 if (lowerName === 'pack_icon.png') {
                     structured[category][clientName].icon = fullUrl;
                 } else if (lowerName === 'pack_banner.png') {
@@ -610,7 +641,19 @@
                         })
                         .catch(() => {});
                     descriptionPromises.push(descPromise);
+                } else if (lowerName === 'working' || lowerName === 'legacy' || lowerName === 'trash') {
+                    const tag = lowerName;
+                    if (!structured[category][clientName].tags.includes(tag)) {
+                        structured[category][clientName].tags.push(tag);
+                    }
                 } else {
+                    const tags = detectTags(parts);
+                    tags.forEach(tag => {
+                        if (!structured[category][clientName].tags.includes(tag)) {
+                            structured[category][clientName].tags.push(tag);
+                        }
+                    });
+                    
                     const isExtension = parts.some(p => p.toLowerCase() === 'extensions');
                     
                     if (lowerName.match(/\.(zip|dll|so|apk|mcpack|mcaddon)$/)) {
@@ -628,9 +671,39 @@
                     }
                 }
             });
-    
+
             await Promise.allSettled(descriptionPromises);
-    
+
+            const optifineClients = {};
+
+            Object.keys(structured).forEach(category => {
+                if (category === "Optifine Packs") return;
+                
+                Object.entries(structured[category]).forEach(([clientName, data]) => {
+                    if (isOptifinePack(clientName, data.description)) {
+                        if (!optifineClients[clientName]) {
+                            optifineClients[clientName] = {
+                                icon: data.icon,
+                                banner: data.banner,
+                                description: data.description,
+                                tags: [...data.tags],
+                                files: [...data.files],
+                                extensions: [...data.extensions],
+                                originalCategory: category
+                            };
+                        } else {
+                            optifineClients[clientName].files.push(...data.files);
+                            optifineClients[clientName].extensions.push(...data.extensions);
+                            optifineClients[clientName].tags = [...new Set([...optifineClients[clientName].tags, ...data.tags])];
+                        }
+                    }
+                });
+            });
+
+            if (Object.keys(optifineClients).length > 0) {
+                structured["Optifine Packs"] = optifineClients;
+            }
+
             libraryTree = Object.entries(structured)
                 .sort((a, b) => {
                     const aIndex = CATEGORY_ORDER.indexOf(a[0]);
@@ -642,20 +715,31 @@
                 })
                 .map(([catName, clients]) => {
                     const sortedClients = Object.entries(clients)
-                        .map(([cliName, data]) => ({
-                            id: 'client_' + cliName.replace(/[^a-zA-Z0-9]/g, '_') + '_' + catName.replace(/[^a-zA-Z0-9]/g, '_'),
-                            displayName: formatName(cliName),
-                            rawName: cliName,
-                            iconUrl: data.icon,
-                            bannerUrl: data.banner,
-                            description: data.description,
-                            files: data.files.sort(smartSort),
-                            extensions: data.extensions.sort(smartSort),
-                            isPopular: catName === "Popular Clients"
-                        }))
+                        .map(([cliName, data]) => {
+                            const clientData = {
+                                id: 'client_' + cliName.replace(/[^a-zA-Z0-9]/g, '_') + '_' + catName.replace(/[^a-zA-Z0-9]/g, '_'),
+                                displayName: formatName(cliName),
+                                rawName: cliName,
+                                iconUrl: data.icon,
+                                bannerUrl: data.banner,
+                                description: data.description,
+                                tags: [...new Set(data.tags)].sort(),
+                                files: data.files.sort(smartSort),
+                                extensions: data.extensions.sort(smartSort),
+                                isPopular: catName === "Popular Clients",
+                                isOptifine: catName === "Optifine Packs",
+                                originalCategory: data.originalCategory
+                            };
+                            
+                            if (clientData.isOptifine && data.originalCategory) {
+                                clientData.displayName = formatName(cliName);
+                            }
+                            
+                            return clientData;
+                        })
                         .filter(c => c.files.length > 0 || c.extensions.length > 0)
                         .sort((a, b) => a.displayName.localeCompare(b.displayName));
-    
+
                     return {
                         name: catName,
                         displayName: catName.startsWith('1_') ? `Version: ${catName.replace('_', '.')}` : catName,
@@ -663,16 +747,16 @@
                     };
                 })
                 .filter(cat => cat.clients.length > 0);
-    
+
             document.getElementById('status-container').style.opacity = '0';
             document.getElementById('status-container').style.transition = 'opacity 0.3s ease';
-    
+
             setTimeout(() => {
                 document.getElementById('status-container').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
                 renderTabs();
                 switchCategory("ALL");
-    
+
                 const mainContent = document.getElementById('main-content');
                 mainContent.style.opacity = '0';
                 mainContent.style.transform = 'translateY(20px)';
@@ -688,7 +772,7 @@
             document.getElementById('loader').classList.add('hidden');
         }
     }
-    
+
     function renderTabs() {
         const container = document.getElementById('category-tabs');
         const tabs = ["ALL", ...libraryTree.map(c => c.name)];
@@ -710,7 +794,7 @@
             `;
         }).join('');
     }
-    
+
     function switchCategory(name) {
         currentCategory = name;
         
@@ -725,12 +809,12 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
-    
+
     function renderClients(query = '') {
         const container = document.getElementById('client-container');
         const q = query.toLowerCase().trim();
         const toShow = currentCategory === "ALL" ? libraryTree : libraryTree.filter(c => c.name === currentCategory);
-    
+
         if (toShow.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-12 sm:py-20">
@@ -743,13 +827,14 @@
             `;
             return;
         }
-    
+
         let html = '';
         
         toShow.forEach(cat => {
             const filteredClients = cat.clients.map(client => {
                 const clientMatch = client.displayName.toLowerCase().includes(q);
                 const descriptionMatch = client.description && client.description.toLowerCase().includes(q);
+                const tagMatch = client.tags.some(tag => tag.toLowerCase().includes(q));
                 const fileMatch = client.files.some(f =>
                     f.display.toLowerCase().includes(q) ||
                     f.rawName.toLowerCase().includes(q)
@@ -758,27 +843,29 @@
                     e.display.toLowerCase().includes(q) ||
                     e.rawName.toLowerCase().includes(q)
                 );
-    
-                if (clientMatch || descriptionMatch || fileMatch || extensionMatch || !q) {
+
+                if (clientMatch || descriptionMatch || tagMatch || fileMatch || extensionMatch || !q) {
                     const matchingFiles = q ? client.files.filter(f =>
                         f.display.toLowerCase().includes(q) ||
                         f.rawName.toLowerCase().includes(q) ||
                         clientMatch ||
-                        descriptionMatch
+                        descriptionMatch ||
+                        tagMatch
                     ) : client.files;
                     
                     const matchingExtensions = q ? client.extensions.filter(e =>
                         e.display.toLowerCase().includes(q) ||
                         e.rawName.toLowerCase().includes(q) ||
                         clientMatch ||
-                        descriptionMatch
+                        descriptionMatch ||
+                        tagMatch
                     ) : client.extensions;
-    
+
                     return { ...client, matchingFiles, matchingExtensions };
                 }
                 return null;
             }).filter(c => c !== null);
-    
+
             if (filteredClients.length > 0) {
                 html += `
                 <div class="space-y-4 sm:space-y-6">
@@ -796,7 +883,7 @@
                         const filesToDisplay = isFilesExpanded ? client.matchingFiles : client.matchingFiles.slice(0, 5);
                         const isDescriptionExpanded = expandedDescriptions.has(client.id);
                         const hasDescription = client.description && client.description.trim().length > 0;
-    
+
                         return `
                         <div class="space-y-3 sm:space-y-4">
                             <div class="flex items-center justify-between">
@@ -815,11 +902,31 @@
                                         <h2 class="text-lg sm:text-xl font-bold text-white tracking-tight truncate">
                                             ${client.displayName}
                                         </h2>
-                                        ${client.isPopular ? `
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border border-yellow-500/30 mt-1">
-                                                <i class="fa-solid fa-star mr-1 text-xs"></i>Popular
-                                            </span>
-                                        ` : ''}
+                                        <div class="flex flex-wrap gap-1 mt-1">
+                                            ${client.isPopular ? `
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border border-yellow-500/30">
+                                                    <i class="fa-solid fa-star mr-1 text-xs"></i>Popular
+                                                </span>
+                                            ` : ''}
+                                            ${client.isOptifine ? `
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 border border-emerald-500/30">
+                                                    <i class="fa-solid fa-bolt mr-1 text-xs"></i>Performance
+                                                </span>
+                                            ` : ''}
+                                            ${client.originalCategory && client.isOptifine ? `
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-300 border border-purple-500/30">
+                                                    <i class="fa-solid fa-layer-group mr-1 text-xs"></i>${client.originalCategory}
+                                                </span>
+                                            ` : ''}
+                                            ${client.tags.map(tag => {
+                                                const tagConfig = TAG_COLORS[tag] || { bg: 'from-gray-500/20 to-gray-500/20', text: 'text-gray-300', border: 'border-gray-500/30', icon: 'fa-tag' };
+                                                return `
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r ${tagConfig.bg} ${tagConfig.text} border ${tagConfig.border}">
+                                                        <i class="fa-solid ${tagConfig.icon} mr-1 text-xs"></i>${tag.charAt(0).toUpperCase() + tag.slice(1)}
+                                                    </span>
+                                                `;
+                                            }).join('')}
+                                        </div>
                                     </div>
                                 </div>
                                 <button onclick="toggleClientVisibility('${client.id}')" 
@@ -830,7 +937,7 @@
                                     }
                                 </button>
                             </div>
-    
+
                             ${hasDescription && !isHidden ? `
                                 <div class="${isDescriptionExpanded ? 'expanded' : ''} client-description">
                                     <div class="description-content">
@@ -843,14 +950,14 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                             ` : ''}
-    
+
                             <div class="${isHidden ? 'hidden' : ''} space-y-3 sm:space-y-4">
                                 ${client.matchingFiles.length > 0 ? `
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                                         ${filesToDisplay.map(file => {
                                             const cardClass = client.bannerUrl ? 'banner-card' : 'glass-card';
                                             const isMobile = window.innerWidth < 768;
-    
+
                                             return `
                                             <div class="${cardClass}">
                                                 ${client.bannerUrl ? `
@@ -877,7 +984,7 @@
                                         `}).join('')}
                                     </div>
                                 ` : ''}
-    
+
                                 ${hasManyFiles && !isSearching && client.matchingFiles.length > 5 ? `
                                     <button onclick="toggleFileList('${client.id}')" 
                                             class="show-more-btn">
@@ -887,7 +994,7 @@
                                         }
                                     </button>
                                 ` : ''}
-    
+
                                 ${client.matchingExtensions.length > 0 ? `
                                     <div class="relative">
                                         <div class="section-divider text-[0.625rem] sm:text-[10px] font-bold uppercase tracking-widest text-zinc-700">
@@ -936,7 +1043,7 @@
                 </div>`;
             }
         });
-    
+
         container.innerHTML = html || `
             <div class="text-center py-12 sm:py-20">
                 <div class="inline-flex p-4 rounded-xl bg-gradient-to-br from-[#347ccb]/10 to-transparent mb-4">
@@ -966,8 +1073,6 @@
         }
         lastTouchEnd = now;
     }, { passive: false });
-  </script>
+</script>
 </body>
 </html>
-
-
