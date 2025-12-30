@@ -226,15 +226,15 @@
         animation: fadeIn 0.3s ease-out;
     }
     
-    .client-description {
+    .description-panel {
         max-height: 0;
         overflow: hidden;
         transition: all 0.3s ease;
         opacity: 0;
     }
     
-    .client-description.expanded {
-        max-height: 500px;
+    .description-panel.expanded {
+        max-height: 2000px;
         opacity: 1;
         margin-top: 1rem;
     }
@@ -444,6 +444,12 @@
     #category-tabs button:hover {
         background: rgba(55, 65, 81, 0.3);
         color: white;
+    }
+    
+    .author-info {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(55, 65, 81, 0.3);
     }
   </style>
 </head>
@@ -684,6 +690,38 @@
         });
         
         return tags;
+    }
+
+    function isDiscordLink(str) {
+        if (!str) return false;
+        const lowerStr = str.toLowerCase();
+        return lowerStr.includes('discord.gg/') || 
+               lowerStr.includes('discord.com/invite/') ||
+               lowerStr.includes('discord.com/invite') ||
+               lowerStr.includes('discord.glacierclient.xyz') ||
+               (lowerStr.includes('discord') && lowerStr.includes('.'));
+    }
+
+    function formatDiscordLink(discordStr) {
+        if (!discordStr) return '';
+        
+        const trimmed = discordStr.trim();
+        
+        if (isDiscordLink(trimmed)) {
+            let url = trimmed;
+            if (!url.startsWith('http')) {
+                if (url.includes('discord.gg/') || url.includes('discord.com/invite/')) {
+                    url = 'https://' + url;
+                } else if (url.includes('discord.glacierclient.xyz')) {
+                    url = 'https://' + url;
+                } else if (url.match(/^[a-zA-Z0-9]+$/)) {
+                    url = 'https://discord.gg/' + url;
+                }
+            }
+            return `<a href="${url}" target="_blank" class="text-[#347ccb] hover:underline">${trimmed.replace(/^https?:\/\//, '').replace('discord.gg/', '')}</a>`;
+        }
+        
+        return `<span class="text-gray-300">${trimmed}</span>`;
     }
 
     async function init() {
@@ -954,7 +992,9 @@
                 const descriptionMatch = client.description && client.description.toLowerCase().includes(q);
                 const authorMatch = client.author && (
                     (client.author.name && client.author.name.toLowerCase().includes(q)) ||
-                    (client.author.website && client.author.website.toLowerCase().includes(q))
+                    (client.author.website && client.author.website.toLowerCase().includes(q)) ||
+                    (client.author.discord && client.author.discord.toLowerCase().includes(q)) ||
+                    (client.author.github && client.author.github.toLowerCase().includes(q))
                 );
                 const tagMatch = client.tags.some(tag => tag.toLowerCase().includes(q));
                 const fileMatch = client.files.some(f =>
@@ -1009,6 +1049,7 @@
                         const hasDescription = client.description && client.description.trim().length > 0;
                         const hasAuthor = client.author && Object.keys(client.author).length > 0;
                         const hasScreenshots = client.screenshots && client.screenshots.length > 0;
+                        const hasDetails = hasDescription || hasAuthor;
 
                         return `
                         <div class="space-y-4">
@@ -1063,42 +1104,6 @@
                                 </button>
                             </div>
 
-                            <!-- Author Info -->
-                            ${hasAuthor && !isHidden ? `
-                                <div class="bg-[#1a1c1e] border border-gray-800/50 rounded-lg p-4">
-                                    <div class="flex items-start gap-3">
-                                        <div class="flex-1">
-                                            <div class="flex items-center gap-2 mb-2">
-                                                <i class="fa-solid fa-user text-[#347ccb]"></i>
-                                                <span class="font-medium text-white">${client.author.name || 'Unknown Author'}</span>
-                                            </div>
-                                            ${client.author.website ? `
-                                                <div class="flex items-center gap-2 text-sm">
-                                                    <i class="fa-solid fa-globe text-gray-500"></i>
-                                                    <a href="${client.author.website}" target="_blank" class="text-[#347ccb] hover:underline truncate">
-                                                        ${client.author.website.replace(/^https?:\/\//, '')}
-                                                    </a>
-                                                </div>
-                                            ` : ''}
-                                            ${client.author.discord ? `
-                                                <div class="flex items-center gap-2 text-sm mt-1">
-                                                    <i class="fa-brands fa-discord text-gray-500"></i>
-                                                    <span class="text-gray-300">${client.author.discord}</span>
-                                                </div>
-                                            ` : ''}
-                                            ${client.author.github ? `
-                                                <div class="flex items-center gap-2 text-sm mt-1">
-                                                    <i class="fa-brands fa-github text-gray-500"></i>
-                                                    <a href="https://github.com/${client.author.github}" target="_blank" class="text-[#347ccb] hover:underline">
-                                                        @${client.author.github}
-                                                    </a>
-                                                </div>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : ''}
-
                             <!-- Screenshots -->
                             ${hasScreenshots && !isHidden ? `
                                 <div class="bg-[#1a1c1e] border border-gray-800/50 rounded-lg p-4">
@@ -1131,15 +1136,54 @@
                                 </div>
                             ` : ''}
 
-                            ${hasDescription && !isHidden ? `
-                                <div class="${isDescriptionExpanded ? 'expanded' : ''} client-description">
+                            <!-- Combined Description and Author Panel -->
+                            ${hasDetails && !isHidden ? `
+                                <div class="${isDescriptionExpanded ? 'expanded' : ''} description-panel">
                                     <div class="description-content">
-                                        ${client.description.split('\n').map(line => `<p class="mb-2 last:mb-0">${line}</p>`).join('')}
+                                        ${hasDescription ? `
+                                            <div class="mb-4">
+                                                ${client.description.split('\n').map(line => `<p class="mb-2 last:mb-0">${line}</p>`).join('')}
+                                            </div>
+                                        ` : ''}
+                                        ${hasAuthor ? `
+                                            <div class="author-info">
+                                                <div class="flex items-start gap-3">
+                                                    <div class="flex-1">
+                                                        <div class="flex items-center gap-2 mb-2">
+                                                            <i class="fa-solid fa-user text-[#347ccb]"></i>
+                                                            <span class="font-medium text-white">${client.author.name || 'Unknown Author'}</span>
+                                                        </div>
+                                                        ${client.author.website ? `
+                                                            <div class="flex items-center gap-2 text-sm">
+                                                                <i class="fa-solid fa-globe text-gray-500"></i>
+                                                                <a href="${client.author.website}" target="_blank" class="text-[#347ccb] hover:underline truncate">
+                                                                    ${client.author.website.replace(/^https?:\/\//, '')}
+                                                                </a>
+                                                            </div>
+                                                        ` : ''}
+                                                        ${client.author.discord ? `
+                                                            <div class="flex items-center gap-2 text-sm mt-1">
+                                                                <i class="fa-brands fa-discord text-gray-500"></i>
+                                                                ${formatDiscordLink(client.author.discord)}
+                                                            </div>
+                                                        ` : ''}
+                                                        ${client.author.github ? `
+                                                            <div class="flex items-center gap-2 text-sm mt-1">
+                                                                <i class="fa-brands fa-github text-gray-500"></i>
+                                                                <a href="https://github.com/${client.author.github}" target="_blank" class="text-[#347ccb] hover:underline">
+                                                                    @${client.author.github}
+                                                                </a>
+                                                            </div>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ` : ''}
                                     </div>
                                 </div>
                                 <button onclick="toggleDescription('${client.id}')" 
-                                        class="description-toggle-btn ${isDescriptionExpanded ? 'expanded' : ''} mt-2">
-                                    ${isDescriptionExpanded ? 'Hide Description' : 'Show Description'}
+                                        class="description-toggle-btn ${isDescriptionExpanded ? 'expanded' : ''}">
+                                    ${isDescriptionExpanded ? 'Hide Details' : 'Show Details'}
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                             ` : ''}
