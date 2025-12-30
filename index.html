@@ -421,6 +421,69 @@
         .backface-hidden {
             backface-visibility: hidden;
         }
+
+        /* Description styles */
+        .client-description {
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+        }
+
+        .client-description.expanded {
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 1rem;
+        }
+
+        .description-content {
+            background: rgba(22, 24, 26, 0.5);
+            border: 1px solid rgba(40, 42, 45, 0.5);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            line-height: 1.6;
+            font-size: 0.875rem;
+            color: #d1d5db;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .description-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--accent), #2a68a8);
+        }
+
+        .description-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent);
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .description-toggle-btn:hover {
+            background: rgba(52, 124, 203, 0.1);
+        }
+
+        .description-toggle-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .description-toggle-btn.expanded i {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body class="min-h-screen font-sans antialiased">
@@ -485,6 +548,7 @@
 
         const expandedFiles = new Set();
         const hiddenClients = new Set();
+        const expandedDescriptions = new Set();
 
         function formatName(name) {
             if (!name) return "";
@@ -515,12 +579,31 @@
             renderClients(document.getElementById('search-input').value);
         }
 
+        function toggleDescription(clientId) {
+            if (expandedDescriptions.has(clientId)) expandedDescriptions.delete(clientId);
+            else expandedDescriptions.add(clientId);
+            renderClients(document.getElementById('search-input').value);
+        }
+
         const smartSort = (a, b) => {
             return a.rawName.localeCompare(b.rawName, undefined, { 
                 numeric: true, 
                 sensitivity: 'base' 
             });
         };
+
+        async function fetchDescription(category, clientName) {
+            try {
+                const descriptionUrl = `${BASE_RAW_URL}/${encodeURIComponent(category)}/${encodeURIComponent(clientName)}/description.txt`;
+                const response = await fetch(descriptionUrl);
+                if (response.ok) {
+                    return await response.text();
+                }
+            } catch (err) {
+                console.warn(`No description found for ${clientName} in ${category}`);
+            }
+            return null;
+        }
 
         async function init() {
             try {
@@ -540,7 +623,13 @@
 
                     if (!structured[category]) structured[category] = {};
                     if (!structured[category][clientName]) {
-                        structured[category][clientName] = { icon: null, banner: null, files: [], extensions: [] };
+                        structured[category][clientName] = { 
+                            icon: null, 
+                            banner: null, 
+                            description: null,
+                            files: [], 
+                            extensions: [] 
+                        };
                     }
 
                     const encodedPath = path.split('/').map(p => encodeURIComponent(p)).join('/');
@@ -548,6 +637,10 @@
 
                     if (fileName.toLowerCase() === 'pack_icon.png') structured[category][clientName].icon = fullUrl;
                     else if (fileName.toLowerCase() === 'pack_banner.png') structured[category][clientName].banner = fullUrl;
+                    else if (fileName.toLowerCase() === 'description.txt') {
+                        // We'll fetch descriptions separately
+                        structured[category][clientName].descriptionUrl = fullUrl;
+                    }
                     else if (fileName.toLowerCase().match(/\.(zip|dll|so|apk|mcpack|mcaddon)$/)) {
                         const fileObj = { display: formatName(fileName), rawName: fileName, url: fullUrl };
                         if (isExtension) structured[category][clientName].extensions.push(fileObj);
@@ -555,24 +648,44 @@
                     }
                 });
 
-                libraryTree = Object.entries(structured)
-                    .sort((a, b) => (CATEGORY_ORDER.indexOf(a[0]) || 99) - (CATEGORY_ORDER.indexOf(b[0]) || 99))
-                    .map(([catName, clients]) => ({
-                        name: catName,
-                        displayName: catName.startsWith('1_') ? `Version: ${catName.replace('_', '.')}` : catName,
-                        clients: Object.entries(clients)
-                            .map(([cliName, data]) => ({
-                                id: 'client_' + cliName.replace(/[^a-zA-Z0-9]/g, '') + '_' + catName.replace(/[^a-zA-Z0-9]/g, ''),
-                                displayName: formatName(cliName),
-                                iconUrl: data.icon,
-                                bannerUrl: data.banner,
-                                files: data.files.sort(smartSort),
-                                extensions: data.extensions.sort(smartSort),
-                                isPopular: catName === "Popular Clients"
-                            }))
-                            .filter(c => c.files.length > 0 || c.extensions.length > 0)
-                            .sort((a, b) => a.displayName.localeCompare(b.displayName))
-                    })).filter(cat => cat.clients.length > 0);
+                // Create library tree structure
+                libraryTree = await Promise.all(
+                    Object.entries(structured)
+                        .sort((a, b) => (CATEGORY_ORDER.indexOf(a[0]) || 99) - (CATEGORY_ORDER.indexOf(b[0]) || 99))
+                        .map(async ([catName, clients]) => {
+                            // Process each client and fetch description
+                            const clientEntries = await Promise.all(
+                                Object.entries(clients).map(async ([cliName, data]) => {
+                                    let description = null;
+                                    if (data.descriptionUrl) {
+                                        description = await fetchDescription(catName, cliName);
+                                    }
+                                    
+                                    return {
+                                        id: 'client_' + cliName.replace(/[^a-zA-Z0-9]/g, '') + '_' + catName.replace(/[^a-zA-Z0-9]/g, ''),
+                                        displayName: formatName(cliName),
+                                        iconUrl: data.icon,
+                                        bannerUrl: data.banner,
+                                        description: description,
+                                        files: data.files.sort(smartSort),
+                                        extensions: data.extensions.sort(smartSort),
+                                        isPopular: catName === "Popular Clients"
+                                    };
+                                })
+                            );
+
+                            return {
+                                name: catName,
+                                displayName: catName.startsWith('1_') ? `Version: ${catName.replace('_', '.')}` : catName,
+                                clients: clientEntries
+                                    .filter(c => c.files.length > 0 || c.extensions.length > 0)
+                                    .sort((a, b) => a.displayName.localeCompare(b.displayName))
+                            };
+                        })
+                );
+
+                // Filter out categories with no clients
+                libraryTree = libraryTree.filter(cat => cat.clients.length > 0);
 
                 // Add fade in animation
                 document.getElementById('status-container').style.opacity = '0';
@@ -655,18 +768,21 @@
             toShow.forEach((cat, catIndex) => {
                 const filteredClients = cat.clients.map(client => {
                     const clientMatch = client.displayName.toLowerCase().includes(q);
+                    const descriptionMatch = client.description && client.description.toLowerCase().includes(q);
                     const matchingFiles = client.files.filter(f => 
                         f.display.toLowerCase().includes(q) || 
                         f.rawName.toLowerCase().includes(q) || 
-                        clientMatch
+                        clientMatch ||
+                        descriptionMatch
                     );
                     const matchingExtensions = client.extensions.filter(e => 
                         e.display.toLowerCase().includes(q) || 
                         e.rawName.toLowerCase().includes(q) || 
-                        clientMatch
+                        clientMatch ||
+                        descriptionMatch
                     );
 
-                    if (matchingFiles.length > 0 || matchingExtensions.length > 0) {
+                    if (matchingFiles.length > 0 || matchingExtensions.length > 0 || descriptionMatch) {
                         return { ...client, matchingFiles, matchingExtensions };
                     }
                     return null;
@@ -687,6 +803,7 @@
                             const hasManyFiles = client.matchingFiles.length > 5;
                             const isFilesExpanded = expandedFiles.has(client.id) || isSearching;
                             const filesToDisplay = isFilesExpanded ? client.matchingFiles : client.matchingFiles.slice(0, 5);
+                            const isDescriptionExpanded = expandedDescriptions.has(client.id);
                             
                             return `
                             <div class="space-y-3 sm:space-y-4" style="animation-delay: ${(catIndex + clientIndex) * 0.05 + 0.1}s">
@@ -700,9 +817,16 @@
                                                 <div class="absolute inset-0 bg-gradient-to-br from-[#347ccb]/30 to-transparent blur-xl rounded-full opacity-50 group-hover:opacity-70 transition-opacity duration-300"></div>
                                             </div>
                                         ` : ''}
-                                        <h2 class="text-lg sm:text-xl font-bold text-white tracking-tight truncate">
-                                            ${client.displayName}
-                                        </h2>
+                                        <div class="min-w-0">
+                                            <h2 class="text-lg sm:text-xl font-bold text-white tracking-tight truncate">
+                                                ${client.displayName}
+                                            </h2>
+                                            ${client.isPopular ? `
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.625rem] font-bold bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border border-yellow-500/30 mt-1">
+                                                    <i class="fa-solid fa-star mr-1 text-xs"></i>Popular
+                                                </span>
+                                            ` : ''}
+                                        </div>
                                     </div>
                                     <button onclick="toggleClientVisibility('${client.id}')" 
                                             class="client-collapse-btn will-change-transform hover:scale-105 active:scale-95">
@@ -712,6 +836,19 @@
                                         }
                                     </button>
                                 </div>
+
+                                ${client.description && !isHidden ? `
+                                    <div class="${isDescriptionExpanded ? 'expanded' : ''} client-description">
+                                        <div class="description-content">
+                                            ${client.description.split('\n').map(line => `<p class="mb-2 last:mb-0">${line}</p>`).join('')}
+                                        </div>
+                                        <button onclick="toggleDescription('${client.id}')" 
+                                                class="description-toggle-btn ${isDescriptionExpanded ? 'expanded' : ''} mt-2">
+                                            ${isDescriptionExpanded ? 'Hide Description' : 'Show Description'}
+                                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                                        </button>
+                                    </div>
+                                ` : ''}
 
                                 <div class="${isHidden ? 'hidden' : ''} space-y-3 sm:space-y-4">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
