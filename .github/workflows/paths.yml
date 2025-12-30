@@ -19,7 +19,7 @@ jobs:
         run: |
           echo "Generating library index..."
           # Find all valid library files and format them into a flat JSON array
-          find ClientLibrary -type f \( -name "*.zip" -o -name "*.dll" -o -name "*.so" -o -name "*.apk" -o -name "*.mcpack" -o -name "*.mcaddon" -o -name "pack_icon.png" -o -name "pack_banner.png" \) | \
+          find ClientLibrary -type f \( -name "*.zip" -o -name "*.dll" -o -name "*.so" -o -name "*.apk" -o -name "*.mcpack" -o -name "*.mcaddon" -o -name "pack_icon.png" -o -name "description.txt" -o -name "pack_banner.png" \) | \
           jq -R . | jq -s . > paths.json
 
       - name: Commit and Push
