@@ -17,15 +17,31 @@ jobs:
 
       - name: Generate paths.json
         run: |
-          echo "Generating library index..."
-          # Find all valid library files and format them into a flat JSON array
-          find ClientLibrary -type f \( -name "*.zip" -o -name "*.dll" -o -name "*.so" -o -name "*.apk" -o -name "*.mcpack" -o -name "*.mcaddon" -o -name "pack_icon.png" -o -name "description.txt" -o -name "pack_banner.png" \) | \
+          echo "Generating library index with tags support..."
+          # Find all valid library files including tag files
+          find ClientLibrary -type f \( \
+            -name "*.zip" -o \
+            -name "*.dll" -o \
+            -name "*.so" -o \
+            -name "*.apk" -o \
+            -name "*.mcpack" -o \
+            -name "*.mcaddon" -o \
+            -name "pack_icon.png" -o \
+            -name "description.txt" -o \
+            -name "description.md" -o \
+            -name "pack_banner.png" -o \
+            -name "working" -o \
+            -name "legacy" -o \
+            -name "trash" \
+          \) | \
           jq -R . | jq -s . > paths.json
+          
+          echo "Generated paths.json with $(wc -l < paths.json) entries"
 
       - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add paths.json
-          git commit -m "chore: update library index [skip ci]" || exit 0
+          git commit -m "chore: update library index with tag support [skip ci]" || exit 0
           git push
