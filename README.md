@@ -7,7 +7,7 @@ A centralized repository for Indigo's client builds, assets, and tools. This lib
 ---
 
 ## Domain Reference
-**Primary Access:** [mca.glacierclient.xyz](http://mca.glacierclient.xyz)
+**Primary Access:** [mca.glacierclient.xyz](https://mca.glacierclient.xyz)
 
 ---
 

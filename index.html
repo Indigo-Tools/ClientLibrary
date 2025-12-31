@@ -719,6 +719,39 @@
         0% { background-position: -200% 0; }
         100% { background-position: 200% 0; }
     }
+
+      button {
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+}
+
+button:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+}
+
+/* Specifically for collapse/expand buttons */
+.client-collapse-btn:active {
+    background: rgba(55, 65, 81, 0.5);
+    transform: scale(0.95);
+}
+
+/* Remove the flash from extension buttons */
+.extension-btn:active::after {
+    animation: none;
+}
+
+/* Prevent flash on mobile */
+@media (hover: none) {
+    button:active {
+        background-color: rgba(52, 124, 203, 0.1);
+    }
+    
+    .glass-card:active,
+    .banner-card:active {
+        transform: scale(0.995);
+    }
+}
   </style>
 </head>
 
@@ -803,10 +836,10 @@
     let currentCategory = "ALL";
     const CATEGORY_ORDER = ["ALL", "Popular Clients", "Optifine Packs", "1_20", "1_19", "1_18", "1_17", "1_16"];
 
-    const expandedFiles = new Set();
-    const hiddenClients = new Set();
     const expandedDescriptions = new Set();
     const expandedExtensions = new Set();
+    const expandedFiles = new Set(); 
+    const collapsedClients = new Set(); 
 
     const TAG_COLORS = {
         'working': { bg: 'from-emerald-500/20 to-green-500/20', text: 'text-emerald-300', border: 'border-emerald-500/30', icon: 'fa-check-circle' },
@@ -858,9 +891,9 @@
         renderClients(document.getElementById('search-input').value);
     }
 
-    function toggleClientVisibility(clientId) {
-        if (hiddenClients.has(clientId)) hiddenClients.delete(clientId);
-        else hiddenClients.add(clientId);
+    function toggleClientCollapse(clientId) {
+        if (collapsedClients.has(clientId)) collapsedClients.delete(clientId);
+        else collapsedClients.add(clientId);
         renderClients(document.getElementById('search-input').value);
     }
 
@@ -1354,7 +1387,7 @@
                     
                     ${filteredClients.map(client => {
                         const isSearching = !!q;
-                        const isHidden = hiddenClients.has(client.id);
+                        const isCollapsed = collapsedClients.has(client.id);
                         const hasManyFiles = client.matchingFiles.length > 5;
                         const isFilesExpanded = expandedFiles.has(client.id) || isSearching;
                         const filesToDisplay = isFilesExpanded ? client.matchingFiles : client.matchingFiles.slice(0, 5);
@@ -1409,18 +1442,19 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button onclick="toggleClientVisibility('${client.id}')" 
+                                
+                                <button onclick="toggleClientCollapse('${client.id}')" 
                                         class="client-collapse-btn performance-optimized"
-                                        aria-label="${isHidden ? 'Show client' : 'Hide client'}">
-                                    ${isHidden ?
-                                        '<i class="fa-solid fa-eye mr-1 sm:mr-2"></i><span class="hidden sm:inline">Show</span>' :
-                                        '<i class="fa-solid fa-eye-slash mr-1 sm:mr-2"></i><span class="hidden sm:inline">Hide</span>'
-                                    }
+                                        aria-label="${isCollapsed ? 'Expand client' : 'Collapse client'}">
+                                    ${isCollapsed ?
+                                        '<i class="fa-solid fa-chevron-down mr-1 sm:mr-2"></i><span class="hidden sm:inline">Expand</span>' :
+                                        '<i class="fa-solid fa-chevron-up mr-1 sm:mr-2"></i><span class="hidden sm:inline">Collapse</span>'
+                                 }
                                 </button>
                             </div>
 
                             <!-- Combined Description, Screenshots, and Author Panel -->
-                            ${hasDetails && !isHidden ? `
+                            ${hasDetails && !isCollapsed ? `
                                 <div class="description-panel ${isDescriptionExpanded ? 'expanded' : ''}">
                                     <div class="description-content performance-optimized">
                                         ${hasScreenshots ? `
@@ -1500,7 +1534,7 @@
                                 </button>
                             ` : ''}
 
-                            <div class="${isHidden ? 'hidden' : ''} space-y-4">
+                            <div class="${isCollapsed ? 'hidden' : ''} space-y-4">
                                 ${client.matchingFiles.length > 0 ? `
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         ${filesToDisplay.map((file, index) => {
