@@ -13,6 +13,10 @@
         --card: #1a1c1e; 
     }
     
+    * {
+        box-sizing: border-box;
+    }
+    
     body { 
         background-color: var(--bg); 
         color: #d1d5db; 
@@ -25,24 +29,28 @@
         scroll-behavior: smooth;
     }
     
+    /* Glass Card Styles */
     .glass-card { 
         background: var(--card); 
         border: 1px solid rgba(55, 65, 81, 0.5);
         border-radius: 0.75rem;
         transition: all 0.2s ease;
+        will-change: transform, border-color;
     }
     
     .glass-card:hover {
         border-color: rgba(52, 124, 203, 0.3);
-        transform: translateY(-1px);
+        transform: translateY(-2px);
     }
     
+    /* Banner Card Styles */
     .banner-card {
         background: linear-gradient(135deg, rgba(26, 28, 30, 0.9) 0%, rgba(26, 28, 30, 0.7) 100%);
         border: 1px solid rgba(55, 65, 81, 0.5);
         border-radius: 0.75rem;
         position: relative;
         overflow: hidden;
+        will-change: transform;
     }
     
     .banner-img {
@@ -68,10 +76,16 @@
         height: 100%; 
     }
     
+    /* Extension Dropdown - Fixed */
+    .extension-container {
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
     .extension-dropdown {
         max-height: 0;
         overflow: hidden;
-        transition: all 0.3s ease;
+        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
         opacity: 0;
         background: rgba(26, 28, 30, 0.95);
         border: 1px solid rgba(55, 65, 81, 0.5);
@@ -81,7 +95,7 @@
     }
     
     .extension-dropdown.open {
-        max-height: 5000px;
+        max-height: 2000px;
         opacity: 1;
         padding: 1rem 0;
     }
@@ -93,29 +107,45 @@
         padding: 1rem;
         border-top: 1px solid rgba(55, 65, 81, 0.3);
         transition: background 0.2s ease;
+        transform-origin: top;
+        animation: slideDown 0.3s ease-out forwards;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
     .extension-row:hover {
         background: rgba(255, 255, 255, 0.02);
     }
     
+    /* Tabs */
     .tab-active { 
         background: rgba(52, 124, 203, 0.1) !important;
         color: white !important;
         border: 1px solid rgba(52, 124, 203, 0.3) !important;
     }
     
+    /* Buttons */
     .btn-download {
         background: linear-gradient(135deg, #347ccb 0%, #2a68a8 100%);
         color: white;
         font-weight: 600;
         border-radius: 0.5rem;
         transition: all 0.2s ease;
+        will-change: transform;
     }
     
     .btn-download:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(52, 124, 203, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(52, 124, 203, 0.3);
     }
     
     .section-divider {
@@ -154,11 +184,13 @@
         justify-content: center;
         gap: 8px;
         min-height: 44px;
+        will-change: transform;
     }
     
     .show-more-btn:hover { 
         background: rgba(55, 65, 81, 0.3); 
         color: white; 
+        transform: translateY(-1px);
     }
     
     .client-collapse-btn {
@@ -179,19 +211,25 @@
         background: rgba(55, 65, 81, 0.3);
     }
     
+    /* Scrollbar */
     ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
     }
     
     ::-webkit-scrollbar-track {
         background: rgba(15, 17, 19, 0.5);
-        border-radius: 3px;
+        border-radius: 4px;
     }
     
     ::-webkit-scrollbar-thumb {
         background: #347ccb;
-        border-radius: 3px;
+        border-radius: 4px;
+        transition: background 0.2s ease;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #2a68a8;
     }
     
     .scrollbar-hide {
@@ -203,6 +241,7 @@
         display: none;
     }
     
+    /* Loading */
     #loader {
         width: 40px;
         height: 40px;
@@ -217,26 +256,47 @@
         100% { transform: rotate(360deg); }
     }
     
+    /* Animations */
     @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from { 
+            opacity: 0; 
+            transform: translateY(10px);
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes scaleIn {
+        from { 
+            opacity: 0; 
+            transform: scale(0.95);
+        }
+        to { 
+            opacity: 1; 
+            transform: scale(1);
+        }
     }
     
     #main-content {
-        animation: fadeIn 0.3s ease-out;
+        animation: fadeIn 0.4s ease-out;
     }
     
+    /* Description Panel */
     .description-panel {
         max-height: 0;
         overflow: hidden;
-        transition: all 0.3s ease;
+        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         opacity: 0;
+        transform: translateY(-10px);
     }
     
     .description-panel.expanded {
         max-height: 2000px;
         opacity: 1;
         margin-top: 1rem;
+        transform: translateY(0);
     }
     
     .description-content {
@@ -247,6 +307,7 @@
         line-height: 1.6;
         font-size: 0.875rem;
         color: #d1d5db;
+        animation: scaleIn 0.3s ease-out;
     }
     
     .description-toggle-btn {
@@ -276,15 +337,45 @@
         transform: rotate(180deg);
     }
     
-    /* Screenshots Modal */
+    /* Extension Button */
+    .extension-btn {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+    
+    .extension-btn i {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .extension-btn.open i {
+        transform: rotate(180deg);
+    }
+    
+    .extension-btn::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(52, 124, 203, 0.1);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    
+    .extension-btn:hover::after {
+        opacity: 1;
+    }
+    
+    /* Screenshots Modal - Enhanced */
     .screenshots-modal {
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.9);
+        background: rgba(0, 0, 0, 0.95);
         z-index: 1000;
         align-items: center;
         justify-content: center;
+        padding: 1rem;
+        animation: fadeIn 0.3s ease-out;
     }
     
     .screenshots-modal.active {
@@ -292,42 +383,39 @@
     }
     
     .screenshot-content {
-        max-width: 90vw;
-        max-height: 90vh;
+        max-width: 95vw;
+        max-height: 95vh;
         position: relative;
+        width: 100%;
+        animation: scaleIn 0.3s ease-out;
+    }
+    
+    .screenshot-main-container {
+        position: relative;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.5);
     }
     
     .screenshot-img {
-        max-width: 100%;
-        max-height: 90vh;
-        border-radius: 0.5rem;
+        width: 100%;
+        height: auto;
+        max-height: 70vh;
+        object-fit: contain;
+        display: block;
+        cursor: zoom-in;
+        transition: transform 0.3s ease;
+    }
+    
+    .screenshot-img.zoomed {
+        transform: scale(1.5);
+        cursor: zoom-out;
     }
     
     .screenshot-close {
         position: absolute;
-        top: -40px;
+        top: -48px;
         right: 0;
-        background: rgba(255, 255, 255, 0.1);
-        border: none;
-        color: white;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: background 0.2s ease;
-    }
-    
-    .screenshot-close:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-    
-    .screenshot-nav {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
         background: rgba(255, 255, 255, 0.1);
         border: none;
         color: white;
@@ -338,36 +426,69 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: background 0.2s ease;
+        transition: all 0.2s ease;
+        z-index: 1001;
+    }
+    
+    .screenshot-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.1);
+    }
+    
+    .screenshot-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: white;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 1001;
     }
     
     .screenshot-nav:hover {
         background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-50%) scale(1.1);
     }
     
     .screenshot-prev {
-        left: -50px;
+        left: 1rem;
     }
     
     .screenshot-next {
-        right: -50px;
+        right: 1rem;
     }
     
     .screenshot-counter {
         position: absolute;
-        bottom: -40px;
+        bottom: 1rem;
         left: 0;
         right: 0;
         text-align: center;
         color: white;
         font-size: 0.875rem;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        display: inline-block;
+        width: fit-content;
+        margin: 0 auto;
     }
     
     .screenshot-thumbnails {
         display: flex;
         gap: 0.5rem;
         overflow-x: auto;
-        padding: 0.5rem 0;
+        padding: 1rem 0;
+        margin-top: 1rem;
+        justify-content: center;
     }
     
     .screenshot-thumbnail {
@@ -376,21 +497,92 @@
         object-fit: cover;
         border-radius: 0.375rem;
         cursor: pointer;
-        opacity: 0.7;
+        opacity: 0.6;
         transition: all 0.2s ease;
+        flex-shrink: 0;
     }
     
     .screenshot-thumbnail:hover {
-        opacity: 1;
-        transform: scale(1.05);
+        opacity: 0.8;
+        transform: translateY(-2px);
     }
     
     .screenshot-thumbnail.active {
         opacity: 1;
         border: 2px solid #347ccb;
+        box-shadow: 0 4px 12px rgba(52, 124, 203, 0.3);
     }
     
-    @media (max-width: 768px) {
+    /* Screenshot Grid in Panel */
+    .screenshot-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+    
+    .screenshot-item {
+        position: relative;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        aspect-ratio: 16/9;
+        background: rgba(0, 0, 0, 0.2);
+        will-change: transform;
+    }
+    
+    .screenshot-item:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 1;
+    }
+    
+    .screenshot-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+    
+    .screenshot-item:hover img {
+        transform: scale(1.05);
+    }
+    
+    .screenshot-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent 50%);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 0.75rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .screenshot-item:hover .screenshot-overlay {
+        opacity: 1;
+    }
+    
+    .screenshot-number {
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: rgba(52, 124, 203, 0.8);
+        padding: 0.25rem 0.5rem;
+        border-radius: 2rem;
+    }
+    
+    /* Author Info */
+    .author-info {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(55, 65, 81, 0.3);
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 640px) {
         .glass-card, .banner-card {
             border-radius: 0.625rem;
         }
@@ -399,26 +591,58 @@
             border-radius: 0 0 0.625rem 0.625rem;
         }
         
-        #category-tabs {
-            padding-bottom: 0.5rem;
+        .screenshot-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.5rem;
+        }
+        
+        .screenshot-item {
+            aspect-ratio: 4/3;
         }
         
         .screenshot-nav {
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
         }
         
         .screenshot-prev {
-            left: 10px;
+            left: 0.5rem;
         }
         
         .screenshot-next {
-            right: 10px;
+            right: 0.5rem;
+        }
+        
+        .screenshot-thumbnail {
+            width: 60px;
+            height: 45px;
+        }
+        
+        .screenshot-img {
+            max-height: 60vh;
         }
     }
     
+    @media (min-width: 641px) and (max-width: 768px) {
+        .screenshot-grid {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        }
+        
+        .screenshot-img {
+            max-height: 65vh;
+        }
+    }
+    
+    @media (min-width: 769px) {
+        .screenshot-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        }
+    }
+    
+    /* Category Tabs */
     #category-tabs-container {
         position: relative;
+        overflow: hidden;
     }
     
     #category-tabs {
@@ -427,6 +651,7 @@
         scrollbar-width: none;
         padding: 0.5rem 0;
         gap: 0.5rem;
+        scroll-behavior: smooth;
     }
     
     #category-tabs button {
@@ -439,6 +664,7 @@
         transition: all 0.2s ease;
         background: rgba(26, 28, 30, 0.7);
         border: 1px solid rgba(55, 65, 81, 0.3);
+        flex-shrink: 0;
     }
     
     #category-tabs button:hover {
@@ -446,21 +672,63 @@
         color: white;
     }
     
-    .author-info {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(55, 65, 81, 0.3);
+    /* Touch Improvements */
+    @media (hover: none) {
+        .glass-card:hover,
+        .banner-card:hover,
+        .btn-download:hover,
+        .show-more-btn:hover,
+        .screenshot-item:hover {
+            transform: none;
+        }
+        
+        .glass-card:active,
+        .banner-card:active {
+            border-color: rgba(52, 124, 203, 0.3);
+        }
+        
+        .btn-download:active {
+            transform: translateY(-2px);
+        }
+        
+        .screenshot-item:active {
+            transform: scale(0.98);
+        }
+    }
+    
+    /* Performance Optimizations */
+    .performance-optimized {
+        will-change: transform, opacity;
+        backface-visibility: hidden;
+        -webkit-font-smoothing: antialiased;
+    }
+    
+    /* Loading Animation */
+    .loading-shimmer {
+        background: linear-gradient(
+            90deg,
+            rgba(26, 28, 30, 0.5) 25%,
+            rgba(55, 65, 81, 0.5) 50%,
+            rgba(26, 28, 30, 0.5) 75%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
     }
   </style>
 </head>
 
-<body class="min-h-screen font-sans antialiased bg-[#0f1113] text-gray-300">
+<body class="min-h-screen font-sans antialiased bg-[#0f1113] text-gray-300 performance-optimized">
   
   <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     
     <!-- Header -->
     <header class="text-center mb-8 sm:mb-12">
-      <div class="inline-flex items-center justify-center p-3 rounded-xl bg-gradient-to-br from-[#347ccb]/15 to-[#347ccb]/5 mb-4">
+      <div class="inline-flex items-center justify-center p-3 rounded-xl bg-gradient-to-br from-[#347ccb]/15 to-[#347ccb]/5 mb-4 animate-pulse">
         <i class="fa-solid fa-box-open text-[#347ccb] text-2xl"></i>
       </div>
       <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2">Indigo Library</h1>
@@ -477,49 +745,51 @@
     <div id="main-content" class="hidden">
       
       <!-- Category Navigation -->
-      <div class="sticky top-0 z-40 bg-[#0f1113]/90 backdrop-blur-md border-b border-gray-800/50 mb-6">
+      <div class="sticky top-0 z-40 bg-[#0f1113]/90 backdrop-blur-md border-b border-gray-800/50 mb-6 -mx-4 sm:-mx-6 px-4 sm:px-6">
         <div id="category-tabs-container" class="relative">
           <div id="category-tabs" class="flex overflow-x-auto py-3 gap-2 scrollbar-hide"></div>
           <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#0f1113] to-transparent pointer-events-none"></div>
+          <div class="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0f1113] to-transparent pointer-events-none"></div>
         </div>
       </div>
 
       <!-- Search Bar -->
-      <div class="max-w-2xl mx-auto mb-8">
+      <div class="max-w-2xl mx-auto mb-8 px-4 sm:px-0">
         <div class="relative">
           <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
           <input type="text" id="search-input" 
                  placeholder="Search clients, versions, or extensions..." 
-                 class="w-full bg-[#1a1c1e] border border-gray-800 rounded-lg pl-12 pr-4 py-3 text-white focus:outline-none focus:border-[#347ccb] focus:ring-1 focus:ring-[#347ccb]/30">
+                 class="w-full bg-[#1a1c1e] border border-gray-800 rounded-lg pl-12 pr-4 py-3 text-white focus:outline-none focus:border-[#347ccb] focus:ring-1 focus:ring-[#347ccb]/30 transition-all duration-200">
         </div>
       </div>
 
       <!-- Client Container -->
-      <div id="client-container" class="space-y-8 pb-12"></div>
+      <div id="client-container" class="space-y-8 pb-12 px-4 sm:px-0"></div>
 
     </div>
   </div>
 
   <!-- Screenshots Modal -->
-  <div id="screenshots-modal" class="screenshots-modal">
-    <div class="screenshot-content">
-      <button class="screenshot-close" onclick="closeScreenshots()">
+  <div id="screenshots-modal" class="screenshots-modal" onclick="closeScreenshots()">
+    <div class="screenshot-content" onclick="event.stopPropagation()">
+      <button class="screenshot-close" onclick="closeScreenshots()" aria-label="Close">
         <i class="fa-solid fa-times"></i>
       </button>
       
-      <button class="screenshot-nav screenshot-prev" onclick="prevScreenshot()">
+      <button class="screenshot-nav screenshot-prev" onclick="prevScreenshot()" aria-label="Previous">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
       
-      <button class="screenshot-nav screenshot-next" onclick="nextScreenshot()">
+      <button class="screenshot-nav screenshot-next" onclick="nextScreenshot()" aria-label="Next">
         <i class="fa-solid fa-chevron-right"></i>
       </button>
       
-      <img id="screenshot-main" class="screenshot-img" src="" alt="Screenshot">
+      <div class="screenshot-main-container">
+        <img id="screenshot-main" class="screenshot-img" src="" alt="Screenshot" onclick="toggleZoom()">
+        <div id="screenshot-counter" class="screenshot-counter"></div>
+      </div>
       
-      <div id="screenshot-counter" class="screenshot-counter"></div>
-      
-      <div id="screenshot-thumbnails" class="screenshot-thumbnails mt-4"></div>
+      <div id="screenshot-thumbnails" class="screenshot-thumbnails"></div>
     </div>
   </div>
 
@@ -536,6 +806,7 @@
     const expandedFiles = new Set();
     const hiddenClients = new Set();
     const expandedDescriptions = new Set();
+    const expandedExtensions = new Set();
 
     const TAG_COLORS = {
         'working': { bg: 'from-emerald-500/20 to-green-500/20', text: 'text-emerald-300', border: 'border-emerald-500/30', icon: 'fa-check-circle' },
@@ -547,6 +818,7 @@
     let currentScreenshots = [];
     let currentScreenshotIndex = 0;
     let currentClientId = '';
+    let isZoomed = false;
 
     function formatName(name) {
         if (!name) return "";
@@ -572,12 +844,12 @@
     }
 
     function toggleDropdown(id) {
-        const dropdown = document.getElementById('drop-' + id);
-        const icon = document.getElementById('icon-' + id);
-        if (dropdown && icon) {
-            dropdown.classList.toggle('open');
-            icon.classList.toggle('rotate-180');
+        if (expandedExtensions.has(id)) {
+            expandedExtensions.delete(id);
+        } else {
+            expandedExtensions.add(id);
         }
+        renderClients(document.getElementById('search-input').value);
     }
 
     function toggleFileList(clientId) {
@@ -603,6 +875,7 @@
         currentScreenshots = screenshots;
         currentScreenshotIndex = index;
         currentClientId = clientId;
+        isZoomed = false;
         
         const modal = document.getElementById('screenshots-modal');
         const mainImg = document.getElementById('screenshot-main');
@@ -611,6 +884,7 @@
         
         if (screenshots.length > 0) {
             mainImg.src = screenshots[index].url;
+            mainImg.classList.remove('zoomed');
             counter.textContent = `${index + 1} / ${screenshots.length}`;
             
             // Create thumbnails
@@ -618,7 +892,8 @@
                 <img src="${screenshot.url}" 
                      class="screenshot-thumbnail ${i === index ? 'active' : ''}" 
                      onclick="showScreenshot(${i})"
-                     alt="Thumbnail ${i + 1}">
+                     alt="Thumbnail ${i + 1}"
+                     loading="lazy">
             `).join('');
             
             modal.classList.add('active');
@@ -633,22 +908,32 @@
         currentScreenshots = [];
         currentScreenshotIndex = 0;
         currentClientId = '';
+        isZoomed = false;
     }
 
     function showScreenshot(index) {
         if (index >= 0 && index < currentScreenshots.length) {
             currentScreenshotIndex = index;
+            isZoomed = false;
+            
             const mainImg = document.getElementById('screenshot-main');
             const counter = document.getElementById('screenshot-counter');
             const thumbnails = document.querySelectorAll('.screenshot-thumbnail');
             
             mainImg.src = currentScreenshots[index].url;
+            mainImg.classList.remove('zoomed');
             counter.textContent = `${index + 1} / ${currentScreenshots.length}`;
             
             thumbnails.forEach((thumb, i) => {
                 thumb.classList.toggle('active', i === index);
             });
         }
+    }
+
+    function toggleZoom() {
+        const mainImg = document.getElementById('screenshot-main');
+        isZoomed = !isZoomed;
+        mainImg.classList.toggle('zoomed', isZoomed);
     }
 
     function nextScreenshot() {
@@ -718,7 +1003,7 @@
                     url = 'https://discord.gg/' + url;
                 }
             }
-            return `<a href="${url}" target="_blank" class="text-[#347ccb] hover:underline">${trimmed.replace(/^https?:\/\//, '').replace('discord.gg/', '')}</a>`;
+            return `<a href="${url}" target="_blank" class="text-[#347ccb] hover:underline transition-colors">${trimmed.replace(/^https?:\/\//, '').replace('discord.gg/', '')}</a>`;
         }
         
         return `<span class="text-gray-300">${trimmed}</span>`;
@@ -732,6 +1017,7 @@
             const descriptionPromises = [];
             const sizePromises = [];
 
+            // First pass: Collect all data and identify Optifine packs
             rawPaths.forEach(path => {
                 const parts = path.split('/');
                 if (parts.length < 3) return;
@@ -750,7 +1036,8 @@
                         tags: [],
                         screenshots: [],
                         files: [],
-                        extensions: []
+                        extensions: [],
+                        isOptifine: false
                     };
                 }
 
@@ -768,6 +1055,10 @@
                         .then(text => {
                             if (text) {
                                 structured[category][clientName].description = text;
+                                // Check if this is an Optifine pack based on description
+                                if (!structured[category][clientName].isOptifine) {
+                                    structured[category][clientName].isOptifine = isOptifinePack(clientName, text);
+                                }
                             }
                         })
                         .catch(() => {});
@@ -830,13 +1121,17 @@
             await Promise.allSettled(descriptionPromises);
             await Promise.allSettled(sizePromises);
 
+            // Second pass: Move Optifine packs to Optifine Packs category
             const optifineClients = {};
 
             Object.keys(structured).forEach(category => {
                 if (category === "Optifine Packs") return;
                 
                 Object.entries(structured[category]).forEach(([clientName, data]) => {
-                    if (isOptifinePack(clientName, data.description)) {
+                    // Check if this is an Optifine pack
+                    const isOptifine = data.isOptifine || isOptifinePack(clientName, data.description);
+                    
+                    if (isOptifine) {
                         if (!optifineClients[clientName]) {
                             optifineClients[clientName] = {
                                 icon: data.icon,
@@ -847,7 +1142,8 @@
                                 screenshots: [...data.screenshots],
                                 files: [...data.files],
                                 extensions: [...data.extensions],
-                                originalCategory: category
+                                originalCategory: category,
+                                isOptifine: true
                             };
                         } else {
                             optifineClients[clientName].files.push(...data.files);
@@ -855,13 +1151,24 @@
                             optifineClients[clientName].screenshots.push(...data.screenshots);
                             optifineClients[clientName].tags = [...new Set([...optifineClients[clientName].tags, ...data.tags])];
                         }
+                        
+                        // Remove from original category
+                        delete structured[category][clientName];
                     }
                 });
             });
 
+            // Create Optifine Packs category if we have any
             if (Object.keys(optifineClients).length > 0) {
                 structured["Optifine Packs"] = optifineClients;
             }
+
+            // Remove empty categories
+            Object.keys(structured).forEach(category => {
+                if (Object.keys(structured[category]).length === 0) {
+                    delete structured[category];
+                }
+            });
 
             libraryTree = Object.entries(structured)
                 .sort((a, b) => {
@@ -888,7 +1195,7 @@
                                 files: data.files.sort(smartSort),
                                 extensions: data.extensions.sort(smartSort),
                                 isPopular: catName === "Popular Clients",
-                                isOptifine: catName === "Optifine Packs",
+                                isOptifine: catName === "Optifine Packs" || data.isOptifine,
                                 originalCategory: data.originalCategory
                             };
                             
@@ -924,6 +1231,7 @@
                 mainContent.style.opacity = '1';
             }, 200);
         } catch (err) {
+            console.error('Failed to load library:', err);
             document.getElementById('status-text').textContent = "Failed to load library. Please check connection.";
             document.getElementById('loader').classList.add('hidden');
         }
@@ -944,7 +1252,7 @@
             return `
                 <button onclick="switchCategory('${t}')" 
                         id="tab-${t}" 
-                        class="text-sm font-medium text-gray-400 hover:text-white transition-colors duration-200 whitespace-nowrap px-3 sm:px-4">
+                        class="text-sm font-medium text-gray-400 hover:text-white transition-colors duration-200 whitespace-nowrap px-3 sm:px-4 performance-optimized">
                     ${displayName}
                 </button>
             `;
@@ -958,9 +1266,14 @@
             btn.classList.remove('tab-active');
         });
         
-        document.getElementById(`tab-${name}`).classList.add('tab-active');
+        const activeTab = document.getElementById(`tab-${name}`);
+        if (activeTab) {
+            activeTab.classList.add('tab-active');
+        }
+        
         renderClients();
         
+        // Smooth scroll for mobile
         if (window.innerWidth < 768) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -973,7 +1286,7 @@
 
         if (toShow.length === 0) {
             container.innerHTML = `
-                <div class="text-center py-12">
+                <div class="text-center py-12 animate-fadeIn">
                     <div class="inline-flex p-4 rounded-xl bg-gradient-to-br from-[#347ccb]/10 to-transparent mb-4">
                         <i class="fa-solid fa-search text-[#347ccb] text-2xl"></i>
                     </div>
@@ -1049,16 +1362,17 @@
                         const hasDescription = client.description && client.description.trim().length > 0;
                         const hasAuthor = client.author && Object.keys(client.author).length > 0;
                         const hasScreenshots = client.screenshots && client.screenshots.length > 0;
-                        const hasDetails = hasDescription || hasAuthor;
+                        const hasDetails = hasDescription || hasAuthor || hasScreenshots;
+                        const areExtensionsExpanded = expandedExtensions.has(client.id);
 
                         return `
-                        <div class="space-y-4">
+                        <div class="space-y-4 animate-fadeIn">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-3 max-w-[70%]">
                                     ${client.iconUrl ? `
                                         <div class="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
                                             <img src="${client.iconUrl}" 
-                                                 class="w-full h-full rounded-lg object-cover border border-white/5 relative z-10"
+                                                 class="w-full h-full rounded-lg object-cover border border-white/5 relative z-10 performance-optimized"
                                                  alt="${client.displayName} icon"
                                                  loading="lazy"
                                                  onerror="this.style.display='none'">
@@ -1076,7 +1390,7 @@
                                             ` : ''}
                                             ${client.isOptifine ? `
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                                                    <i class="fa-solid fa-bolt mr-1 text-xs"></i>Performance
+                                                    <i class="fa-solid fa-bolt mr-1 text-xs"></i>Optifine
                                                 </span>
                                             ` : ''}
                                             ${client.originalCategory && client.isOptifine ? `
@@ -1096,7 +1410,8 @@
                                     </div>
                                 </div>
                                 <button onclick="toggleClientVisibility('${client.id}')" 
-                                        class="client-collapse-btn">
+                                        class="client-collapse-btn performance-optimized"
+                                        aria-label="${isHidden ? 'Show client' : 'Hide client'}">
                                     ${isHidden ?
                                         '<i class="fa-solid fa-eye mr-1 sm:mr-2"></i><span class="hidden sm:inline">Show</span>' :
                                         '<i class="fa-solid fa-eye-slash mr-1 sm:mr-2"></i><span class="hidden sm:inline">Hide</span>'
@@ -1104,42 +1419,38 @@
                                 </button>
                             </div>
 
-                            <!-- Screenshots -->
-                            ${hasScreenshots && !isHidden ? `
-                                <div class="bg-[#1a1c1e] border border-gray-800/50 rounded-lg p-4">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <div class="flex items-center gap-2">
-                                            <i class="fa-solid fa-images text-[#347ccb]"></i>
-                                            <span class="font-medium text-white">Screenshots (${client.screenshots.length})</span>
-                                        </div>
-                                        <button onclick="openScreenshots('${client.id}', ${JSON.stringify(client.screenshots)})" 
-                                                class="text-sm text-[#347ccb] hover:underline">
-                                            View All
-                                        </button>
-                                    </div>
-                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                        ${client.screenshots.slice(0, 3).map((screenshot, idx) => `
-                                            <div class="relative aspect-video rounded-lg overflow-hidden cursor-pointer group"
-                                                 onclick="openScreenshots('${client.id}', ${JSON.stringify(client.screenshots)}, ${idx})">
-                                                <img src="${screenshot.url}" 
-                                                     alt="Screenshot ${idx + 1}"
-                                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200">
-                                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200"></div>
-                                                ${idx === 2 && client.screenshots.length > 3 ? `
-                                                    <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                        <span class="text-white font-medium">+${client.screenshots.length - 3} more</span>
-                                                    </div>
-                                                ` : ''}
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                            ` : ''}
-
-                            <!-- Combined Description and Author Panel -->
+                            <!-- Combined Description, Screenshots, and Author Panel -->
                             ${hasDetails && !isHidden ? `
-                                <div class="${isDescriptionExpanded ? 'expanded' : ''} description-panel">
-                                    <div class="description-content">
+                                <div class="description-panel ${isDescriptionExpanded ? 'expanded' : ''}">
+                                    <div class="description-content performance-optimized">
+                                        ${hasScreenshots ? `
+                                            <div class="mb-6">
+                                                <div class="flex items-center justify-between mb-3">
+                                                    <div class="flex items-center gap-2">
+                                                        <i class="fa-solid fa-images text-[#347ccb]"></i>
+                                                        <span class="font-medium text-white">Screenshots (${client.screenshots.length})</span>
+                                                    </div>
+                                                    <button onclick="openScreenshots('${client.id}', ${JSON.stringify(client.screenshots)})" 
+                                                            class="text-sm text-[#347ccb] hover:underline transition-colors">
+                                                        View All
+                                                    </button>
+                                                </div>
+                                                <div class="screenshot-grid">
+                                                    ${client.screenshots.slice(0, 6).map((screenshot, idx) => `
+                                                        <div class="screenshot-item performance-optimized" 
+                                                             onclick="openScreenshots('${client.id}', ${JSON.stringify(client.screenshots)}, ${idx})"
+                                                             aria-label="View screenshot ${idx + 1}">
+                                                            <img src="${screenshot.url}" 
+                                                                 alt="Screenshot ${idx + 1}"
+                                                                 loading="lazy">
+                                                            <div class="screenshot-overlay">
+                                                                <span class="screenshot-number">${idx + 1}</span>
+                                                            </div>
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
                                         ${hasDescription ? `
                                             <div class="mb-4">
                                                 ${client.description.split('\n').map(line => `<p class="mb-2 last:mb-0">${line}</p>`).join('')}
@@ -1156,7 +1467,7 @@
                                                         ${client.author.website ? `
                                                             <div class="flex items-center gap-2 text-sm">
                                                                 <i class="fa-solid fa-globe text-gray-500"></i>
-                                                                <a href="${client.author.website}" target="_blank" class="text-[#347ccb] hover:underline truncate">
+                                                                <a href="${client.author.website}" target="_blank" rel="noopener noreferrer" class="text-[#347ccb] hover:underline truncate transition-colors">
                                                                     ${client.author.website.replace(/^https?:\/\//, '')}
                                                                 </a>
                                                             </div>
@@ -1170,7 +1481,7 @@
                                                         ${client.author.github ? `
                                                             <div class="flex items-center gap-2 text-sm mt-1">
                                                                 <i class="fa-brands fa-github text-gray-500"></i>
-                                                                <a href="https://github.com/${client.author.github}" target="_blank" class="text-[#347ccb] hover:underline">
+                                                                <a href="https://github.com/${client.author.github}" target="_blank" rel="noopener noreferrer" class="text-[#347ccb] hover:underline transition-colors">
                                                                     @${client.author.github}
                                                                 </a>
                                                             </div>
@@ -1182,7 +1493,8 @@
                                     </div>
                                 </div>
                                 <button onclick="toggleDescription('${client.id}')" 
-                                        class="description-toggle-btn ${isDescriptionExpanded ? 'expanded' : ''}">
+                                        class="description-toggle-btn ${isDescriptionExpanded ? 'expanded' : ''} performance-optimized"
+                                        aria-label="${isDescriptionExpanded ? 'Hide details' : 'Show details'}">
                                     ${isDescriptionExpanded ? 'Hide Details' : 'Show Details'}
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
@@ -1191,12 +1503,12 @@
                             <div class="${isHidden ? 'hidden' : ''} space-y-4">
                                 ${client.matchingFiles.length > 0 ? `
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        ${filesToDisplay.map(file => {
+                                        ${filesToDisplay.map((file, index) => {
                                             const cardClass = client.bannerUrl ? 'banner-card' : 'glass-card';
                                             const isMobile = window.innerWidth < 768;
 
                                             return `
-                                            <div class="${cardClass}">
+                                            <div class="${cardClass} performance-optimized" style="animation-delay: ${index * 50}ms">
                                                 ${client.bannerUrl ? `
                                                     <img src="${client.bannerUrl}" class="banner-img" alt="${client.displayName} banner" loading="lazy">
                                                     <div class="banner-gradient"></div>
@@ -1219,7 +1531,8 @@
                                                     </div>
                                                     <a href="${file.url}" 
                                                        target="_blank" 
-                                                       class="btn-download text-white text-sm font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center ${isMobile ? 'w-full mt-3' : ''}">
+                                                       rel="noopener noreferrer"
+                                                       class="btn-download text-white text-sm font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center ${isMobile ? 'w-full mt-3' : ''} performance-optimized">
                                                         <i class="fa-solid fa-download mr-1.5"></i>Download
                                                     </a>
                                                 </div>
@@ -1230,7 +1543,8 @@
 
                                 ${hasManyFiles && !isSearching && client.matchingFiles.length > 5 ? `
                                     <button onclick="toggleFileList('${client.id}')" 
-                                            class="show-more-btn">
+                                            class="show-more-btn performance-optimized"
+                                            aria-label="${isFilesExpanded ? 'Show less files' : 'Show more files'}">
                                         ${isFilesExpanded ?
                                             '<i class="fa-solid fa-angles-up"></i> <span>Show Less</span>' :
                                             `<i class="fa-solid fa-angles-down"></i> <span>Show ${client.matchingFiles.length - 5} more</span>`
@@ -1239,25 +1553,26 @@
                                 ` : ''}
 
                                 ${client.matchingExtensions.length > 0 ? `
-                                    <div class="relative">
+                                    <div class="extension-container performance-optimized">
                                         <div class="section-divider">
                                             <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                                Extensions & Add-ons
+                                                Extensions & Add-ons (${client.matchingExtensions.length})
                                             </span>
                                         </div>
                                         <button onclick="toggleDropdown('${client.id}')" 
-                                                class="w-full glass-card p-3 sm:p-4 flex items-center justify-between">
+                                                class="w-full glass-card p-3 sm:p-4 flex items-center justify-between extension-btn ${areExtensionsExpanded ? 'open' : ''} performance-optimized"
+                                                aria-label="${areExtensionsExpanded ? 'Hide extensions' : 'Show extensions'}">
                                             <div class="flex items-center text-sm font-semibold text-[#347ccb]">
                                                 <i class="fa-solid fa-puzzle-piece mr-2 text-gray-500"></i>
                                                 Extensions (${client.matchingExtensions.length})
                                             </div>
-                                            <i id="icon-${client.id}" class="fa-solid fa-chevron-down text-gray-600"></i>
+                                            <i class="fa-solid fa-chevron-down text-gray-600 transition-transform duration-300"></i>
                                         </button>
-                                        <div id="drop-${client.id}" class="extension-dropdown">
-                                            ${client.matchingExtensions.map(ext => {
+                                        <div class="extension-dropdown ${areExtensionsExpanded ? 'open' : ''}">
+                                            ${client.matchingExtensions.map((ext, index) => {
                                                 const isMobile = window.innerWidth < 768;
                                                 return `
-                                                <div class="extension-row">
+                                                <div class="extension-row performance-optimized" style="animation-delay: ${index * 50}ms">
                                                     ${client.bannerUrl ? `
                                                         <img src="${client.bannerUrl}" class="banner-img opacity-20" loading="lazy">
                                                         <div class="banner-gradient"></div>
@@ -1279,7 +1594,8 @@
                                                         </div>
                                                         <a href="${ext.url}" 
                                                            target="_blank" 
-                                                           class="btn-download text-white text-sm font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center ${isMobile ? 'w-full mt-2' : ''}">
+                                                           rel="noopener noreferrer"
+                                                           class="btn-download text-white text-sm font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center ${isMobile ? 'w-full mt-2' : ''} performance-optimized">
                                                             <i class="fa-solid fa-download mr-1.5"></i>Download
                                                         </a>
                                                     </div>
@@ -1296,7 +1612,7 @@
         });
 
         container.innerHTML = html || `
-            <div class="text-center py-12">
+            <div class="text-center py-12 animate-fadeIn">
                 <div class="inline-flex p-4 rounded-xl bg-gradient-to-br from-[#347ccb]/10 to-transparent mb-4">
                     <i class="fa-solid fa-search text-[#347ccb] text-2xl"></i>
                 </div>
@@ -1306,6 +1622,7 @@
         `;
     }
     
+    // Debounced search
     let searchDebounce;
     document.getElementById('search-input').addEventListener('input', (e) => {
         clearTimeout(searchDebounce);
@@ -1321,8 +1638,46 @@
         }
     });
     
-    document.addEventListener('DOMContentLoaded', init);
+    // Keyboard navigation for screenshots
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('screenshots-modal');
+        if (modal.classList.contains('active')) {
+            if (e.key === 'ArrowLeft') {
+                prevScreenshot();
+            } else if (e.key === 'ArrowRight') {
+                nextScreenshot();
+            } else if (e.key === 'z' || e.key === 'Z') {
+                toggleZoom();
+            }
+        }
+    });
     
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+        // Add CSS for animation
+        const style = document.createElement('style');
+        style.textContent = `
+            .animate-fadeIn {
+                animation: fadeIn 0.4s ease-out forwards;
+            }
+            @keyframes fadeIn {
+                from { 
+                    opacity: 0; 
+                    transform: translateY(10px);
+                }
+                to { 
+                    opacity: 1; 
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Initialize the library
+        init();
+    });
+    
+    // Touch improvements
     let lastTouchEnd = 0;
     document.addEventListener('touchend', (e) => {
         const now = Date.now();
@@ -1331,6 +1686,15 @@
         }
         lastTouchEnd = now;
     }, { passive: false });
+    
+    // Performance: debounce resize events
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            renderClients(document.getElementById('search-input').value);
+        }, 250);
+    });
   </script>
 </body>
 </html>
