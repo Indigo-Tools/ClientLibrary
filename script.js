@@ -5,7 +5,7 @@ const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAM
 
 let libraryTree = [];
 let currentCategory = "ALL";
-const CATEGORY_ORDER = ["ALL", "Popular Clients", "Optifine Packs", "1_20", "1_19", "1_18", "1_17", "1_16"];
+let CATEGORY_ORDER = ["ALL", "Popular Clients", "Creators", "Optifine Packs"]; 
 
 const expandedDescriptions = new Set();
 const expandedExtensions = new Set();
@@ -213,6 +213,49 @@ function formatDiscordLink(discordStr) {
     return `<span class="text-gray-300">${trimmed}</span>`;
 }
 
+function extractVersion(categoryName) {
+    // Check if category name matches pattern like "1_21", "1_20", "1_19", etc.
+    const match = categoryName.match(/^(\d+)_(\d+)$/);
+    if (match) {
+        return {
+            major: parseInt(match[1]),
+            minor: parseInt(match[2]),
+            string: categoryName
+        };
+    }
+    return null;
+}
+
+function sortCategories(categories) {
+    const versionCategories = categories.filter(cat => extractVersion(cat.name));
+    const otherCategories = categories.filter(cat => !extractVersion(cat.name));
+    
+    // Sort versions descending (newest first)
+    versionCategories.sort((a, b) => {
+        const verA = extractVersion(a.name);
+        const verB = extractVersion(b.name);
+        if (verB.major !== verA.major) return verB.major - verA.major;
+        return verB.minor - verA.minor;
+    });
+    
+    // Sort other categories by predefined order, then alphabetically
+    otherCategories.sort((a, b) => {
+        const aIndex = CATEGORY_ORDER.indexOf(a.name);
+        const bIndex = CATEGORY_ORDER.indexOf(b.name);
+        
+        // Both in predefined order
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        // Only A in predefined order
+        if (aIndex !== -1) return -1;
+        // Only B in predefined order
+        if (bIndex !== -1) return 1;
+        // Neither in predefined order, sort alphabetically
+        return a.name.localeCompare(b.name);
+    });
+    
+    return [...otherCategories, ...versionCategories];
+}
+
 async function init() {
     try {
         const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
@@ -220,6 +263,7 @@ async function init() {
         const structured = {};
         const descriptionPromises = [];
         const sizePromises = [];
+        const detectedCategories = new Set();
 
         // First pass: Collect all data and identify Optifine packs
         rawPaths.forEach(path => {
@@ -229,6 +273,9 @@ async function init() {
             const category = parts[1];
             const fileName = parts[parts.length - 1];
             const clientName = parts[2];
+
+            // Add category to detected categories
+            detectedCategories.add(category);
 
             if (!structured[category]) structured[category] = {};
             if (!structured[category][clientName]) {
@@ -371,19 +418,26 @@ async function init() {
         Object.keys(structured).forEach(category => {
             if (Object.keys(structured[category]).length === 0) {
                 delete structured[category];
+                detectedCategories.delete(category);
             }
         });
 
-        libraryTree = Object.entries(structured)
-            .sort((a, b) => {
-                const aIndex = CATEGORY_ORDER.indexOf(a[0]);
-                const bIndex = CATEGORY_ORDER.indexOf(b[0]);
-                if (aIndex === -1 && bIndex === -1) return a[0].localeCompare(b[0]);
-                if (aIndex === -1) return 1;
-                if (bIndex === -1) return -1;
-                return aIndex - bIndex;
-            })
-            .map(([catName, clients]) => {
+        // Build the category order dynamically
+        const allCategories = Array.from(detectedCategories);
+        const sortedCategories = sortCategories(
+            allCategories.map(catName => ({
+                name: catName,
+                displayName: extractVersion(catName) ? 
+                    `Version: ${catName.replace('_', '.')}` : 
+                    catName
+            }))
+        );
+
+        libraryTree = sortedCategories
+            .map(({ name: catName, displayName }) => {
+                const clients = structured[catName];
+                if (!clients) return null;
+
                 const sortedClients = Object.entries(clients)
                     .map(([cliName, data]) => {
                         const clientData = {
@@ -414,11 +468,11 @@ async function init() {
 
                 return {
                     name: catName,
-                    displayName: catName.startsWith('1_') ? `Version: ${catName.replace('_', '.')}` : catName,
+                    displayName: displayName,
                     clients: sortedClients
                 };
             })
-            .filter(cat => cat.clients.length > 0);
+            .filter(cat => cat && cat.clients.length > 0);
 
         document.getElementById('status-container').style.opacity = '0';
         document.getElementById('status-container').style.transition = 'opacity 0.3s ease';
@@ -447,11 +501,11 @@ function renderTabs() {
 
     container.innerHTML = tabs.map(t => {
         let label = t === "ALL" ? "All" : t;
-        if (t.startsWith('1_')) {
-            label = t.replace('_', '.');
-        }
-
-        const displayName = t.startsWith('1_') ? `Version: ${label}` : label;
+        
+        // Find the category display name from libraryTree
+        const category = libraryTree.find(c => c.name === t);
+        const displayName = category ? category.displayName : 
+                          t.startsWith('1_') ? `Version: ${t.replace('_', '.')}` : t;
 
         return `
                 <button onclick="switchCategory('${t}')" 
