@@ -3,6 +3,9 @@ const REPO_NAME = 'ClientLibrary';
 const BRANCH = 'main';
 const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
 
+const USE_MONETIZATION = true; 
+const LINKVERTISE_USER_ID = 499358;
+
 let libraryTree = [];
 let allClients = [];
 let currentCategory = "ALL";
@@ -14,6 +17,18 @@ const TAG_ICONS = { working: 'fa-check-circle', legacy: 'fa-history', trash: 'fa
 let currentScreenshots = [];
 let currentScreenshotIndex = 0;
 let isZoomed = false;
+
+function getMonetizedUrl(targetUrl) {
+    if (!USE_MONETIZATION || !LINKVERTISE_USER_ID) return targetUrl;
+    try {
+        const encoded = encodeURIComponent(btoa(encodeURI(targetUrl)));
+        const random = Math.random() * 1000;
+        return `https://link-to.net/${LINKVERTISE_USER_ID}/${random}/dynamic/?r=${encoded}`;
+    } catch (e) {
+        console.error("Monetization failed for:", targetUrl, e);
+        return targetUrl;
+    }
+}
 
 function formatName(name) {
     if (!name) return "";
@@ -618,6 +633,7 @@ function renderClients(query = '') {
                 client.matchingFiles.forEach((file, idx) => {
                     const hiddenClass = (!q && manyFiles && idx >= 5) ? `file-hidden-${client.id}` : '';
                     const hiddenStyle = (!q && manyFiles && idx >= 5) ? ' style="display:none"' : '';
+                    const downloadUrl = getMonetizedUrl(file.url);
                     parts.push(`<div class="file-card ${hiddenClass}"${hiddenStyle}>
                         ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="file-card-banner" loading="lazy" alt=""><div class="file-card-overlay"></div>` : ''}
                         <div class="file-card-body">
@@ -626,7 +642,7 @@ function renderClients(query = '') {
                                 <div class="file-raw">${file.rawName}</div>
                                 ${file.size ? `<div class="file-size"><i class="fa-solid fa-weight-scale"></i>${file.size}</div>` : ''}
                             </div>
-                            <a href="${file.url}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>Download</a>
+                            <a href="${downloadUrl}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>Download</a>
                         </div>
                     </div>`);
                 });
@@ -644,16 +660,18 @@ function renderClients(query = '') {
                         <i class="fa-solid fa-chevron-down chevron"></i>
                     </button>
                     <div id="ext-body-${client.id}" class="ext-body"><div class="ext-body-inner">
-                        ${client.matchingExtensions.map(ext => `
+                        ${client.matchingExtensions.map(ext => {
+                            const extDownloadUrl = getMonetizedUrl(ext.url);
+                            return `
                             <div class="ext-row">
                                 <div class="file-info">
                                     <div class="file-name" style="font-size:0.8125rem">${ext.display}</div>
                                     <div class="file-raw">${ext.rawName}</div>
                                     ${ext.size ? `<div class="file-size"><i class="fa-solid fa-weight-scale"></i>${ext.size}</div>` : ''}
                                 </div>
-                                <a href="${ext.url}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>Download</a>
+                                <a href="${extDownloadUrl}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>Download</a>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div></div>
                 </div>`);
             }
