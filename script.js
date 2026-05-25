@@ -416,7 +416,10 @@ async function init() {
                 }
             });
         });
-        if (Object.keys(optifineClients).length > 0) structured["Optifine Packs"] = optifineClients;
+        if (Object.keys(optifineClients).length > 0) {
+            structured["Optifine Packs"] = optifineClients;
+            detectedCategories.add("Optifine Packs");
+        }
         Object.keys(structured).forEach(cat => { if (Object.keys(structured[cat]).length === 0) { delete structured[cat]; detectedCategories.delete(cat); } });
 
         const sorted = sortCategories(Array.from(detectedCategories).map(name => ({
