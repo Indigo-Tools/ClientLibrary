@@ -272,6 +272,26 @@ function detectTags(parts) {
     return ['working', 'legacy', 'trash'].filter(tag => parts.some(p => p.toLowerCase() === tag));
 }
 
+function detectVersionsFromFilename(filename) {
+    const versions = new Set();
+    const patterns = [
+        /MCPE[- ]?(\d+)[._](\d+)/gi,
+        /MC[- ]?(\d+)[._](\d+)/gi,
+        /\b(\d+)[._](\d+)[._](\d+)\b/g,
+        /\b(\d+)[._](\d{2})\b/g,
+    ];
+    for (const pat of patterns) {
+        let m;
+        while ((m = pat.exec(filename)) !== null) {
+            const major = parseInt(m[1]), minor = parseInt(m[2]);
+            if (major === 1 && minor >= 14 && minor <= 30) {
+                versions.add(`${major}_${minor}`);
+            }
+        }
+    }
+    return versions;
+}
+
 function isDiscordLink(str) {
     if (!str) return false;
     const s = str.toLowerCase();
@@ -338,6 +358,7 @@ function buildSearchString(client) {
     let s = client.displayName.toLowerCase() + '\0';
     if (client.description) s += client.description.toLowerCase() + '\0';
     s += client.tags.join('\0') + '\0';
+    if (client.compatVersions) s += client.compatVersions.map(v => v.replace('_', '.')).join('\0') + '\0';
     for (const f of client.files) s += f.display.toLowerCase() + '\0' + f.rawName.toLowerCase() + '\0';
     for (const e of client.extensions) s += e.display.toLowerCase() + '\0' + e.rawName.toLowerCase() + '\0';
     return s;
@@ -363,12 +384,15 @@ async function init() {
             detectedCategories.add(category);
             if (!structured[category]) structured[category] = {};
             if (!structured[category][clientName]) {
-                structured[category][clientName] = { icon: null, banner: null, description: null, author: null, tags: [], screenshots: [], files: [], extensions: [], isOptifine: false };
+                structured[category][clientName] = { icon: null, banner: null, description: null, author: null, tags: [], screenshots: [], files: [], extensions: [], isOptifine: false, compatVersions: new Set() };
             }
             const encodedPath = parts.map(p => encodeURIComponent(p)).join('/');
             const fullUrl = `${BASE_RAW_URL}/${encodedPath}`;
             const lowerName = fileName.toLowerCase();
             const client = structured[category][clientName];
+
+            if (extractVersion(category)) client.compatVersions.add(category);
+            detectVersionsFromFilename(fileName).forEach(v => client.compatVersions.add(v));
 
             if (lowerName === 'pack_icon.png') { client.icon = fullUrl; }
             else if (lowerName === 'pack_banner.png') { client.banner = fullUrl; }
@@ -411,6 +435,7 @@ async function init() {
                         optifineClients[name].extensions.push(...data.extensions);
                         optifineClients[name].screenshots.push(...data.screenshots);
                         optifineClients[name].tags = [...new Set([...optifineClients[name].tags, ...data.tags])];
+                        data.compatVersions.forEach(v => optifineClients[name].compatVersions.add(v));
                     }
                     delete structured[cat][name];
                 }
@@ -430,6 +455,11 @@ async function init() {
             const clients = structured[name];
             if (!clients) return null;
             const list = Object.entries(clients).map(([cName, data]) => {
+                const compatVersions = [...(data.compatVersions || [])].sort((a, b) => {
+                    const va = extractVersion(a), vb = extractVersion(b);
+                    if (!va || !vb) return 0;
+                    return va.major !== vb.major ? va.major - vb.major : va.minor - vb.minor;
+                });
                 const c = {
                     id: 'c_' + cName.replace(/[^a-zA-Z0-9]/g, '_') + '_' + name.replace(/[^a-zA-Z0-9]/g, '_'),
                     displayName: formatName(cName), rawName: cName,
@@ -438,6 +468,7 @@ async function init() {
                     screenshots: data.screenshots, files: data.files.sort(smartSort), extensions: data.extensions.sort(smartSort),
                     isPopular: name === "Popular Clients", isOptifine: name === "Optifine Packs" || data.isOptifine,
                     originalCategory: data.originalCategory,
+                    compatVersions,
                     _search: ''
                 };
                 c._search = buildSearchString(c);
@@ -539,6 +570,7 @@ function renderClients(query = '') {
                             ${client.isOptifine ? '<span class="tag tag-optifine"><i class="fa-solid fa-bolt"></i>Optifine</span>' : ''}
                             ${client.originalCategory && client.isOptifine ? `<span class="tag tag-category"><i class="fa-solid fa-layer-group"></i>${client.originalCategory}</span>` : ''}
                             ${client.tags.map(t => `<span class="tag tag-${t}"><i class="fa-solid ${TAG_ICONS[t]||'fa-tag'}"></i>${t.charAt(0).toUpperCase()+t.slice(1)}</span>`).join('')}
+                            ${(client.compatVersions && client.compatVersions.length > 0) ? client.compatVersions.map(v => `<span class="tag tag-version"><i class="fa-solid fa-code-branch"></i>${v.replace('_','.')}</span>`).join('') : ''}
                         </div>
                     </div>
                 </div>
