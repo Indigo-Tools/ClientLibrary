@@ -2,68 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta property="og:title" content=MCA (Indigo Tools | Client Library)" />
-
+  <meta property="og:title" content="Nyxora Library (Client Library)" />
   <meta property="og:description" content="Minecraft Client Archive, Clients from 1.16 MCPE to Newest MCPE Clients, Mainly focused on texture pack clients." />
-  
   <meta property="og:url" content="https://mca.glacierclient.xyz" />
-  
-  
-  
-  <meta name="theme-color" content="#7289DA" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>Indigo Library</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="theme-color" content="#6c5ce7" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nyxora Library</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
- <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="min-h-screen font-sans antialiased bg-[#0f1113] text-gray-300 performance-optimized">
-  
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-    
-    <!-- Header -->
-    <header class="text-center mb-8 sm:mb-12">
-      <div class="inline-flex items-center justify-center p-3 rounded-xl bg-gradient-to-br from-[#347ccb]/15 to-[#347ccb]/5 mb-4 animate-pulse">
-        <i class="fa-solid fa-box-open text-[#347ccb] text-2xl"></i>
+<body>
+  <div class="site-wrapper">
+
+    <header class="site-header">
+      <div class="header-icon">
+        <i class="fa-solid fa-box-open"></i>
       </div>
-      <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2">Indigo Library</h1>
-      <p class="text-gray-500 text-xs font-medium tracking-wider">mca.glacierclient.xyz</p>
+      <h1 class="header-title">Nyxora Library</h1>
+      <p class="header-subtitle">mca.glacierclient.xyz</p>
     </header>
 
-    <!-- Loading State -->
-    <div id="status-container" class="flex flex-col items-center justify-center py-16">
-      <div id="loader" class="w-10 h-10 border-3 border-[#347ccb]/30 border-t-[#347ccb] rounded-full animate-spin"></div>
-      <p id="status-text" class="mt-4 text-gray-500">Indexing Library...</p>
+    <div id="status-container" class="loading-state">
+      <div class="spinner"></div>
+      <p id="status-text" class="loading-text">Indexing Library...</p>
     </div>
 
-    <!-- Main Content -->
     <div id="main-content" class="hidden">
-      
-      <!-- Category Navigation -->
-      <div class="sticky top-0 z-40 bg-[#0f1113]/90 backdrop-blur-md border-b border-gray-800/50 mb-6 -mx-4 sm:-mx-6 px-4 sm:px-6">
-        <div id="category-tabs-container" class="relative">
-          <div id="category-tabs" class="flex overflow-x-auto py-3 gap-2 scrollbar-hide"></div>
-          <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#0f1113] to-transparent pointer-events-none"></div>
-          <div class="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0f1113] to-transparent pointer-events-none"></div>
+
+      <nav class="tabs-bar">
+        <div id="category-tabs" class="tabs-scroll"></div>
+      </nav>
+
+      <!-- Search with dropdown -->
+      <div class="search-wrapper" id="search-wrapper">
+        <i class="fa-solid fa-search search-icon"></i>
+        <input type="text" id="search-input"
+               placeholder="Search clients, versions, or extensions..."
+               class="search-input"
+               autocomplete="off">
+        <button id="search-clear" class="search-clear hidden" aria-label="Clear search">
+          <i class="fa-solid fa-times"></i>
+        </button>
+        <div id="search-results-count" class="search-count hidden"></div>
+        <div id="search-dropdown" class="search-dropdown hidden"></div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div id="stats-bar" class="stats-bar"></div>
+        <div class="toolbar-actions">
+          <button id="expand-all-btn" onclick="expandCollapseAll()" class="toolbar-btn">
+            <i class="fa-solid fa-angles-down"></i>
+            <span>Expand All</span>
+          </button>
         </div>
       </div>
 
-      <!-- Search Bar -->
-      <div class="max-w-2xl mx-auto mb-8 px-4 sm:px-0">
-        <div class="relative">
-          <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-          <input type="text" id="search-input" 
-                 placeholder="Search clients, versions, or extensions..." 
-                 class="w-full bg-[#1a1c1e] border border-gray-800 rounded-lg pl-12 pr-4 py-3 text-white focus:outline-none focus:border-[#347ccb] focus:ring-1 focus:ring-[#347ccb]/30 transition-all duration-200">
-        </div>
-      </div>
-
-      <!-- Client Container -->
-      <div id="client-container" class="space-y-8 pb-12 px-4 sm:px-0"></div>
+      <div id="client-container" class="client-list"></div>
 
     </div>
   </div>
+
+  <!-- Back to top -->
+  <button id="back-to-top" class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top">
+    <i class="fa-solid fa-chevron-up"></i>
+  </button>
 
   <!-- Screenshots Modal -->
   <div id="screenshots-modal" class="screenshots-modal" onclick="closeScreenshots()">
@@ -71,23 +75,20 @@
       <button class="screenshot-close" onclick="closeScreenshots()" aria-label="Close">
         <i class="fa-solid fa-times"></i>
       </button>
-      
       <button class="screenshot-nav screenshot-prev" onclick="prevScreenshot()" aria-label="Previous">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
-      
       <button class="screenshot-nav screenshot-next" onclick="nextScreenshot()" aria-label="Next">
         <i class="fa-solid fa-chevron-right"></i>
       </button>
-      
       <div class="screenshot-main-container">
         <img id="screenshot-main" class="screenshot-img" src="" alt="Screenshot" onclick="toggleZoom()">
         <div id="screenshot-counter" class="screenshot-counter"></div>
       </div>
-      
       <div id="screenshot-thumbnails" class="screenshot-thumbnails"></div>
     </div>
   </div>
+
   <script src="script.js"></script>
 </body>
 </html>
