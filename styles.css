@@ -38,7 +38,7 @@ body::before {
     position: fixed;
     inset: 0;
     z-index: -1;
-    background: url(BG.png) center / cover no-repeat fixed;
+    background: url(BG.png) center / cover no-repeat;
     opacity: 0.08;
 }
 
