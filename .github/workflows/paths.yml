@@ -15,58 +15,67 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Generate paths.json
+      - name: Generate paths.json with metadata
         run: |
-          echo "Generating comprehensive library index..."
-          
-          # Find all valid library files including support files
-          find ClientLibrary -type f \( \
-            -name "*.zip" -o \
-            -name "*.dll" -o \
-            -name "*.so" -o \
-            -name "*.apk" -o \
-            -name "*.mcpack" -o \
-            -name "*.mcaddon" -o \
-            -name "pack_icon.png" -o \
-            -name "pack_banner.png" -o \
-            -name "description.txt" -o \
-            -name "description.md" -o \
-            -name "author.json" -o \
-            -name "*.png" -o \
-            -name "*.jpg" -o \
-            -name "*.jpeg" -o \
-            -name "*.gif" -o \
-            -name "*.webp" -o \
-            -name "working" -o \
-            -name "legacy" -o \
-            -name "trash" \
-          \) | \
-          jq -R . | jq -s . > paths.json
-          
-          # Count and log statistics
-          TOTAL_PATHS=$(wc -l < paths.json)
-          echo "Generated paths.json with $TOTAL_PATHS total entries"
-          
-          # Count by file type
-          echo "File type breakdown:"
-          grep -i "\.zip\"" paths.json | wc -l | xargs echo "  ZIP files:"
-          grep -i "\.dll\"" paths.json | wc -l | xargs echo "  DLL files:"
-          grep -i "\.so\"" paths.json | wc -l | xargs echo "  SO files:"
-          grep -i "\.apk\"" paths.json | wc -l | xargs echo "  APK files:"
-          grep -i "\.mcpack\"" paths.json | wc -l | xargs echo "  MCPack files:"
-          grep -i "\.mcaddon\"" paths.json | wc -l | xargs echo "  MCAddon files:"
-          grep -i "pack_icon\.png\"" paths.json | wc -l | xargs echo "  Icons:"
-          grep -i "pack_banner\.png\"" paths.json | wc -l | xargs echo "  Banners:"
-          grep -i "description\." paths.json | wc -l | xargs echo "  Descriptions:"
-          grep -i "author\.json\"" paths.json | wc -l | xargs echo "  Author files:"
-          grep -i "\.png\"" paths.json | grep -v "pack_icon\|pack_banner" | wc -l | xargs echo "  PNG images:"
-          grep -i "\.jpg\"" paths.json | wc -l | xargs echo "  JPG images:"
-          grep -i "\.jpeg\"" paths.json | wc -l | xargs echo "  JPEG images:"
-          grep -i "\.gif\"" paths.json | wc -l | xargs echo "  GIF images:"
-          grep -i "\.webp\"" paths.json | wc -l | xargs echo "  WebP images:"
-          grep -i "\"working\"" paths.json | wc -l | xargs echo "  Working tags:"
-          grep -i "\"legacy\"" paths.json | wc -l | xargs echo "  Legacy tags:"
-          grep -i "\"trash\"" paths.json | wc -l | xargs echo "  Trash tags:"
+          echo "Generating comprehensive library index with metadata..."
+
+          python3 - <<'PYEOF'
+          import os, json, stat
+
+          library_dir = "ClientLibrary"
+          valid_exts = {".zip", ".dll", ".so", ".apk", ".mcpack", ".mcaddon"}
+          image_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+          tag_names = {"working", "legacy", "trash"}
+
+          entries = []
+          for root, dirs, files in os.walk(library_dir):
+              for fname in files:
+                  fpath = os.path.join(root, fname)
+                  rel = fpath.replace("\\", "/")
+                  parts = rel.split("/")
+                  if len(parts) < 3:
+                      continue
+                  low = fname.lower()
+                  entry = {"path": rel}
+
+                  if low == "pack_icon.png" or low == "pack_banner.png":
+                      entries.append(entry)
+                  elif low in ("description.txt", "description.md"):
+                      try:
+                          with open(fpath, "r", encoding="utf-8", errors="replace") as f:
+                              entry["content"] = f.read()
+                      except:
+                          entry["content"] = ""
+                      entries.append(entry)
+                  elif low in ("author.json", "creator.json"):
+                      try:
+                          with open(fpath, "r", encoding="utf-8", errors="replace") as f:
+                              entry["content"] = json.loads(f.read())
+                      except:
+                          entry["content"] = {}
+                      entries.append(entry)
+                  elif low in tag_names:
+                      entries.append(entry)
+                  elif any(low.endswith(e) for e in valid_exts):
+                      try:
+                          entry["size"] = os.path.getsize(fpath)
+                      except:
+                          pass
+                      entries.append(entry)
+                  elif any(low.endswith(e) for e in image_exts):
+                      entries.append(entry)
+
+          with open("paths.json", "w") as f:
+              json.dump(entries, f, separators=(",", ":"))
+
+          print(f"Generated paths.json with {len(entries)} entries")
+          dl_files = [e for e in entries if any(e["path"].lower().endswith(x) for x in valid_exts)]
+          print(f"  Downloadable files: {len(dl_files)}")
+          desc_files = [e for e in entries if "content" in e and ("description" in e["path"].lower())]
+          print(f"  Descriptions (inlined): {len(desc_files)}")
+          author_files = [e for e in entries if "content" in e and ("author" in e["path"].lower() or "creator" in e["path"].lower())]
+          print(f"  Author files (inlined): {len(author_files)}")
+          PYEOF
 
       - name: Commit and Push
         run: |

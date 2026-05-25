@@ -28,14 +28,6 @@ function formatFileSize(bytes) {
     return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
 }
 
-async function getFileSize(url) {
-    try {
-        const r = await fetch(url, { method: 'HEAD' });
-        const s = r.headers.get('content-length');
-        return s ? parseInt(s) : null;
-    } catch { return null; }
-}
-
 // ── Toggle helpers (no full re-render) ──
 
 function toggleClientCollapse(clientId) {
@@ -97,7 +89,7 @@ function expandCollapseAll() {
     allExpanded = !allExpanded;
 }
 
-// ── Search dropdown ──
+// ── Search (single-pass for both results + count) ──
 
 function highlightMatch(text, query) {
     if (!query) return text;
@@ -106,36 +98,33 @@ function highlightMatch(text, query) {
     return text.slice(0, idx) + '<span class="search-highlight">' + text.slice(idx, idx + query.length) + '</span>' + text.slice(idx + query.length);
 }
 
-function getSearchResults(query) {
-    if (!query) return [];
+function searchClients(query, limit) {
     const q = query.toLowerCase().trim();
-    if (!q) return [];
+    if (!q) return { results: [], total: 0 };
 
     const results = [];
+    let total = 0;
+
     for (const cat of libraryTree) {
         for (const client of cat.clients) {
-            const nameMatch = client.displayName.toLowerCase().includes(q);
-            const descMatch = client.description?.toLowerCase().includes(q);
-            const tagMatch = client.tags.some(t => t.includes(q));
-            const fileMatch = client.files.some(f => f.display.toLowerCase().includes(q) || f.rawName.toLowerCase().includes(q));
-            const extMatch = client.extensions.some(e => e.display.toLowerCase().includes(q) || e.rawName.toLowerCase().includes(q));
-
-            if (nameMatch || descMatch || tagMatch || fileMatch || extMatch) {
-                results.push({
-                    id: client.id,
-                    name: client.displayName,
-                    icon: client.iconUrl,
-                    category: cat.displayName,
-                    fileCount: client.files.length + client.extensions.length,
-                    tags: client.tags,
-                    isPopular: client.isPopular,
-                    isOptifine: client.isOptifine
-                });
+            if (client._search.includes(q)) {
+                total++;
+                if (results.length < limit) {
+                    results.push({
+                        id: client.id,
+                        name: client.displayName,
+                        icon: client.iconUrl,
+                        category: cat.displayName,
+                        fileCount: client.files.length + client.extensions.length,
+                        tags: client.tags,
+                        isPopular: client.isPopular,
+                        isOptifine: client.isOptifine
+                    });
+                }
             }
-            if (results.length >= 8) return results;
         }
     }
-    return results;
+    return { results, total };
 }
 
 function renderSearchDropdown(query) {
@@ -154,12 +143,10 @@ function renderSearchDropdown(query) {
 
     clearBtn.classList.remove('hidden');
 
-    const results = getSearchResults(q);
+    const { results, total } = searchClients(q, 8);
 
-    // Count total matches for the badge
-    const totalMatches = countAllMatches(q);
-    if (totalMatches > 0) {
-        countEl.textContent = `${totalMatches} found`;
+    if (total > 0) {
+        countEl.textContent = `${total} found`;
         countEl.classList.remove('hidden');
     } else {
         countEl.classList.add('hidden');
@@ -189,33 +176,15 @@ function renderSearchDropdown(query) {
             </div>
             <i class="fa-solid fa-arrow-right" style="color:var(--text-dim);font-size:0.6875rem;flex-shrink:0"></i>
         </div>
-    `).join('') + (totalMatches > results.length ? `<div class="search-dropdown-hint">Showing ${results.length} of ${totalMatches} results — type to narrow down</div>` : '');
+    `).join('') + (total > results.length ? `<div class="search-dropdown-hint">Showing ${results.length} of ${total} results — type to narrow down</div>` : '');
 
     dropdown.classList.remove('hidden');
-}
-
-function countAllMatches(query) {
-    const q = query.toLowerCase().trim();
-    if (!q) return 0;
-    let count = 0;
-    for (const cat of libraryTree) {
-        for (const client of cat.clients) {
-            const nameMatch = client.displayName.toLowerCase().includes(q);
-            const descMatch = client.description?.toLowerCase().includes(q);
-            const tagMatch = client.tags.some(t => t.includes(q));
-            const fileMatch = client.files.some(f => f.display.toLowerCase().includes(q) || f.rawName.toLowerCase().includes(q));
-            const extMatch = client.extensions.some(e => e.display.toLowerCase().includes(q) || e.rawName.toLowerCase().includes(q));
-            if (nameMatch || descMatch || tagMatch || fileMatch || extMatch) count++;
-        }
-    }
-    return count;
 }
 
 function scrollToClient(clientId) {
     const el = document.getElementById(`block-${clientId}`);
     if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Briefly highlight
         el.style.outline = '2px solid var(--accent)';
         el.style.outlineOffset = '4px';
         el.style.borderRadius = 'var(--radius)';
@@ -225,7 +194,6 @@ function scrollToClient(clientId) {
             setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 500);
         }, 800);
     }
-    // Ensure it's not collapsed
     const body = document.getElementById(`body-${clientId}`);
     if (body?.classList.contains('collapsed')) toggleClientCollapse(clientId);
 
@@ -364,18 +332,31 @@ function renderStats() {
     `;
 }
 
+// ── Build search string for a client (pre-computed, called once) ──
+
+function buildSearchString(client) {
+    let s = client.displayName.toLowerCase() + '\0';
+    if (client.description) s += client.description.toLowerCase() + '\0';
+    s += client.tags.join('\0') + '\0';
+    for (const f of client.files) s += f.display.toLowerCase() + '\0' + f.rawName.toLowerCase() + '\0';
+    for (const e of client.extensions) s += e.display.toLowerCase() + '\0' + e.rawName.toLowerCase() + '\0';
+    return s;
+}
+
 // ── Init ──
 
 async function init() {
     try {
         const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
-        const rawPaths = await response.json();
+        const rawEntries = await response.json();
         const structured = {};
-        const asyncJobs = [];
-        const sizeJobs = [];
         const detectedCategories = new Set();
 
-        rawPaths.forEach(path => {
+        // Support both old format (array of strings) and new format (array of objects)
+        const isNewFormat = rawEntries.length > 0 && typeof rawEntries[0] === 'object';
+
+        rawEntries.forEach(entry => {
+            const path = isNewFormat ? entry.path : entry;
             const parts = path.split('/');
             if (parts.length < 3) return;
             const category = parts[1], clientName = parts[2], fileName = parts[parts.length - 1];
@@ -392,11 +373,14 @@ async function init() {
             if (lowerName === 'pack_icon.png') { client.icon = fullUrl; }
             else if (lowerName === 'pack_banner.png') { client.banner = fullUrl; }
             else if (lowerName === 'description.txt' || lowerName === 'description.md') {
-                asyncJobs.push(fetch(fullUrl).then(r => r.ok ? r.text() : null).then(text => {
-                    if (text) { client.description = text; if (!client.isOptifine) client.isOptifine = isOptifinePack(clientName, text); }
-                }).catch(() => {}));
+                if (isNewFormat && entry.content != null) {
+                    client.description = entry.content;
+                    if (!client.isOptifine) client.isOptifine = isOptifinePack(clientName, entry.content);
+                }
             } else if (lowerName === 'author.json' || lowerName === 'creator.json') {
-                asyncJobs.push(fetch(fullUrl).then(r => r.ok ? r.json() : null).then(a => { if (a) client.author = a; }).catch(() => {}));
+                if (isNewFormat && entry.content != null) {
+                    client.author = entry.content;
+                }
             } else if (lowerName.match(/\.(png|jpg|jpeg|gif|webp)$/) && (parts.some(p => p.toLowerCase() === 'screenshots') || lowerName.includes('screenshot'))) {
                 client.screenshots.push({ url: fullUrl, name: fileName });
             } else if (['working','legacy','trash'].includes(lowerName)) {
@@ -405,15 +389,16 @@ async function init() {
                 detectTags(parts).forEach(t => { if (!client.tags.includes(t)) client.tags.push(t); });
                 if (lowerName.match(/\.(zip|dll|so|apk|mcpack|mcaddon)$/)) {
                     const isExt = parts.some(p => p.toLowerCase() === 'extensions');
-                    const fileObj = { display: formatName(fileName), rawName: fileName, url: fullUrl, size: null };
-                    sizeJobs.push(getFileSize(fullUrl).then(s => { fileObj.size = formatFileSize(s); }).catch(() => {}));
+                    const fileObj = {
+                        display: formatName(fileName),
+                        rawName: fileName,
+                        url: fullUrl,
+                        size: (isNewFormat && entry.size) ? formatFileSize(entry.size) : null
+                    };
                     (isExt ? client.extensions : client.files).push(fileObj);
                 }
             }
         });
-
-        await Promise.allSettled(asyncJobs);
-        await Promise.allSettled(sizeJobs);
 
         const optifineClients = {};
         Object.keys(structured).forEach(cat => {
@@ -441,19 +426,23 @@ async function init() {
         libraryTree = sorted.map(({ name, displayName }) => {
             const clients = structured[name];
             if (!clients) return null;
-            const list = Object.entries(clients).map(([cName, data]) => ({
-                id: 'c_' + cName.replace(/[^a-zA-Z0-9]/g, '_') + '_' + name.replace(/[^a-zA-Z0-9]/g, '_'),
-                displayName: formatName(cName), rawName: cName,
-                iconUrl: data.icon, bannerUrl: data.banner, description: data.description,
-                author: data.author, tags: [...new Set(data.tags)].sort(),
-                screenshots: data.screenshots, files: data.files.sort(smartSort), extensions: data.extensions.sort(smartSort),
-                isPopular: name === "Popular Clients", isOptifine: name === "Optifine Packs" || data.isOptifine,
-                originalCategory: data.originalCategory
-            })).filter(c => c.files.length > 0 || c.extensions.length > 0).sort((a, b) => a.displayName.localeCompare(b.displayName));
+            const list = Object.entries(clients).map(([cName, data]) => {
+                const c = {
+                    id: 'c_' + cName.replace(/[^a-zA-Z0-9]/g, '_') + '_' + name.replace(/[^a-zA-Z0-9]/g, '_'),
+                    displayName: formatName(cName), rawName: cName,
+                    iconUrl: data.icon, bannerUrl: data.banner, description: data.description,
+                    author: data.author, tags: [...new Set(data.tags)].sort(),
+                    screenshots: data.screenshots, files: data.files.sort(smartSort), extensions: data.extensions.sort(smartSort),
+                    isPopular: name === "Popular Clients", isOptifine: name === "Optifine Packs" || data.isOptifine,
+                    originalCategory: data.originalCategory,
+                    _search: ''
+                };
+                c._search = buildSearchString(c);
+                return c;
+            }).filter(c => c.files.length > 0 || c.extensions.length > 0).sort((a, b) => a.displayName.localeCompare(b.displayName));
             return { name, displayName, clients: list };
         }).filter(c => c && c.clients.length > 0);
 
-        // Build flat client list for search
         allClients = [];
         libraryTree.forEach(cat => cat.clients.forEach(c => allClients.push(c)));
 
@@ -508,29 +497,24 @@ function renderClients(query = '') {
         return;
     }
 
-    let html = '';
+    const parts = [];
 
     toShow.forEach(cat => {
-        const filtered = cat.clients.map(client => {
-            const cm = client.displayName.toLowerCase().includes(q);
-            const dm = client.description?.toLowerCase().includes(q);
-            const am = client.author && [client.author.name, client.author.website, client.author.discord, client.author.github].some(v => v?.toLowerCase().includes(q));
-            const tm = client.tags.some(t => t.toLowerCase().includes(q));
-            const fm = client.files.some(f => f.display.toLowerCase().includes(q) || f.rawName.toLowerCase().includes(q));
-            const em = client.extensions.some(e => e.display.toLowerCase().includes(q) || e.rawName.toLowerCase().includes(q));
-            if (cm || dm || am || tm || fm || em || !q) {
-                const broad = cm || dm || am || tm;
-                return { ...client,
-                    matchingFiles: q ? client.files.filter(f => broad || f.display.toLowerCase().includes(q) || f.rawName.toLowerCase().includes(q)) : client.files,
-                    matchingExtensions: q ? client.extensions.filter(e => broad || e.display.toLowerCase().includes(q) || e.rawName.toLowerCase().includes(q)) : client.extensions
-                };
+        const filtered = [];
+        for (const client of cat.clients) {
+            if (!q || client._search.includes(q)) {
+                const broad = !q || client.displayName.toLowerCase().includes(q) || client.description?.toLowerCase().includes(q) || client.tags.some(t => t.includes(q));
+                filtered.push({
+                    ...client,
+                    matchingFiles: q && !broad ? client.files.filter(f => f.display.toLowerCase().includes(q) || f.rawName.toLowerCase().includes(q)) : client.files,
+                    matchingExtensions: q && !broad ? client.extensions.filter(e => e.display.toLowerCase().includes(q) || e.rawName.toLowerCase().includes(q)) : client.extensions
+                });
             }
-            return null;
-        }).filter(Boolean);
+        }
 
         if (filtered.length === 0) return;
 
-        html += `<div class="category-group"><div class="section-label"><span>${cat.displayName}</span></div>`;
+        parts.push(`<div class="category-group"><div class="section-label"><span>${cat.displayName}</span></div>`);
 
         filtered.forEach(client => {
             const hasDesc = client.description?.trim().length > 0;
@@ -540,9 +524,9 @@ function renderClients(query = '') {
             const manyFiles = client.matchingFiles.length > 5;
             const ssJson = escapeAttr(JSON.stringify(client.screenshots));
 
-            html += `<div class="client-block" id="block-${client.id}">`;
+            parts.push(`<div class="client-block" id="block-${client.id}" style="content-visibility:auto;contain-intrinsic-size:auto 300px">`);
 
-            html += `<div class="client-header">
+            parts.push(`<div class="client-header">
                 <div class="client-info">
                     ${client.iconUrl ? `<img src="${client.iconUrl}" class="client-icon" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
                     <div class="client-meta">
@@ -558,15 +542,15 @@ function renderClients(query = '') {
                 <button id="collapse-btn-${client.id}" onclick="toggleClientCollapse('${client.id}')" class="collapse-btn">
                     <i class="fa-solid fa-chevron-up"></i><span class="hide-mobile">Collapse</span>
                 </button>
-            </div>`;
+            </div>`);
 
-            html += `<div id="body-${client.id}" class="client-body"><div class="client-body-inner">`;
+            parts.push(`<div id="body-${client.id}" class="client-body"><div class="client-body-inner">`);
 
             if (hasDetails) {
-                html += `<div id="details-${client.id}" class="details-panel"><div class="details-panel-inner"><div class="details-inner">`;
+                parts.push(`<div id="details-${client.id}" class="details-panel"><div class="details-panel-inner"><div class="details-inner">`);
 
                 if (hasSS) {
-                    html += `<div style="margin-bottom:1rem">
+                    parts.push(`<div style="margin-bottom:1rem">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
                             <span style="display:flex;align-items:center;gap:0.4rem;font-weight:600;color:var(--white)"><i class="fa-solid fa-images" style="color:var(--accent)"></i>Screenshots (${client.screenshots.length})</span>
                             <button onclick="openScreenshots('${client.id}',${ssJson})" style="background:none;border:none;color:var(--accent);font-size:0.8125rem;font-weight:600;cursor:pointer">View All</button>
@@ -574,32 +558,32 @@ function renderClients(query = '') {
                         <div class="ss-grid">${client.screenshots.slice(0,6).map((ss, i) =>
                             `<div class="ss-thumb" onclick="openScreenshots('${client.id}',${ssJson},${i})"><img src="${ss.url}" alt="Screenshot ${i+1}" loading="lazy"><div class="ss-thumb-overlay"><span class="ss-badge">${i+1}</span></div></div>`
                         ).join('')}</div>
-                    </div>`;
+                    </div>`);
                 }
 
                 if (hasDesc) {
-                    html += `<div style="margin-bottom:0.75rem">${client.description.split('\n').map(l => `<p style="margin-bottom:0.4rem">${l}</p>`).join('')}</div>`;
+                    parts.push(`<div style="margin-bottom:0.75rem">${client.description.split('\n').map(l => `<p style="margin-bottom:0.4rem">${l}</p>`).join('')}</div>`);
                 }
 
                 if (hasAuthor) {
-                    html += `<div class="author-block">
+                    parts.push(`<div class="author-block">
                         <div class="author-name"><i class="fa-solid fa-user"></i>${client.author.name||'Unknown'}</div>
                         ${client.author.website ? `<div class="author-link"><i class="fa-solid fa-globe"></i><a href="${client.author.website}" target="_blank" rel="noopener">${client.author.website.replace(/^https?:\/\//,'')}</a></div>` : ''}
                         ${client.author.discord ? `<div class="author-link"><i class="fa-brands fa-discord"></i>${formatDiscordLink(client.author.discord)}</div>` : ''}
                         ${client.author.github ? `<div class="author-link"><i class="fa-brands fa-github"></i><a href="https://github.com/${client.author.github}" target="_blank" rel="noopener">@${client.author.github}</a></div>` : ''}
-                    </div>`;
+                    </div>`);
                 }
 
-                html += `</div></div></div>`;
-                html += `<button id="details-btn-${client.id}" onclick="toggleDescription('${client.id}')" class="details-toggle">Show Details <i class="fa-solid fa-chevron-down"></i></button>`;
+                parts.push(`</div></div></div>`);
+                parts.push(`<button id="details-btn-${client.id}" onclick="toggleDescription('${client.id}')" class="details-toggle">Show Details <i class="fa-solid fa-chevron-down"></i></button>`);
             }
 
             if (client.matchingFiles.length > 0) {
-                html += `<div class="file-grid">`;
+                parts.push(`<div class="file-grid">`);
                 client.matchingFiles.forEach((file, idx) => {
                     const hiddenClass = (!q && manyFiles && idx >= 5) ? `file-hidden-${client.id}` : '';
                     const hiddenStyle = (!q && manyFiles && idx >= 5) ? ' style="display:none"' : '';
-                    html += `<div class="file-card ${hiddenClass}"${hiddenStyle}>
+                    parts.push(`<div class="file-card ${hiddenClass}"${hiddenStyle}>
                         ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="file-card-banner" loading="lazy" alt=""><div class="file-card-overlay"></div>` : ''}
                         <div class="file-card-body">
                             <div class="file-info">
@@ -609,17 +593,17 @@ function renderClients(query = '') {
                             </div>
                             <a href="${file.url}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>Download</a>
                         </div>
-                    </div>`;
+                    </div>`);
                 });
-                html += `</div>`;
+                parts.push(`</div>`);
             }
 
             if (!q && manyFiles) {
-                html += `<button id="more-btn-${client.id}" onclick="toggleFileList('${client.id}')" class="show-more-btn"><i class="fa-solid fa-angles-down"></i>Show ${client.matchingFiles.length - 5} more</button>`;
+                parts.push(`<button id="more-btn-${client.id}" onclick="toggleFileList('${client.id}')" class="show-more-btn"><i class="fa-solid fa-angles-down"></i>Show ${client.matchingFiles.length - 5} more</button>`);
             }
 
             if (client.matchingExtensions.length > 0) {
-                html += `<div class="ext-section">
+                parts.push(`<div class="ext-section">
                     <button id="ext-header-${client.id}" onclick="toggleDropdown('${client.id}')" class="ext-header">
                         <span><i class="fa-solid fa-puzzle-piece" style="margin-right:0.4rem;color:var(--text-dim)"></i>Extensions (${client.matchingExtensions.length})</span>
                         <i class="fa-solid fa-chevron-down chevron"></i>
@@ -636,102 +620,97 @@ function renderClients(query = '') {
                             </div>
                         `).join('')}
                     </div></div>
-                </div>`;
+                </div>`);
             }
 
-            html += `</div></div>`;
-            html += `</div>`;
+            parts.push(`</div></div>`);
+            parts.push(`</div>`);
         });
 
-        html += `</div>`;
+        parts.push(`</div>`);
     });
 
-    container.innerHTML = html || `<div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-search"></i></div><div class="empty-title">No results found</div><div class="empty-desc">Try a different search term or browse the categories above</div></div>`;
+    container.innerHTML = parts.join('') || `<div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-search"></i></div><div class="empty-title">No results found</div><div class="empty-desc">Try a different search term or browse the categories above</div></div>`;
 }
 
 // ── Events ──
 
-const searchInput = document.getElementById('search-input');
-const searchClear = document.getElementById('search-clear');
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('search-input');
+    const searchClear = document.getElementById('search-clear');
 
-let searchDebounce;
-searchInput.addEventListener('input', (e) => {
-    const val = e.target.value;
-    clearTimeout(searchDebounce);
-    renderSearchDropdown(val);
-    searchDebounce = setTimeout(() => renderClients(val), 200);
-});
+    let searchDebounce;
+    searchInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        clearTimeout(searchDebounce);
+        renderSearchDropdown(val);
+        searchDebounce = setTimeout(() => renderClients(val), 200);
+    });
 
-searchInput.addEventListener('focus', () => {
-    if (searchInput.value.trim()) renderSearchDropdown(searchInput.value);
-});
+    searchInput.addEventListener('focus', () => {
+        if (searchInput.value.trim()) renderSearchDropdown(searchInput.value);
+    });
 
-searchClear.addEventListener('click', clearSearch);
+    searchClear.addEventListener('click', clearSearch);
 
-// Close dropdown on outside click
-document.addEventListener('click', (e) => {
-    const wrapper = document.getElementById('search-wrapper');
-    if (!wrapper.contains(e.target)) {
-        document.getElementById('search-dropdown').classList.add('hidden');
-    }
-});
-
-// Keyboard
-document.addEventListener('keydown', (e) => {
-    // Screenshot modal keys
-    if (document.getElementById('screenshots-modal').classList.contains('active')) {
-        if (e.key === 'Escape') closeScreenshots();
-        else if (e.key === 'ArrowLeft') prevScreenshot();
-        else if (e.key === 'ArrowRight') nextScreenshot();
-        else if (e.key === 'z' || e.key === 'Z') toggleZoom();
-        return;
-    }
-
-    // "/" to focus search
-    if (e.key === '/' && document.activeElement !== searchInput) {
-        e.preventDefault();
-        searchInput.focus();
-        return;
-    }
-
-    // Escape to clear search or close dropdown
-    if (e.key === 'Escape') {
-        if (searchInput.value) {
-            clearSearch();
-        } else {
-            searchInput.blur();
+    document.addEventListener('click', (e) => {
+        const wrapper = document.getElementById('search-wrapper');
+        if (!wrapper.contains(e.target)) {
             document.getElementById('search-dropdown').classList.add('hidden');
         }
-        return;
-    }
+    });
 
-    // Arrow keys in dropdown
-    if (document.activeElement === searchInput) {
-        const dropdown = document.getElementById('search-dropdown');
-        const items = dropdown.querySelectorAll('.search-dropdown-item');
-        if (items.length === 0) return;
-
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            dropdownIndex = Math.min(dropdownIndex + 1, items.length - 1);
-            items.forEach((el, i) => el.classList.toggle('focused', i === dropdownIndex));
-            items[dropdownIndex]?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            dropdownIndex = Math.max(dropdownIndex - 1, 0);
-            items.forEach((el, i) => el.classList.toggle('focused', i === dropdownIndex));
-            items[dropdownIndex]?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter' && dropdownIndex >= 0 && items[dropdownIndex]) {
-            e.preventDefault();
-            const clientId = items[dropdownIndex].dataset.clientId;
-            if (clientId) scrollToClient(clientId);
+    document.addEventListener('keydown', (e) => {
+        if (document.getElementById('screenshots-modal').classList.contains('active')) {
+            if (e.key === 'Escape') closeScreenshots();
+            else if (e.key === 'ArrowLeft') prevScreenshot();
+            else if (e.key === 'ArrowRight') nextScreenshot();
+            else if (e.key === 'z' || e.key === 'Z') toggleZoom();
+            return;
         }
-    }
+
+        if (e.key === '/' && document.activeElement !== searchInput) {
+            e.preventDefault();
+            searchInput.focus();
+            return;
+        }
+
+        if (e.key === 'Escape') {
+            if (searchInput.value) {
+                clearSearch();
+            } else {
+                searchInput.blur();
+                document.getElementById('search-dropdown').classList.add('hidden');
+            }
+            return;
+        }
+
+        if (document.activeElement === searchInput) {
+            const dropdown = document.getElementById('search-dropdown');
+            const items = dropdown.querySelectorAll('.search-dropdown-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                dropdownIndex = Math.min(dropdownIndex + 1, items.length - 1);
+                items.forEach((el, i) => el.classList.toggle('focused', i === dropdownIndex));
+                items[dropdownIndex]?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                dropdownIndex = Math.max(dropdownIndex - 1, 0);
+                items.forEach((el, i) => el.classList.toggle('focused', i === dropdownIndex));
+                items[dropdownIndex]?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Enter' && dropdownIndex >= 0 && items[dropdownIndex]) {
+                e.preventDefault();
+                const clientId = items[dropdownIndex].dataset.clientId;
+                if (clientId) scrollToClient(clientId);
+            }
+        }
+    });
+
+    window.addEventListener('scroll', () => {
+        document.getElementById('back-to-top').classList.toggle('visible', window.scrollY > 400);
+    }, { passive: true });
+
+    init();
 });
-
-// Back to top
-window.addEventListener('scroll', () => {
-    document.getElementById('back-to-top').classList.toggle('visible', window.scrollY > 400);
-}, { passive: true });
-
-document.addEventListener('DOMContentLoaded', () => init());
