@@ -1031,7 +1031,7 @@ async function init() {
                 client.screenshots.push({ url: fullUrl, name: fileName, type: 'image' });
             } else if (lowerName.match(/\.(mp4|webm|mov|m4v|ogv)$/) && (parts.some(p => p.toLowerCase() === 'screenshots') || lowerName.includes('screenshot'))) {
                 client.screenshots.push({ url: fullUrl, name: fileName, type: 'video' });
-            } else if (['working','legacy','trash'].includes(lowerName)) {
+            } else if (['working','legacy','trash','popular'].includes(lowerName)) {
                 if (!client.tags.includes(lowerName)) client.tags.push(lowerName);
             } else {
                 detectTags(parts).forEach(t => { if (!client.tags.includes(t)) client.tags.push(t); });
@@ -1088,9 +1088,9 @@ async function init() {
                     id: 'c_' + cName.replace(/[^a-zA-Z0-9]/g, '_') + '_' + name.replace(/[^a-zA-Z0-9]/g, '_'),
                     displayName: formatName(cName), rawName: cName,
                     iconUrl: data.icon, bannerUrl: data.banner, description: data.description,
-                    author: data.author, tags: [...new Set(data.tags)].sort(),
+                    author: data.author, tags: [...new Set(data.tags)].filter(t => t !== 'popular').sort(),
                     screenshots: data.screenshots, files: data.files.sort(smartSort), extensions: data.extensions.sort(smartSort),
-                    isPopular: name === "Popular Clients", isOptifine: name === "Optifine Packs" || data.isOptifine,
+                    isPopular: name === "Popular Clients" || (data.tags || []).includes('popular'), isOptifine: name === "Optifine Packs" || data.isOptifine,
                     originalCategory: data.originalCategory,
                     compatVersions,
                     _search: ''
