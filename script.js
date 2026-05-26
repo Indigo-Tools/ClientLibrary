@@ -3,8 +3,20 @@ const REPO_NAME = 'ClientLibrary';
 const BRANCH = 'main';
 const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
 
-const USE_MONETIZATION = true; 
 const LINKVERTISE_USER_ID = 499358;
+function isMonetizationOn() { return true; }
+
+const DL_COUNTS_KEY = 'nyxora_dl_counts_v1';
+function loadDlCounts() { try { return JSON.parse(localStorage.getItem(DL_COUNTS_KEY) || '{}'); } catch { return {}; } }
+function saveDlCounts(o) { try { localStorage.setItem(DL_COUNTS_KEY, JSON.stringify(o)); } catch {} }
+function bumpDlCount(clientId) {
+    if (!clientId) return;
+    const o = loadDlCounts();
+    o[clientId] = (o[clientId] || 0) + 1;
+    saveDlCounts(o);
+    const badge = document.getElementById(`dl-badge-${clientId}`);
+    if (badge) { badge.textContent = o[clientId]; badge.classList.remove('hidden'); }
+}
 
 let libraryTree = [];
 let allClients = [];
@@ -178,8 +190,18 @@ function useHistoryQuery(q) {
 }
 
 // ── QoL: Accent / density / motion ──
+function lightenHex(hex, pct) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    const f = (v) => Math.min(255, Math.round(v + (255 - v) * pct)).toString(16).padStart(2,'0');
+    return '#' + f(r) + f(g) + f(b);
+}
 function applyAccent() {
-    const c = ACCENT_COLORS[prefs.accent] || ACCENT_COLORS.violet;
+    let c;
+    if (prefs.accent === 'custom' && prefs.customAccent) {
+        c = { main: prefs.customAccent, light: lightenHex(prefs.customAccent, 0.18) };
+    } else {
+        c = ACCENT_COLORS[prefs.accent] || ACCENT_COLORS.violet;
+    }
     const root = document.documentElement.style;
     root.setProperty('--accent', c.main);
     root.setProperty('--accent-light', c.light);
@@ -200,6 +222,42 @@ function setAccent(key) {
     applyAccent();
     renderAccentSwatches();
 }
+function setCustomAccent(hex) {
+    if (!/^#[0-9a-f]{6}$/i.test(hex)) return;
+    prefs.accent = 'custom';
+    prefs.customAccent = hex;
+    savePrefs();
+    applyAccent();
+    renderAccentSwatches();
+    const hx = document.getElementById('setting-accent-hex');
+    if (hx) hx.textContent = hex;
+}
+function applyNightShift() {
+    const overlay = document.getElementById('night-shift-overlay');
+    if (!overlay) return;
+    if (prefs.nightShift) {
+        overlay.classList.remove('hidden');
+        overlay.style.opacity = ((prefs.nightShiftStrength || 30) / 100).toFixed(2);
+    } else {
+        overlay.classList.add('hidden');
+    }
+}
+function toggleNightShift() {
+    prefs.nightShift = !prefs.nightShift;
+    if (prefs.nightShift && !prefs.nightShiftStrength) prefs.nightShiftStrength = 30;
+    savePrefs();
+    applyNightShift();
+    document.getElementById('setting-nightshift')?.classList.toggle('on', !!prefs.nightShift);
+    document.getElementById('nightshift-strength-row').style.display = prefs.nightShift ? '' : 'none';
+    const s = document.getElementById('setting-nightshift-strength');
+    if (s) s.value = prefs.nightShiftStrength || 30;
+    toast(prefs.nightShift ? 'Night Shift on' : 'Night Shift off', 'moon');
+}
+function setNightShiftStrength(v) {
+    prefs.nightShiftStrength = +v;
+    savePrefs();
+    applyNightShift();
+}
 function applyDensity() { document.documentElement.dataset.density = prefs.density; }
 function setDensity(d) { prefs.density = d; savePrefs(); applyDensity(); renderSettingsSegmented(); }
 function applyMotion() {
@@ -212,6 +270,69 @@ function toggleReducedMotion() {
     savePrefs();
     applyMotion();
     document.getElementById('setting-motion')?.classList.toggle('on', prefs.motion === 'reduce');
+}
+
+function applyCompactCards() {
+    if (prefs.compactCards) document.documentElement.dataset.compactCards = 'on';
+    else document.documentElement.removeAttribute('data-compact-cards');
+}
+function toggleCompactCards() {
+    prefs.compactCards = !prefs.compactCards;
+    savePrefs();
+    applyCompactCards();
+    document.getElementById('setting-compact-cards')?.classList.toggle('on', !!prefs.compactCards);
+}
+function toggleAutoCollapse() {
+    prefs.autoCollapse = !prefs.autoCollapse;
+    savePrefs();
+    document.getElementById('setting-auto-collapse')?.classList.toggle('on', !!prefs.autoCollapse);
+}
+
+function resetAllPrefs() {
+    if (!confirm('Reset all preferences (favorites, theme, filters, history)?')) return;
+    [PREFS_KEY, FAVS_KEY, RECENT_KEY, SEARCH_HIST_KEY, DL_COUNTS_KEY].forEach(k => localStorage.removeItem(k));
+    location.reload();
+}
+
+// ── QoL v2: Copy all download links ──
+function copyAllLinks(urlsJson) {
+    let urls;
+    try { urls = JSON.parse(decodeURIComponent(urlsJson)); } catch { return; }
+    if (!Array.isArray(urls) || !urls.length) return;
+    copyText(urls.join('\n'), `Copied ${urls.length} link${urls.length>1?'s':''}`);
+}
+
+// ── QoL v2: Scroll progress bar ──
+function updateScrollProgress() {
+    const bar = document.getElementById('scroll-progress');
+    if (!bar) return;
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    const p = h > 0 ? (window.scrollY / h) * 100 : 0;
+    bar.style.width = p + '%';
+}
+
+// ── QoL v2: Online/offline ──
+function showNetIndicator(online) {
+    const el = document.getElementById('net-indicator');
+    if (!el) return;
+    el.classList.remove('hidden', 'online', 'offline');
+    el.classList.add(online ? 'online' : 'offline');
+    el.innerHTML = online
+        ? '<i class="fa-solid fa-wifi"></i>Back online'
+        : '<i class="fa-solid fa-plane"></i>You\'re offline';
+    clearTimeout(showNetIndicator._t);
+    showNetIndicator._t = setTimeout(() => el.classList.add('hidden'), 2400);
+}
+
+// ── QoL v2: PWA install ──
+let _deferredInstallPrompt = null;
+function installPwa() {
+    if (!_deferredInstallPrompt) return;
+    _deferredInstallPrompt.prompt();
+    _deferredInstallPrompt.userChoice.finally(() => {
+        _deferredInstallPrompt = null;
+        document.getElementById('pwa-install')?.classList.add('hidden');
+    });
 }
 
 // ── QoL: Settings modal renderers ──
@@ -228,7 +349,7 @@ function renderAccentSwatches() {
     ).join('');
 }
 function renderSettingsSegmented() {
-    const themes = [['auto', t('theme_auto')], ['dark', t('theme_dark')], ['light', t('theme_light')]];
+    const themes = [['auto', t('theme_auto')], ['dark', t('theme_dark')], ['light', t('theme_light')], ['schedule', 'Schedule']];
     const densities = [['cozy', t('density_cozy')], ['compact', t('density_compact')]];
     const th = document.getElementById('setting-theme');
     const de = document.getElementById('setting-density');
@@ -241,6 +362,15 @@ function openSettings() {
     renderLanguageSelect();
     renderAccentSwatches();
     renderSettingsSegmented();
+    document.getElementById('setting-compact-cards')?.classList.toggle('on', !!prefs.compactCards);
+    document.getElementById('setting-auto-collapse')?.classList.toggle('on', !!prefs.autoCollapse);
+    document.getElementById('setting-nightshift')?.classList.toggle('on', !!prefs.nightShift);
+    const ns = document.getElementById('nightshift-strength-row'); if (ns) ns.style.display = prefs.nightShift ? '' : 'none';
+    const nss = document.getElementById('setting-nightshift-strength'); if (nss) nss.value = prefs.nightShiftStrength || 30;
+    const pk = document.getElementById('setting-accent-picker');
+    const cur = (prefs.accent === 'custom' && prefs.customAccent) ? prefs.customAccent : (ACCENT_COLORS[prefs.accent]?.main || '#6c5ce7');
+    if (pk) pk.value = cur;
+    const hx = document.getElementById('setting-accent-hex'); if (hx) hx.textContent = cur;
     document.getElementById('settings-modal').classList.add('active');
 }
 function closeSettings() { document.getElementById('settings-modal').classList.remove('active'); }
@@ -371,23 +501,24 @@ function saveFavorites() { try { localStorage.setItem(FAVS_KEY, JSON.stringify([
 
 // ── QoL: Theme ──
 function applyTheme() {
-    const mode = prefs.theme === 'auto'
-        ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
-        : prefs.theme;
+    let mode;
+    if (prefs.theme === 'auto')        mode = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    else if (prefs.theme === 'schedule') { const h = new Date().getHours(); mode = (h >= 18 || h < 6) ? 'dark' : 'light'; }
+    else mode = prefs.theme;
     document.documentElement.dataset.theme = mode;
     const btn = document.getElementById('theme-toggle');
     if (btn) {
-        const icons = { auto: 'fa-circle-half-stroke', dark: 'fa-moon', light: 'fa-sun' };
-        btn.innerHTML = `<i class="fa-solid ${icons[prefs.theme]}"></i>`;
+        const icons = { auto: 'fa-circle-half-stroke', dark: 'fa-moon', light: 'fa-sun', schedule: 'fa-clock' };
+        btn.innerHTML = `<i class="fa-solid ${icons[prefs.theme]||'fa-circle-half-stroke'}"></i>`;
         btn.title = `Theme: ${prefs.theme} (T to cycle)`;
     }
 }
 function cycleTheme() {
-    const order = ['auto', 'dark', 'light'];
+    const order = ['auto', 'dark', 'light', 'schedule'];
     prefs.theme = order[(order.indexOf(prefs.theme) + 1) % order.length];
     savePrefs();
     applyTheme();
-    const label = { auto: t('theme_auto'), dark: t('theme_dark'), light: t('theme_light') }[prefs.theme];
+    const label = { auto: t('theme_auto'), dark: t('theme_dark'), light: t('theme_light'), schedule: 'Schedule' }[prefs.theme];
     toast(`${t('toast_theme')}: ${label}`, 'palette');
     renderSettingsSegmented();
 }
@@ -481,16 +612,31 @@ function renderSortMenu() {
             <i class="fa-solid ${o.icon}"></i><span>${t(o.tKey)}</span><i class="fa-solid fa-check"></i>
         </button>`).join('');
 }
+function isMobile() { return window.matchMedia('(max-width: 640px)').matches; }
+function openSortSheet() {
+    const menu = document.getElementById('sort-menu');
+    renderSortMenu();
+    menu.classList.remove('hidden');
+    if (isMobile()) {
+        document.getElementById('sheet-backdrop')?.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+function closeSortSheet() {
+    document.getElementById('sort-menu')?.classList.add('hidden');
+    document.getElementById('sheet-backdrop')?.classList.add('hidden');
+    document.body.style.overflow = '';
+}
 function toggleSortMenu(e) {
     e?.stopPropagation();
     const menu = document.getElementById('sort-menu');
-    renderSortMenu();
-    menu.classList.toggle('hidden');
+    if (!menu.classList.contains('hidden')) closeSortSheet();
+    else openSortSheet();
 }
 function setSort(id) {
     prefs.sort = id;
     savePrefs();
-    document.getElementById('sort-menu').classList.add('hidden');
+    closeSortSheet();
     renderClients(currentQuery);
 }
 
@@ -564,7 +710,7 @@ function moveKbFocus(delta) {
 }
 
 function getMonetizedUrl(targetUrl) {
-    if (!USE_MONETIZATION || !LINKVERTISE_USER_ID) return targetUrl;
+    if (!isMonetizationOn() || !LINKVERTISE_USER_ID) return targetUrl;
     try {
         const encoded = encodeURIComponent(btoa(encodeURI(targetUrl)));
         const random = Math.random() * 1000;
@@ -1186,6 +1332,17 @@ function switchCategory(name) {
     document.getElementById(`tab-${name}`)?.classList.add('active');
     kbFocusIndex = -1;
     renderClients(currentQuery);
+    if (prefs.autoCollapse) {
+        setTimeout(() => {
+            document.querySelectorAll('.client-body').forEach(b => b.classList.add('collapsed'));
+            document.querySelectorAll('[id^="collapse-btn-"]').forEach(b => {
+                b.innerHTML = `<i class="fa-solid fa-chevron-down"></i><span class="hide-mobile">${t('expand_all').replace(/\s.+/, '')}</span>`;
+            });
+            allExpanded = false;
+            const eb = document.getElementById('expand-all-btn');
+            if (eb) eb.innerHTML = `<i class="fa-solid fa-angles-down"></i><span>${t('expand_all')}</span>`;
+        }, 0);
+    }
     if (window.innerWidth < 768) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1251,7 +1408,7 @@ function renderClients(query = '') {
                 <div class="client-info">
                     ${iconHtml}
                     <div class="client-meta">
-                        <div class="client-name">${client.displayName}</div>
+                        <div class="client-name" onclick="shareClient('${client.id}', '${safeName}')" title="${t('share')}">${client.displayName}${(()=>{const c=loadDlCounts()[client.id]||0;return `<span id="dl-badge-${client.id}" class="dl-count-badge${c?'':' hidden'}"><i class="fa-solid fa-download"></i>${c}</span>`;})()}</div>
                         <div class="tag-row">
                             ${client.isPopular ? `<button class="tag tag-popular clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('popular')"><i class="fa-solid fa-star"></i>${t('popular')}</button>` : ''}
                             ${client.isOptifine ? `<button class="tag tag-optifine clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('optifine')"><i class="fa-solid fa-bolt"></i>${t('optifine')}</button>` : ''}
@@ -1261,7 +1418,8 @@ function renderClients(query = '') {
                         </div>
                     </div>
                 </div>
-                <div class="client-actions">
+                <div class="client-actions" data-client-id="${client.id}">
+                    ${(client.files.length + client.extensions.length) > 1 ? `<button class="action-icon copy-all-btn" onclick="copyAllLinks('${escapeAttr(encodeURIComponent(JSON.stringify([...client.files, ...client.extensions].map(f => getMonetizedUrl(f.url)))))}')" aria-label="Copy all links" title="Copy all links"><i class="fa-solid fa-clipboard-list"></i></button>` : ''}
                     ${(client.files.length + client.extensions.length) > 1 ? `<button class="action-icon" onclick="openAllDownloads('${escapeAttr(encodeURIComponent(JSON.stringify([...client.files, ...client.extensions].map(f => getMonetizedUrl(f.url)))))}')" aria-label="${t('open_all')}" title="${t('open_all')}"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>` : ''}
                     <button class="action-icon fav-btn ${isFav ? 'active' : ''}" data-fav-id="${client.id}" onclick="toggleFavorite('${client.id}', '${safeName}')" aria-label="${t('favorites')}" title="${t('favorites')}"><i class="fa-${isFav ? 'solid' : 'regular'} fa-star"></i></button>
                     <button class="action-icon" onclick="shareClient('${client.id}', '${safeName}')" aria-label="${t('share')}" title="${t('share')}"><i class="fa-solid fa-link"></i></button>
@@ -1386,8 +1544,35 @@ document.addEventListener('DOMContentLoaded', () => {
     applyAccent();
     applyDensity();
     applyMotion();
+    applyCompactCards();
+    applyNightShift();
     applyTheme();
     applyTranslations();
+
+    // Scroll progress
+    window.addEventListener('scroll', updateScrollProgress, { passive: true });
+    updateScrollProgress();
+
+    // Online/offline
+    window.addEventListener('online',  () => showNetIndicator(true));
+    window.addEventListener('offline', () => showNetIndicator(false));
+
+    // PWA install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        _deferredInstallPrompt = e;
+        document.getElementById('pwa-install')?.classList.remove('hidden');
+    });
+
+    // Delegate download clicks to track per-client counts
+    document.addEventListener('click', (e) => {
+        const a = e.target.closest('a.btn-dl');
+        if (!a) return;
+        const owner = a.closest('[data-client-id], .client-block');
+        const id = owner?.dataset?.clientId || owner?.id?.replace(/^block-/, '');
+        if (id) bumpDlCount(id);
+    }, true);
+
     matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => { if (prefs.theme === 'auto') applyTheme(); });
 
     const searchInput = document.getElementById('search-input');
@@ -1418,8 +1603,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Dismiss sort menu when clicking outside
         const sortWrap = document.getElementById('sort-btn')?.parentElement;
         const sortMenu = document.getElementById('sort-menu');
-        if (sortMenu && sortWrap && !sortWrap.contains(e.target)) {
-            sortMenu.classList.add('hidden');
+        if (sortMenu && sortWrap && !sortWrap.contains(e.target) && !document.getElementById('sheet-backdrop')?.contains(e.target)) {
+            closeSortSheet();
         }
     });
 
@@ -1454,7 +1639,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 searchInput.blur();
                 document.getElementById('search-dropdown').classList.add('hidden');
-                document.getElementById('sort-menu')?.classList.add('hidden');
+                closeSortSheet();
             }
             return;
         }

@@ -25,6 +25,13 @@
 
 <body>
   <a href="#main-content" class="skip-link">Skip to content</a>
+  <div id="scroll-progress" class="scroll-progress" aria-hidden="true"></div>
+  <div id="night-shift-overlay" class="night-shift-overlay hidden" aria-hidden="true"></div>
+  <div id="sheet-backdrop" class="sheet-backdrop hidden" onclick="closeSortSheet()"></div>
+  <div id="net-indicator" class="net-indicator hidden" aria-live="polite"></div>
+  <button id="pwa-install" class="pwa-install hidden" onclick="installPwa()" title="Install app">
+    <i class="fa-solid fa-download"></i><span>Install</span>
+  </button>
   <div class="site-wrapper">
 
     <button id="theme-toggle" class="icon-btn theme-toggle" onclick="cycleTheme()" aria-label="Toggle theme" title="Toggle theme (T)">
@@ -73,12 +80,15 @@
         <button id="search-clear" class="search-clear hidden" aria-label="Clear search">
           <i class="fa-solid fa-times"></i>
         </button>
+        <button id="cmdk-open" class="search-cmdk" aria-label="Open command palette" title="Command palette (Ctrl+K)" onclick="openCmdK()">
+          <i class="fa-solid fa-bolt"></i>
+        </button>
         <div id="search-results-count" class="search-count hidden"></div>
         <div id="search-dropdown" class="search-dropdown hidden"></div>
       </div>
 
       <!-- Toolbar -->
-      <div class="toolbar">
+      <div class="toolbar" id="toolbar">
         <div id="stats-bar" class="stats-bar"></div>
         <div class="toolbar-actions">
           <div class="toolbar-menu-wrapper">
@@ -117,6 +127,48 @@
     </div>
   </div>
 
+  <!-- Command palette -->
+  <div id="cmdk" class="cmdk hidden" onclick="closeCmdK()">
+    <div class="cmdk-content" onclick="event.stopPropagation()">
+      <div class="cmdk-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input id="cmdk-input" type="text" placeholder="Type a command, client, category..." autocomplete="off"/>
+        <kbd class="cmdk-hint">esc</kbd>
+      </div>
+      <div id="cmdk-list" class="cmdk-list" role="listbox"></div>
+      <div class="cmdk-footer">
+        <span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> select</span><span><kbd>esc</kbd> close</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats dashboard -->
+  <div id="stats-modal" class="help-modal" onclick="closeStats()">
+    <div class="help-content" onclick="event.stopPropagation()">
+      <button class="help-close" onclick="closeStats()"><i class="fa-solid fa-times"></i></button>
+      <h2 class="help-title"><i class="fa-solid fa-chart-simple"></i> Your library stats</h2>
+      <div id="stats-grid" class="stats-grid"></div>
+    </div>
+  </div>
+
+  <!-- QR modal -->
+  <div id="qr-modal" class="help-modal" onclick="closeQr()">
+    <div class="help-content qr-content" onclick="event.stopPropagation()">
+      <button class="help-close" onclick="closeQr()"><i class="fa-solid fa-times"></i></button>
+      <h2 class="help-title"><i class="fa-solid fa-qrcode"></i> Scan to open</h2>
+      <div id="qr-target"></div>
+      <p id="qr-url" class="qr-url"></p>
+    </div>
+  </div>
+
+  <!-- Bulk actions bar -->
+  <div id="bulk-bar" class="bulk-bar hidden">
+    <span id="bulk-count" class="bulk-count">0 shown</span>
+    <button class="toolbar-btn" onclick="bulkFavoriteAll()"><i class="fa-solid fa-star"></i>Favorite all</button>
+    <button class="toolbar-btn" onclick="bulkOpenAll()"><i class="fa-solid fa-arrow-up-right-from-square"></i>Open all</button>
+    <button class="toolbar-btn" onclick="bulkCopyLinks()"><i class="fa-solid fa-clipboard-list"></i>Copy links</button>
+  </div>
+
   <!-- Help / shortcuts modal -->
   <div id="help-modal" class="help-modal" onclick="closeHelp()">
     <div class="help-content" onclick="event.stopPropagation()">
@@ -131,6 +183,8 @@
         <div class="help-row"><kbd>r</kbd><span>Random client</span></div>
         <div class="help-row"><kbd>t</kbd><span>Cycle theme</span></div>
         <div class="help-row"><kbd>?</kbd><span>Show this help</span></div>
+        <div class="help-row"><kbd>Ctrl</kbd>+<kbd>K</kbd><span>Command palette</span></div>
+        <div class="help-row"><kbd>.</kbd><span>Your stats</span></div>
         <div class="help-row"><kbd>&larr;</kbd> / <kbd>&rarr;</kbd><span>Prev / next screenshot</span></div>
         <div class="help-row"><kbd>z</kbd><span>Zoom screenshot</span></div>
       </div>
@@ -182,6 +236,26 @@
       <div class="settings-section">
         <label class="settings-label" data-t="accent">Accent color</label>
         <div class="accent-swatches" id="setting-accent"></div>
+        <div class="accent-custom">
+          <label class="accent-custom-card" for="setting-accent-picker">
+            <input type="color" id="setting-accent-picker" value="#6c5ce7" onchange="setCustomAccent(this.value)" oninput="setCustomAccent(this.value)" aria-label="Pick a custom accent color">
+            <span class="accent-custom-swatch" id="setting-accent-swatch"></span>
+            <span class="accent-custom-info">
+              <span class="accent-custom-title"><i class="fa-solid fa-eye-dropper"></i>Custom color</span>
+              <span id="setting-accent-hex" class="accent-hex" onclick="event.preventDefault();copyText('#6c5ce7','Hex copied')">#6c5ce7</span>
+            </span>
+          </label>
+          <button class="accent-random-btn" onclick="randomAccent()" title="Random color" aria-label="Random color"><i class="fa-solid fa-dice"></i></button>
+        </div>
+        <div class="accent-recents" id="accent-recents"></div>
+      </div>
+      <div class="settings-section settings-row">
+        <label class="settings-label">Night Shift</label>
+        <button id="setting-nightshift" class="settings-switch" onclick="toggleNightShift()" role="switch" aria-checked="false" title="Warm overlay to reduce blue light"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-section" id="nightshift-strength-row" style="display:none">
+        <label class="settings-label">Night Shift strength</label>
+        <input type="range" id="setting-nightshift-strength" min="10" max="80" step="5" oninput="setNightShiftStrength(this.value)" class="nightshift-slider">
       </div>
       <div class="settings-section">
         <label class="settings-label" data-t="density">Density</label>
@@ -191,7 +265,20 @@
         <label class="settings-label" data-t="reduce_motion">Reduce motion</label>
         <button id="setting-motion" class="settings-switch" onclick="toggleReducedMotion()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
       </div>
+      <div class="settings-section settings-row">
+        <label class="settings-label">Compact file cards</label>
+        <button id="setting-compact-cards" class="settings-switch" onclick="toggleCompactCards()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-section settings-row">
+        <label class="settings-label">Auto-collapse on switch</label>
+        <button id="setting-auto-collapse" class="settings-switch" onclick="toggleAutoCollapse()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+      </div>
       <div class="settings-section settings-actions">
+        <button class="toolbar-btn" onclick="resetAllPrefs()"><i class="fa-solid fa-rotate-left"></i><span>Reset preferences</span></button>
+      </div>
+      <div class="settings-section settings-actions">
+        <button class="toolbar-btn" onclick="closeSettings();openStats()"><i class="fa-solid fa-chart-simple"></i><span>Your stats</span></button>
+        <button class="toolbar-btn" onclick="closeSettings();openCmdK()"><i class="fa-solid fa-bolt"></i><span>Command palette</span></button>
         <button class="toolbar-btn" onclick="exportFavorites()"><i class="fa-solid fa-file-export"></i><span data-t="export_favs">Export favorites</span></button>
         <button class="toolbar-btn" onclick="document.getElementById('import-input').click()"><i class="fa-solid fa-file-import"></i><span data-t="import_favs">Import favorites</span></button>
         <input id="import-input" type="file" accept="application/json,.json" style="display:none" onchange="importFavorites(event)">
@@ -201,5 +288,6 @@
 
   <script src="translations.js" defer></script>
   <script src="script.js" defer></script>
+  <script src="qolv3.js" defer></script>
 </body>
 </html>
