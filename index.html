@@ -76,7 +76,8 @@
         <input type="text" id="search-input"
                placeholder="Search clients, versions, or extensions..."
                class="search-input"
-               autocomplete="off">
+               autocomplete="off"
+               aria-label="Search clients, versions, or extensions">
         <button id="search-clear" class="search-clear hidden" aria-label="Clear search">
           <i class="fa-solid fa-times"></i>
         </button>
@@ -109,8 +110,8 @@
             <span class="hide-mobile" data-t="random">Random</span>
           </button>
           <button id="expand-all-btn" onclick="expandCollapseAll()" class="toolbar-btn">
-            <i class="fa-solid fa-angles-down"></i>
-            <span data-t="expand_all">Expand All</span>
+            <i class="fa-solid fa-angles-up"></i>
+            <span data-t="collapse_all">Collapse All</span>
           </button>
         </div>
       </div>
@@ -288,6 +289,5 @@
 
   <script src="translations.js" defer></script>
   <script src="script.js" defer></script>
-  <script src="qolv3.js" defer></script>
 </body>
 </html>

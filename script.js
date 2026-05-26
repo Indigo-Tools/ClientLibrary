@@ -144,9 +144,9 @@ function renderRecentlyViewed() {
     }
     el.innerHTML = `<span class="recently-viewed-label"><i class="fa-solid fa-clock-rotate-left"></i> ${t('recently_viewed')}</span>
         <div class="recently-viewed-strip">${items.map(c => `
-            <button class="recently-chip" onclick="scrollToClient('${c.id}')">
+            <button class="recently-chip" onclick="scrollToClient(${jsArg(c.id)})">
                 ${c.iconUrl ? `<img src="${c.iconUrl}" alt="" loading="lazy" onerror="this.outerHTML='<span class=\\'icon-placeholder\\'><i class=\\'fa-solid fa-cube\\'></i></span>'">` : `<span class="icon-placeholder"><i class="fa-solid fa-cube"></i></span>`}
-                <span>${c.displayName}</span>
+                <span>${escapeHtml(c.displayName)}</span>
             </button>`).join('')}</div>`;
 }
 
@@ -177,8 +177,8 @@ function renderSearchHistory() {
         <span><i class="fa-solid fa-clock-rotate-left"></i> ${t('recently_viewed')}</span>
         <button class="search-history-clear" onclick="event.stopPropagation();clearSearchHistory()">${t('clear_all')}</button>
     </div>` + hist.map(q => `
-        <div class="search-history-item" onclick="useHistoryQuery('${escapeAttr(q)}')">
-            <i class="fa-solid fa-clock-rotate-left"></i><span>${q}</span>
+        <div class="search-history-item" onclick="useHistoryQuery(${jsArg(q)})">
+            <i class="fa-solid fa-clock-rotate-left"></i><span>${escapeHtml(q)}</span>
         </div>`).join('');
     dropdown.classList.remove('hidden');
     return true;
@@ -243,12 +243,18 @@ function applyNightShift() {
         overlay.classList.add('hidden');
     }
 }
+function setSwitchState(id, on) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('on', !!on);
+    el.setAttribute('aria-checked', on ? 'true' : 'false');
+}
 function toggleNightShift() {
     prefs.nightShift = !prefs.nightShift;
     if (prefs.nightShift && !prefs.nightShiftStrength) prefs.nightShiftStrength = 30;
     savePrefs();
     applyNightShift();
-    document.getElementById('setting-nightshift')?.classList.toggle('on', !!prefs.nightShift);
+    setSwitchState('setting-nightshift', !!prefs.nightShift);
     document.getElementById('nightshift-strength-row').style.display = prefs.nightShift ? '' : 'none';
     const s = document.getElementById('setting-nightshift-strength');
     if (s) s.value = prefs.nightShiftStrength || 30;
@@ -270,7 +276,7 @@ function toggleReducedMotion() {
     prefs.motion = (prefs.motion === 'reduce') ? 'auto' : 'reduce';
     savePrefs();
     applyMotion();
-    document.getElementById('setting-motion')?.classList.toggle('on', prefs.motion === 'reduce');
+    setSwitchState('setting-motion', prefs.motion === 'reduce');
 }
 
 function applyCompactCards() {
@@ -281,12 +287,12 @@ function toggleCompactCards() {
     prefs.compactCards = !prefs.compactCards;
     savePrefs();
     applyCompactCards();
-    document.getElementById('setting-compact-cards')?.classList.toggle('on', !!prefs.compactCards);
+    setSwitchState('setting-compact-cards', !!prefs.compactCards);
 }
 function toggleAutoCollapse() {
     prefs.autoCollapse = !prefs.autoCollapse;
     savePrefs();
-    document.getElementById('setting-auto-collapse')?.classList.toggle('on', !!prefs.autoCollapse);
+    setSwitchState('setting-auto-collapse', !!prefs.autoCollapse);
 }
 
 function resetAllPrefs() {
@@ -340,7 +346,7 @@ function installPwa() {
 function renderLanguageSelect() {
     const sel = document.getElementById('setting-language');
     if (!sel) return;
-    sel.innerHTML = LANGUAGE_LIST.map(l => `<option value="${l.code}" ${l.code === prefs.language ? 'selected' : ''}>${l.name}</option>`).join('');
+    sel.innerHTML = LANGUAGE_LIST.map(l => `<option value="${escapeAttr(l.code)}" ${l.code === prefs.language ? 'selected' : ''}>${escapeHtml(l.name)}</option>`).join('');
 }
 function renderAccentSwatches() {
     const wrap = document.getElementById('setting-accent');
@@ -354,18 +360,18 @@ function renderSettingsSegmented() {
     const densities = [['cozy', t('density_cozy')], ['compact', t('density_compact')]];
     const th = document.getElementById('setting-theme');
     const de = document.getElementById('setting-density');
-    if (th) th.innerHTML = themes.map(([v, lbl]) => `<button onclick="setThemePref('${v}')" class="${prefs.theme === v ? 'active' : ''}">${lbl}</button>`).join('');
-    if (de) de.innerHTML = densities.map(([v, lbl]) => `<button onclick="setDensity('${v}')" class="${prefs.density === v ? 'active' : ''}">${lbl}</button>`).join('');
-    document.getElementById('setting-motion')?.classList.toggle('on', prefs.motion === 'reduce');
+    if (th) th.innerHTML = themes.map(([v, lbl]) => `<button onclick="setThemePref('${v}')" class="${prefs.theme === v ? 'active' : ''}">${escapeHtml(lbl)}</button>`).join('');
+    if (de) de.innerHTML = densities.map(([v, lbl]) => `<button onclick="setDensity('${v}')" class="${prefs.density === v ? 'active' : ''}">${escapeHtml(lbl)}</button>`).join('');
+    setSwitchState('setting-motion', prefs.motion === 'reduce');
 }
 function setThemePref(v) { prefs.theme = v; savePrefs(); applyTheme(); renderSettingsSegmented(); }
 function openSettings() {
     renderLanguageSelect();
     renderAccentSwatches();
     renderSettingsSegmented();
-    document.getElementById('setting-compact-cards')?.classList.toggle('on', !!prefs.compactCards);
-    document.getElementById('setting-auto-collapse')?.classList.toggle('on', !!prefs.autoCollapse);
-    document.getElementById('setting-nightshift')?.classList.toggle('on', !!prefs.nightShift);
+    setSwitchState('setting-compact-cards', !!prefs.compactCards);
+    setSwitchState('setting-auto-collapse', !!prefs.autoCollapse);
+    setSwitchState('setting-nightshift', !!prefs.nightShift);
     const ns = document.getElementById('nightshift-strength-row'); if (ns) ns.style.display = prefs.nightShift ? '' : 'none';
     const nss = document.getElementById('setting-nightshift-strength'); if (nss) nss.value = prefs.nightShiftStrength || 30;
     const pk = document.getElementById('setting-accent-picker');
@@ -530,7 +536,8 @@ function toast(message, icon = 'circle-check') {
     if (!container) return;
     const el = document.createElement('div');
     el.className = 'toast';
-    el.innerHTML = `<i class="fa-solid fa-${icon}"></i><span>${message}</span>`;
+    const safeIcon = String(icon).replace(/[^a-z0-9-]/gi, '') || 'circle-check';
+    el.innerHTML = `<i class="fa-solid fa-${safeIcon}"></i><span>${escapeHtml(message)}</span>`;
     container.appendChild(el);
     requestAnimationFrame(() => el.classList.add('visible'));
     setTimeout(() => {
@@ -728,7 +735,7 @@ function formatName(name) {
 }
 
 function formatFileSize(bytes) {
-    if (!bytes) return null;
+    if (bytes == null) return null;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 B';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
@@ -786,13 +793,13 @@ function expandCollapseAll() {
         document.querySelectorAll('[id^="collapse-btn-"]').forEach(b => {
             b.innerHTML = `<i class="fa-solid fa-chevron-down"></i><span class="hide-mobile">${t('expand_all').replace(/\s.+/, '')}</span>`;
         });
-        btn.innerHTML = `<i class="fa-solid fa-angles-up"></i><span>${t('collapse_all')}</span>`;
+        btn.innerHTML = `<i class="fa-solid fa-angles-down"></i><span>${t('expand_all')}</span>`;
     } else {
         bodies.forEach(b => b.classList.remove('collapsed'));
         document.querySelectorAll('[id^="collapse-btn-"]').forEach(b => {
             b.innerHTML = `<i class="fa-solid fa-chevron-up"></i><span class="hide-mobile">${t('collapse_all').replace(/\s.+/, '')}</span>`;
         });
-        btn.innerHTML = `<i class="fa-solid fa-angles-down"></i><span>${t('expand_all')}</span>`;
+        btn.innerHTML = `<i class="fa-solid fa-angles-up"></i><span>${t('collapse_all')}</span>`;
     }
     allExpanded = !allExpanded;
 }
@@ -800,10 +807,10 @@ function expandCollapseAll() {
 // ── Search (single-pass for both results + count) ──
 
 function highlightMatch(text, query) {
-    if (!query) return text;
+    if (!query) return escapeHtml(text);
     const idx = text.toLowerCase().indexOf(query.toLowerCase());
-    if (idx === -1) return text;
-    return text.slice(0, idx) + '<span class="search-highlight">' + text.slice(idx, idx + query.length) + '</span>' + text.slice(idx + query.length);
+    if (idx === -1) return escapeHtml(text);
+    return escapeHtml(text.slice(0, idx)) + '<span class="search-highlight">' + escapeHtml(text.slice(idx, idx + query.length)) + '</span>' + escapeHtml(text.slice(idx + query.length));
 }
 
 function searchClients(query, limit) {
@@ -868,7 +875,7 @@ function renderSearchDropdown(query) {
     }
 
     dropdown.innerHTML = results.map((r, i) => `
-        <div class="search-dropdown-item${i === dropdownIndex ? ' focused' : ''}" data-client-id="${r.id}" onclick="scrollToClient('${r.id}')">
+        <div class="search-dropdown-item${i === dropdownIndex ? ' focused' : ''}" data-client-id="${escapeAttr(r.id)}" onclick="scrollToClient(${jsArg(r.id)})">
             ${r.icon
                 ? `<img src="${r.icon}" class="search-dropdown-icon" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'search-dropdown-icon-placeholder\\'><i class=\\'fa-solid fa-cube\\'></i></div>'">`
                 : '<div class="search-dropdown-icon-placeholder"><i class="fa-solid fa-cube"></i></div>'
@@ -876,7 +883,7 @@ function renderSearchDropdown(query) {
             <div class="search-dropdown-info">
                 <div class="search-dropdown-name">${highlightMatch(r.name, q)}</div>
                 <div class="search-dropdown-meta">
-                    <span>${r.category}</span>
+                    <span>${escapeHtml(r.category)}</span>
                     <span>${r.fileCount} file${r.fileCount !== 1 ? 's' : ''}</span>
                     ${r.isPopular ? '<span class="search-dropdown-badge" style="color:#fbbf24;background:rgba(251,191,36,0.1)">Popular</span>' : ''}
                     ${r.isOptifine ? '<span class="search-dropdown-badge" style="color:#34d399;background:rgba(52,211,153,0.1)">Optifine</span>' : ''}
@@ -1040,9 +1047,9 @@ function formatDiscordLink(str) {
     if (isDiscordLink(t)) {
         let url = t;
         if (!url.startsWith('http')) url = 'https://' + url;
-        return `<a href="${url}" target="_blank">${t.replace(/^https?:\/\//, '')}</a>`;
+        return `<a href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeHtml(t.replace(/^https?:\/\//, ''))}</a>`;
     }
-    return `<span>${t}</span>`;
+    return `<span>${escapeHtml(t)}</span>`;
 }
 
 function extractVersion(name) {
@@ -1068,7 +1075,15 @@ function sortCategories(categories) {
 }
 
 function escapeAttr(str) {
-    return str.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function jsArg(value) {
+    return escapeAttr(JSON.stringify(String(value)).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026'));
 }
 
 // ── Stats ──
@@ -1137,7 +1152,12 @@ function scrollTabs(direction) {
 
 async function init() {
     try {
-        const response = await fetch(`${BASE_RAW_URL}/paths.json?t=${Date.now()}`);
+        const cacheBust = Date.now();
+        let response = await fetch(`paths.json?t=${cacheBust}`, { cache: 'no-store' });
+        if (!response.ok) {
+            response = await fetch(`${BASE_RAW_URL}/paths.json?t=${cacheBust}`, { cache: 'no-store' });
+        }
+        if (!response.ok) throw new Error(`paths.json returned ${response.status}`);
         const rawEntries = await response.json();
         const structured = {};
         const detectedCategories = new Set();
@@ -1315,10 +1335,10 @@ function renderTabs() {
     const buttons = tabs.map(name => {
         const cat = libraryTree.find(c => c.name === name);
         const label = name === "ALL" ? t('all') : (cat ? cat.displayName : (name.startsWith('1_') ? `Version: ${name.replace('_','.')}` : name));
-        return `<button onclick="switchCategory('${name}')" id="tab-${name}" class="tab-btn">${label}<span class="tab-count">${countFor(name)}</span></button>`;
+        return `<button onclick="switchCategory(${jsArg(name)})" id="tab-${escapeAttr(name)}" class="tab-btn">${escapeHtml(label)}<span class="tab-count">${countFor(name)}</span></button>`;
     });
     if (favCount > 0) {
-        buttons.splice(1, 0, `<button onclick="switchCategory('__favorites__')" id="tab-__favorites__" class="tab-btn"><i class="fa-solid fa-star" style="color:#fbbf24;margin-right:0.3rem"></i>${t('favorites')}<span class="tab-count">${favCount}</span></button>`);
+        buttons.splice(1, 0, `<button onclick="switchCategory('__favorites__')" id="tab-__favorites__" class="tab-btn"><i class="fa-solid fa-star" style="color:#fbbf24;margin-right:0.3rem"></i>${escapeHtml(t('favorites'))}<span class="tab-count">${favCount}</span></button>`);
     }
     container.innerHTML = buttons.join('');
     document.getElementById(`tab-${currentCategory}`)?.classList.add('active');
@@ -1388,7 +1408,7 @@ function renderClients(query = '') {
 
         if (filtered.length === 0) return;
 
-        parts.push(`<div class="category-group"><div class="section-label"><span>${cat.displayName}</span></div>`);
+        parts.push(`<div class="category-group"><div class="section-label"><span>${escapeHtml(cat.displayName)}</span></div>`);
 
         filtered.forEach(client => {
             const hasDesc = client.description?.trim().length > 0;
@@ -1398,54 +1418,55 @@ function renderClients(query = '') {
             const manyFiles = client.matchingFiles.length > 5;
             const ssJson = escapeAttr(JSON.stringify(client.screenshots));
 
-            parts.push(`<div class="client-block" id="block-${client.id}" style="content-visibility:auto;contain-intrinsic-size:auto 300px">`);
+            parts.push(`<div class="client-block" id="block-${escapeAttr(client.id)}" style="content-visibility:auto;contain-intrinsic-size:auto 300px">`);
 
             const isFav = favorites.has(client.id);
-            const safeName = escapeAttr(client.displayName);
+            const safeName = jsArg(client.displayName);
+            const safeId = jsArg(client.id);
             const iconHtml = client.iconUrl
-                ? `<img src="${client.iconUrl}" class="client-icon" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'client-icon icon-placeholder\\'><i class=\\'fa-solid fa-cube\\'></i></div>'">`
+                ? `<img src="${escapeAttr(client.iconUrl)}" class="client-icon" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'client-icon icon-placeholder\\'><i class=\\'fa-solid fa-cube\\'></i></div>'">`
                 : `<div class="client-icon icon-placeholder"><i class="fa-solid fa-cube"></i></div>`;
             parts.push(`<div class="client-header">
                 <div class="client-info">
                     ${iconHtml}
                     <div class="client-meta">
-                        <div class="client-name" onclick="shareClient('${client.id}', '${safeName}')" title="${t('share')}">${client.displayName}${(()=>{const c=loadDlCounts()[client.id]||0;return `<span id="dl-badge-${client.id}" class="dl-count-badge${c?'':' hidden'}"><i class="fa-solid fa-download"></i>${c}</span>`;})()}</div>
+                        <div class="client-name" onclick="shareClient(${safeId}, ${safeName})" title="${escapeAttr(t('share'))}">${escapeHtml(client.displayName)}${(()=>{const c=loadDlCounts()[client.id]||0;return `<span id="dl-badge-${escapeAttr(client.id)}" class="dl-count-badge${c?'':' hidden'}"><i class="fa-solid fa-download"></i>${c}</span>`;})()}</div>
                         <div class="tag-row">
-                            ${client.isPopular ? `<button class="tag tag-popular clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('popular')"><i class="fa-solid fa-star"></i>${t('popular')}</button>` : ''}
-                            ${client.isOptifine ? `<button class="tag tag-optifine clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('optifine')"><i class="fa-solid fa-bolt"></i>${t('optifine')}</button>` : ''}
-                            ${client.originalCategory && client.isOptifine ? `<span class="tag tag-category"><i class="fa-solid fa-layer-group"></i>${client.originalCategory}</span>` : ''}
-                            ${client.tags.map(tg => `<button class="tag tag-${tg} clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('${tg}')" title="${t('filter')}: ${t(tg) || tg}"><i class="fa-solid ${TAG_ICONS[tg]||'fa-tag'}"></i>${(t(tg) || tg).charAt(0).toUpperCase()+(t(tg) || tg).slice(1)}</button>`).join('')}
+                            ${client.isPopular ? `<button class="tag tag-popular clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('popular')"><i class="fa-solid fa-star"></i>${escapeHtml(t('popular'))}</button>` : ''}
+                            ${client.isOptifine ? `<button class="tag tag-optifine clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('optifine')"><i class="fa-solid fa-bolt"></i>${escapeHtml(t('optifine'))}</button>` : ''}
+                            ${client.originalCategory && client.isOptifine ? `<span class="tag tag-category"><i class="fa-solid fa-layer-group"></i>${escapeHtml(client.originalCategory)}</span>` : ''}
+                            ${client.tags.map(tg => { const label = t(tg) || tg; return `<button class="tag tag-${escapeAttr(tg)} clickable" onclick="event.stopPropagation();toggleTagFilterFromTag(${jsArg(tg)})" title="${escapeAttr(t('filter'))}: ${escapeAttr(label)}"><i class="fa-solid ${TAG_ICONS[tg]||'fa-tag'}"></i>${escapeHtml(label.charAt(0).toUpperCase()+label.slice(1))}</button>`; }).join('')}
                             ${(client.compatVersions && client.compatVersions.length > 0) ? client.compatVersions.map(v => `<span class="tag tag-version"><i class="fa-solid fa-code-branch"></i>${v.replace('_','.')}</span>`).join('') : ''}
                         </div>
                     </div>
                 </div>
-                <div class="client-actions" data-client-id="${client.id}">
+                <div class="client-actions" data-client-id="${escapeAttr(client.id)}">
                     ${(client.files.length + client.extensions.length) > 1 ? `<button class="action-icon copy-all-btn" onclick="copyAllLinks('${escapeAttr(encodeURIComponent(JSON.stringify([...client.files, ...client.extensions].map(f => getMonetizedUrl(f.url)))))}')" aria-label="Copy all links" title="Copy all links"><i class="fa-solid fa-clipboard-list"></i></button>` : ''}
-                    ${(client.files.length + client.extensions.length) > 1 ? `<button class="action-icon" onclick="openAllDownloads('${escapeAttr(encodeURIComponent(JSON.stringify([...client.files, ...client.extensions].map(f => getMonetizedUrl(f.url)))))}')" aria-label="${t('open_all')}" title="${t('open_all')}"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>` : ''}
-                    <button class="action-icon fav-btn ${isFav ? 'active' : ''}" data-fav-id="${client.id}" onclick="toggleFavorite('${client.id}', '${safeName}')" aria-label="${t('favorites')}" title="${t('favorites')}"><i class="fa-${isFav ? 'solid' : 'regular'} fa-star"></i></button>
-                    <button class="action-icon" onclick="shareClient('${client.id}', '${safeName}')" aria-label="${t('share')}" title="${t('share')}"><i class="fa-solid fa-link"></i></button>
-                    <button id="collapse-btn-${client.id}" onclick="toggleClientCollapse('${client.id}')" class="collapse-btn">
-                        <i class="fa-solid fa-chevron-up"></i><span class="hide-mobile">${t('collapse_all').replace(/\s.+/, '')}</span>
+                    ${(client.files.length + client.extensions.length) > 1 ? `<button class="action-icon" onclick="openAllDownloads('${escapeAttr(encodeURIComponent(JSON.stringify([...client.files, ...client.extensions].map(f => getMonetizedUrl(f.url)))))}')" aria-label="${escapeAttr(t('open_all'))}" title="${escapeAttr(t('open_all'))}"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>` : ''}
+                    <button class="action-icon fav-btn ${isFav ? 'active' : ''}" data-fav-id="${escapeAttr(client.id)}" onclick="toggleFavorite(${safeId}, ${safeName})" aria-label="${escapeAttr(t('favorites'))}" title="${escapeAttr(t('favorites'))}"><i class="fa-${isFav ? 'solid' : 'regular'} fa-star"></i></button>
+                    <button class="action-icon" onclick="shareClient(${safeId}, ${safeName})" aria-label="${escapeAttr(t('share'))}" title="${escapeAttr(t('share'))}"><i class="fa-solid fa-link"></i></button>
+                    <button id="collapse-btn-${escapeAttr(client.id)}" onclick="toggleClientCollapse(${safeId})" class="collapse-btn">
+                        <i class="fa-solid fa-chevron-up"></i><span class="hide-mobile">${escapeHtml(t('collapse_all').replace(/\s.+/, ''))}</span>
                     </button>
                 </div>
             </div>`);
 
-            parts.push(`<div id="body-${client.id}" class="client-body"><div class="client-body-inner">`);
+            parts.push(`<div id="body-${escapeAttr(client.id)}" class="client-body"><div class="client-body-inner">`);
 
             if (hasDetails) {
-                parts.push(`<div id="details-${client.id}" class="details-panel"><div class="details-panel-inner"><div class="details-inner">`);
+                parts.push(`<div id="details-${escapeAttr(client.id)}" class="details-panel"><div class="details-panel-inner"><div class="details-inner">`);
 
                 if (hasSS) {
                     parts.push(`<div style="margin-bottom:1rem">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
-                            <span style="display:flex;align-items:center;gap:0.4rem;font-weight:600;color:var(--white)"><i class="fa-solid fa-images" style="color:var(--accent)"></i>${t('screenshots')} (${client.screenshots.length})</span>
-                            <button onclick="openScreenshots('${client.id}',${ssJson})" style="background:none;border:none;color:var(--accent);font-size:0.8125rem;font-weight:600;cursor:pointer">${t('view_all')}</button>
+                            <span style="display:flex;align-items:center;gap:0.4rem;font-weight:600;color:var(--white)"><i class="fa-solid fa-images" style="color:var(--accent)"></i>${escapeHtml(t('screenshots'))} (${client.screenshots.length})</span>
+                            <button onclick="openScreenshots(${safeId},${ssJson})" style="background:none;border:none;color:var(--accent);font-size:0.8125rem;font-weight:600;cursor:pointer">${escapeHtml(t('view_all'))}</button>
                         </div>
                         <div class="ss-grid">${client.screenshots.slice(0,6).map((ss, i) => {
                             const media = ss.type === 'video'
                                 ? `<video src="${ss.url}" muted playsinline preload="metadata"></video><span class="ss-thumb-play"><i class="fa-solid fa-play"></i></span>`
                                 : `<img src="${ss.url}" alt="Screenshot ${i+1}" loading="lazy">`;
-                            return `<div class="ss-thumb" onclick="openScreenshots('${client.id}',${ssJson},${i})">${media}<div class="ss-thumb-overlay"><span class="ss-badge">${i+1}</span></div></div>`;
+                            return `<div class="ss-thumb" onclick="openScreenshots(${safeId},${ssJson},${i})">${media}<div class="ss-thumb-overlay"><span class="ss-badge">${i+1}</span></div></div>`;
                         }).join('')}</div>
                     </div>`);
                 }
@@ -1456,15 +1477,15 @@ function renderClients(query = '') {
 
                 if (hasAuthor) {
                     parts.push(`<div class="author-block">
-                        <div class="author-name"><i class="fa-solid fa-user"></i>${client.author.name||'Unknown'}</div>
-                        ${client.author.website ? `<div class="author-link"><i class="fa-solid fa-globe"></i><a href="${client.author.website}" target="_blank" rel="noopener">${client.author.website.replace(/^https?:\/\//,'')}</a></div>` : ''}
+                        <div class="author-name"><i class="fa-solid fa-user"></i>${escapeHtml(client.author.name||'Unknown')}</div>
+                        ${client.author.website ? `<div class="author-link"><i class="fa-solid fa-globe"></i><a href="${escapeAttr(client.author.website)}" target="_blank" rel="noopener">${escapeHtml(client.author.website.replace(/^https?:\/\//,''))}</a></div>` : ''}
                         ${client.author.discord ? `<div class="author-link"><i class="fa-brands fa-discord"></i>${formatDiscordLink(client.author.discord)}</div>` : ''}
-                        ${client.author.github ? `<div class="author-link"><i class="fa-brands fa-github"></i><a href="https://github.com/${client.author.github}" target="_blank" rel="noopener">@${client.author.github}</a></div>` : ''}
+                        ${client.author.github ? `<div class="author-link"><i class="fa-brands fa-github"></i><a href="https://github.com/${escapeAttr(client.author.github)}" target="_blank" rel="noopener">@${escapeHtml(client.author.github)}</a></div>` : ''}
                     </div>`);
                 }
 
                 parts.push(`</div></div></div>`);
-                parts.push(`<button id="details-btn-${client.id}" onclick="toggleDescription('${client.id}')" class="details-toggle">${t('show_details')} <i class="fa-solid fa-chevron-down"></i></button>`);
+                parts.push(`<button id="details-btn-${escapeAttr(client.id)}" onclick="toggleDescription(${safeId})" class="details-toggle">${escapeHtml(t('show_details'))} <i class="fa-solid fa-chevron-down"></i></button>`);
             }
 
             if (client.matchingFiles.length > 0) {
@@ -1473,17 +1494,15 @@ function renderClients(query = '') {
                     const hiddenClass = (!q && manyFiles && idx >= 5) ? `file-hidden-${client.id}` : '';
                     const hiddenStyle = (!q && manyFiles && idx >= 5) ? ' style="display:none"' : '';
                     const downloadUrl = getMonetizedUrl(file.url);
-                    const fNameAttr = escapeAttr(file.rawName);
-                    const fUrlAttr = escapeAttr(file.url);
-                    parts.push(`<div class="file-card ${hiddenClass}"${hiddenStyle}>
-                        ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="file-card-banner" loading="lazy" alt="" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='none')"><div class="file-card-overlay"></div>` : ''}
+                    parts.push(`<div class="file-card ${escapeAttr(hiddenClass)}"${hiddenStyle}>
+                        ${client.bannerUrl ? `<img src="${escapeAttr(client.bannerUrl)}" class="file-card-banner" loading="lazy" alt="" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='none')"><div class="file-card-overlay"></div>` : ''}
                         <div class="file-card-body">
                             <div class="file-info">
-                                <div class="file-name"><i class="fa-solid fa-file-arrow-down"></i>${file.display}<span class="file-actions"><button class="file-icon-btn" onclick="copyFilename('${fNameAttr}')" title="${t('copy_filename')}" aria-label="${t('copy_filename')}"><i class="fa-solid fa-copy"></i></button><button class="file-icon-btn" onclick="copyDownload('${fUrlAttr}')" title="${t('copy_link')}" aria-label="${t('copy_link')}"><i class="fa-solid fa-link"></i></button></span></div>
-                                <div class="file-raw">${file.rawName}</div>
-                                ${file.size ? `<div class="file-size"><i class="fa-solid fa-weight-scale"></i>${file.size}</div>` : ''}
+                                <div class="file-name"><i class="fa-solid fa-file-arrow-down"></i>${escapeHtml(file.display)}<span class="file-actions"><button class="file-icon-btn" onclick="copyFilename(${jsArg(file.rawName)})" title="${escapeAttr(t('copy_filename'))}" aria-label="${escapeAttr(t('copy_filename'))}"><i class="fa-solid fa-copy"></i></button><button class="file-icon-btn" onclick="copyDownload(${jsArg(file.url)})" title="${escapeAttr(t('copy_link'))}" aria-label="${escapeAttr(t('copy_link'))}"><i class="fa-solid fa-link"></i></button></span></div>
+                                <div class="file-raw">${escapeHtml(file.rawName)}</div>
+                                ${file.size ? `<div class="file-size"><i class="fa-solid fa-weight-scale"></i>${escapeHtml(file.size)}</div>` : ''}
                             </div>
-                            <a href="${downloadUrl}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>${t('download')}</a>
+                            <a href="${escapeAttr(downloadUrl)}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>${escapeHtml(t('download'))}</a>
                         </div>
                     </div>`);
                 });
@@ -1491,28 +1510,26 @@ function renderClients(query = '') {
             }
 
             if (!q && manyFiles) {
-                parts.push(`<button id="more-btn-${client.id}" onclick="toggleFileList('${client.id}')" class="show-more-btn"><i class="fa-solid fa-angles-down"></i>${t('show_more', { n: client.matchingFiles.length - 5 })}</button>`);
+                parts.push(`<button id="more-btn-${escapeAttr(client.id)}" onclick="toggleFileList(${safeId})" class="show-more-btn"><i class="fa-solid fa-angles-down"></i>${escapeHtml(t('show_more', { n: client.matchingFiles.length - 5 }))}</button>`);
             }
 
             if (client.matchingExtensions.length > 0) {
                 parts.push(`<div class="ext-section">
-                    <button id="ext-header-${client.id}" onclick="toggleDropdown('${client.id}')" class="ext-header">
-                        <span><i class="fa-solid fa-puzzle-piece" style="margin-right:0.4rem;color:var(--text-dim)"></i>${t('extensions')} (${client.matchingExtensions.length})</span>
+                    <button id="ext-header-${escapeAttr(client.id)}" onclick="toggleDropdown(${safeId})" class="ext-header">
+                        <span><i class="fa-solid fa-puzzle-piece" style="margin-right:0.4rem;color:var(--text-dim)"></i>${escapeHtml(t('extensions'))} (${client.matchingExtensions.length})</span>
                         <i class="fa-solid fa-chevron-down chevron"></i>
                     </button>
-                    <div id="ext-body-${client.id}" class="ext-body"><div class="ext-body-inner">
+                    <div id="ext-body-${escapeAttr(client.id)}" class="ext-body"><div class="ext-body-inner">
                         ${client.matchingExtensions.map(ext => {
                             const extDownloadUrl = getMonetizedUrl(ext.url);
-                            const eName = escapeAttr(ext.rawName);
-                            const eUrl = escapeAttr(ext.url);
                             return `
                             <div class="ext-row">
                                 <div class="file-info">
-                                    <div class="file-name" style="font-size:0.8125rem">${ext.display}<span class="file-actions"><button class="file-icon-btn" onclick="copyFilename('${eName}')" title="${t('copy_filename')}" aria-label="${t('copy_filename')}"><i class="fa-solid fa-copy"></i></button><button class="file-icon-btn" onclick="copyDownload('${eUrl}')" title="${t('copy_link')}" aria-label="${t('copy_link')}"><i class="fa-solid fa-link"></i></button></span></div>
-                                    <div class="file-raw">${ext.rawName}</div>
-                                    ${ext.size ? `<div class="file-size"><i class="fa-solid fa-weight-scale"></i>${ext.size}</div>` : ''}
+                                    <div class="file-name" style="font-size:0.8125rem">${escapeHtml(ext.display)}<span class="file-actions"><button class="file-icon-btn" onclick="copyFilename(${jsArg(ext.rawName)})" title="${escapeAttr(t('copy_filename'))}" aria-label="${escapeAttr(t('copy_filename'))}"><i class="fa-solid fa-copy"></i></button><button class="file-icon-btn" onclick="copyDownload(${jsArg(ext.url)})" title="${escapeAttr(t('copy_link'))}" aria-label="${escapeAttr(t('copy_link'))}"><i class="fa-solid fa-link"></i></button></span></div>
+                                    <div class="file-raw">${escapeHtml(ext.rawName)}</div>
+                                    ${ext.size ? `<div class="file-size"><i class="fa-solid fa-weight-scale"></i>${escapeHtml(ext.size)}</div>` : ''}
                                 </div>
-                                <a href="${extDownloadUrl}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>Download</a>
+                                <a href="${escapeAttr(extDownloadUrl)}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>${escapeHtml(t('download'))}</a>
                             </div>
                         `}).join('')}
                     </div></div>
@@ -1854,7 +1871,7 @@ function closeStats() { document.getElementById('stats-modal')?.classList.remove
 // ── QR code share (public qrserver API) ──
 function openQr(clientId, name) {
     const url = `${location.origin}${location.pathname}#client=${encodeURIComponent(clientId)}`;
-    document.getElementById('qr-target').innerHTML = `<img alt="QR for ${name}" src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(url)}" width="240" height="240" loading="lazy">`;
+    document.getElementById('qr-target').innerHTML = `<img alt="QR for ${escapeAttr(name)}" src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(url)}" width="240" height="240" loading="lazy">`;
     document.getElementById('qr-url').textContent = url;
     document.getElementById('qr-modal').classList.add('active');
 }
@@ -1958,13 +1975,14 @@ function decorateClientActions() {
         const block = document.getElementById('block-' + id);
         const nameEl = block?.querySelector('.client-name');
         const name = nameEl ? nameEl.textContent.replace(/\s*\d+$/, '').trim() : id;
-        const safe = (name || '').replace(/'/g, "\\'");
+        const safeId = jsArg(id);
+        const safeName = jsArg(name || '');
         const isPin = pinned.has(id);
         const hasNote = !!getNote(id);
         const html = `
-            <button class="action-icon pin-btn ${isPin ? 'active' : ''}" data-pin-id="${id}" onclick="togglePin('${id}','${safe}')" title="Pin to top"><i class="fa-solid fa-thumbtack"></i></button>
-            <button class="action-icon note-btn ${hasNote ? 'has-note' : ''}" data-note-id="${id}" onclick="openNote('${id}','${safe}')" title="Personal note"><i class="fa-solid fa-note-sticky"></i></button>
-            <button class="action-icon qr-btn" onclick="openQr('${id}','${safe}')" title="QR code"><i class="fa-solid fa-qrcode"></i></button>
+            <button class="action-icon pin-btn ${isPin ? 'active' : ''}" data-pin-id="${escapeAttr(id)}" onclick="togglePin(${safeId},${safeName})" title="Pin to top" aria-label="Pin to top"><i class="fa-solid fa-thumbtack"></i></button>
+            <button class="action-icon note-btn ${hasNote ? 'has-note' : ''}" data-note-id="${escapeAttr(id)}" onclick="openNote(${safeId},${safeName})" title="Personal note" aria-label="Personal note"><i class="fa-solid fa-note-sticky"></i></button>
+            <button class="action-icon qr-btn" onclick="openQr(${safeId},${safeName})" title="QR code" aria-label="QR code"><i class="fa-solid fa-qrcode"></i></button>
         `;
         // insert before the share button (icon link)
         const shareBtn = actions.querySelector('button[onclick^="shareClient"]');
@@ -1981,7 +1999,7 @@ function decorateClientActions() {
         const sims = similarClients(client, 5);
         if (sims.length === 0) return;
         panel.dataset.simInjected = '1';
-        const html = `<div class="similar-strip"><span class="similar-label"><i class="fa-solid fa-shuffle"></i> Similar clients</span><div class="similar-list">${sims.map(s => `<button class="similar-chip" onclick="scrollToClient('${s.id}')">${s.iconUrl?`<img src="${s.iconUrl}" alt="" loading="lazy">`:'<i class="fa-solid fa-cube"></i>'}<span>${s.displayName}</span></button>`).join('')}</div></div>`;
+        const html = `<div class="similar-strip"><span class="similar-label"><i class="fa-solid fa-shuffle"></i> Similar clients</span><div class="similar-list">${sims.map(s => `<button class="similar-chip" onclick="scrollToClient(${jsArg(s.id)})">${s.iconUrl?`<img src="${escapeAttr(s.iconUrl)}" alt="" loading="lazy">`:'<i class="fa-solid fa-cube"></i>'}<span>${escapeHtml(s.displayName)}</span></button>`).join('')}</div></div>`;
         panel.insertAdjacentHTML('beforeend', html);
     });
 
@@ -2003,7 +2021,7 @@ function decorateClientActions() {
         const block = document.getElementById('block-' + id); if (!block) return;
         if (block.querySelector('.client-note-inline')) return;
         const body = block.querySelector('.client-body-inner');
-        if (body) body.insertAdjacentHTML('afterbegin', `<div class="client-note-inline"><i class="fa-solid fa-note-sticky"></i><span>${text.replace(/</g,'&lt;')}</span><button class="note-edit" onclick="openNote('${id}','')"><i class="fa-solid fa-pen"></i></button></div>`);
+        if (body) body.insertAdjacentHTML('afterbegin', `<div class="client-note-inline"><i class="fa-solid fa-note-sticky"></i><span>${escapeHtml(text)}</span><button class="note-edit" onclick="openNote(${jsArg(id)},'')" aria-label="Edit note"><i class="fa-solid fa-pen"></i></button></div>`);
     });
 }
 

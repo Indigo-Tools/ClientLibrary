@@ -164,7 +164,7 @@ a:hover { color: var(--accent-light); text-decoration: underline; }
 .search-clear:hover { color: var(--white); background: rgba(255,255,255,0.06); }
 
 .search-count {
-    position: absolute; right: 2.5rem; top: 50%; transform: translateY(-50%);
+    position: absolute; right: 5.15rem; top: 50%; transform: translateY(-50%);
     font-size: 0.6875rem; font-weight: 600; color: var(--accent);
     background: var(--accent-dim); padding: 0.15rem 0.5rem; border-radius: 4px;
     z-index: 2; pointer-events: none;
@@ -388,7 +388,11 @@ a:hover { color: var(--accent-light); text-decoration: underline; }
 
 .file-info { min-width: 0; flex: 1; }
 
-.file-name { font-size: 0.875rem; font-weight: 600; color: var(--white); display: flex; align-items: center; gap: 0.5rem; }
+.file-name {
+    min-width: 0; font-size: 0.875rem; font-weight: 600; color: var(--white);
+    display: flex; align-items: center; gap: 0.5rem;
+    line-height: 1.35; overflow-wrap: anywhere;
+}
 .file-name i { color: var(--text-dim); font-size: 0.8125rem; }
 
 .file-raw {
@@ -807,7 +811,7 @@ button:focus-visible, a:focus-visible { outline-offset: 3px; }
 .fav-btn.active:hover { color: #fcd34d; }
 
 /* ── QoL: Per-file copy icons ── */
-.file-actions { display: inline-flex; gap: 0.25rem; margin-left: 0.4rem; }
+.file-actions { display: inline-flex; gap: 0.25rem; margin-left: 0.4rem; flex-shrink: 0; }
 .file-icon-btn {
     background: none; border: none; color: var(--text-dim); cursor: pointer;
     width: 26px; height: 26px; border-radius: 6px;
@@ -875,7 +879,7 @@ button:focus-visible, a:focus-visible { outline-offset: 3px; }
     background: var(--accent-dim); color: var(--accent);
     border-radius: var(--radius-sm); flex-shrink: 0;
 }
-.client-icon.icon-placeholder { width: 56px; height: 56px; font-size: 1.5rem; }
+.client-icon.icon-placeholder { width: 40px; height: 40px; font-size: 1rem; }
 
 /* ── QoL: j/k navigation highlight ── */
 .client-block.kb-focused { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--radius); }
@@ -1307,7 +1311,7 @@ button:focus-visible, a:focus-visible { outline-offset: 3px; }
 .search-cmdk:hover { background: var(--accent); color: white; transform: translateY(-50%) scale(1.05); }
 .search-cmdk:active { transform: translateY(-50%) scale(0.95); }
 .search-clear { right: 2.7rem; }
-.search-input { padding-right: 5.5rem !important; }
+.search-input { padding-right: 8.25rem !important; }
 
 /* iOS no-zoom & touch sizing on cmdk */
 #cmdk-input { font-size: 16px; min-height: 44px; }
@@ -1321,7 +1325,11 @@ button:focus-visible, a:focus-visible { outline-offset: 3px; }
     .client-actions { width: 100%; justify-content: flex-start; margin-top: 0.5rem; }
     .client-actions .action-icon { min-width: 36px; min-height: 36px; flex: 0 0 auto; }
     .client-actions .collapse-btn { margin-left: auto; }
-    /* Hide the long-press-only "open all" on tiny screens to reduce clutter — covered by bulk bar */
+    .client-icon.icon-placeholder { width: 36px; height: 36px; }
+    .search-input { padding-right: 5.5rem !important; }
+    .search-count { display: none; }
+    .toolbar-actions .toolbar-btn span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .file-actions { margin-left: auto; }
 }
 
 /* Make sure floating icon-btn cluster doesn't collide */
@@ -1341,7 +1349,7 @@ button:focus-visible, a:focus-visible { outline-offset: 3px; }
 /* QoL v3.2: night shift overlay, custom accent picker */
 
 .night-shift-overlay {
-    position: fixed; inset: 0; z-index: 9998;
+    position: fixed; inset: 0; z-index: 70;
     background: linear-gradient(180deg, rgba(255,150,40,0.6), rgba(255,110,30,0.55));
     mix-blend-mode: multiply;
     pointer-events: none;
