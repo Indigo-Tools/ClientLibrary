@@ -637,13 +637,29 @@ a:hover { color: var(--accent-light); text-decoration: underline; }
 /* ── Responsive ── */
 @media (max-width: 640px) {
     .site-wrapper { padding: 1rem 1rem 3rem; }
-    .header-title { font-size: 1.5rem; }
+    .header-title { font-size: 1.4rem; }
+    .header-subtitle { font-size: 0.6875rem; }
+    .header-icon { width: 44px; height: 44px; font-size: 1.1rem; margin-bottom: 0.75rem; }
+    .site-header { padding: 3rem 0 1.25rem; }
+    .tabs-bar { margin: 0 -1rem; padding: 0 1rem; }
+    .tab-scroll-btn { width: 24px; height: 24px; }
+    .tab-btn { padding: 0.4rem 0.7rem; font-size: 0.75rem; }
+    .back-to-top { bottom: 1rem; right: 1rem; width: 38px; height: 38px; }
+    .client-list { gap: 1.25rem; }
+    .category-group { gap: 1rem; }
+    .details-inner { padding: 1rem; font-size: 0.8125rem; }
+    .file-name { font-size: 0.8125rem; }
+    .client-icon { width: 36px; height: 36px; }
+    .client-name { font-size: 0.9375rem; }
+    .toast-container { top: auto; bottom: 4.5rem; }
     .file-grid { grid-template-columns: 1fr; }
     .file-card-body { flex-direction: column; align-items: stretch; }
     .btn-dl { width: 100%; justify-content: center; }
     .ext-row { flex-direction: column; align-items: stretch; }
     .ext-row .btn-dl { width: 100%; justify-content: center; margin-top: 0.5rem; }
     .ss-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    .screenshot-content { padding-top: 3rem; }
+    .screenshot-close { top: -44px; right: 0.25rem; width: 36px; height: 36px; }
     .screenshot-nav { width: 36px; height: 36px; }
     .screenshot-prev { left: 0.5rem; }
     .screenshot-next { right: 0.5rem; }
@@ -651,7 +667,17 @@ a:hover { color: var(--accent-light); text-decoration: underline; }
     .screenshot-img { max-height: 55vh; }
     .toolbar { flex-direction: column; align-items: stretch; }
     .stats-bar { justify-content: center; }
-    .toolbar-actions { justify-content: center; }
+    .toolbar-actions { justify-content: center; flex-wrap: wrap; }
+    .toolbar-menu { right: auto; left: 0; min-width: 200px; }
+    .search-wrapper { margin: 1rem auto; }
+    .search-input { padding: 0.75rem 4.5rem 0.75rem 2.5rem; font-size: 16px; }
+    .client-header { flex-wrap: wrap; }
+    .client-actions { margin-left: auto; }
+    .filter-panel { padding: 0.75rem; }
+    .recently-viewed { flex-direction: column; align-items: stretch; gap: 0.4rem; }
+    .recently-viewed-label { text-align: left; }
+    .btn-open-all { margin-left: 0; }
+    .help-content, .settings-content { max-height: 85vh; overflow-y: auto; }
 }
 
 button { -webkit-tap-highlight-color: transparent; font-family: inherit; }
