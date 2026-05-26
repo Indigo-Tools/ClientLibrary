@@ -1,0 +1,18 @@
+{
+  "name": "Nyxora Library",
+  "short_name": "Nyxora",
+  "description": "Minecraft Client Archive — texture packs and clients from 1.16 to the latest MCPE.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0b0d",
+  "theme_color": "#6c5ce7",
+  "icons": [
+    {
+      "src": "BG.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}

@@ -4,6 +4,11 @@ on:
   push:
     paths:
       - 'ClientLibrary/**'
+      - '**.html'
+      - '**.css'
+      - '**.js'
+      - 'manifest.json'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
@@ -36,6 +41,7 @@ jobs:
           library_dir = "ClientLibrary"
           valid_exts = {".zip", ".dll", ".so", ".apk", ".mcpack", ".mcaddon"}
           image_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+          video_exts = {".mp4", ".webm", ".mov", ".m4v", ".ogv"}
           tag_names = {"working", "legacy", "trash"}
 
           entries = []
@@ -74,6 +80,8 @@ jobs:
                           pass
                       entries.append(entry)
                   elif any(low.endswith(e) for e in image_exts):
+                      entries.append(entry)
+                  elif any(low.endswith(e) for e in video_exts):
                       entries.append(entry)
 
           with open("paths.json", "w") as f:

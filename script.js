@@ -18,6 +18,551 @@ let currentScreenshots = [];
 let currentScreenshotIndex = 0;
 let isZoomed = false;
 
+// ── QoL: Preferences & favorites ──
+const PREFS_KEY = 'nyxora_prefs_v1';
+const FAVS_KEY = 'nyxora_favs_v1';
+const DEFAULT_PREFS = {
+    theme: 'auto', sort: 'name-asc', tagFilters: [], category: 'ALL',
+    language: 'en', accent: 'violet', density: 'cozy', motion: 'auto',
+    recentlyViewed: [], searchHistory: [],
+};
+const RECENT_KEY = 'nyxora_recent_v1';
+const SEARCH_HIST_KEY = 'nyxora_searches_v1';
+const ACCENT_COLORS = {
+    violet: { name: 'Violet', main: '#6c5ce7', light: '#7c6df0' },
+    blue:   { name: 'Blue',   main: '#3b82f6', light: '#60a5fa' },
+    teal:   { name: 'Teal',   main: '#14b8a6', light: '#2dd4bf' },
+    rose:   { name: 'Rose',   main: '#f43f5e', light: '#fb7185' },
+    amber:  { name: 'Amber',  main: '#f59e0b', light: '#fbbf24' },
+    emerald:{ name: 'Emerald',main: '#10b981', light: '#34d399' },
+};
+let prefs = loadPrefs();
+let favorites = loadFavorites();
+let currentQuery = '';
+let kbFocusIndex = -1;
+
+const SORT_OPTIONS = [
+    { id: 'name-asc',          tKey: 'sort_name_asc',     icon: 'fa-arrow-down-a-z' },
+    { id: 'name-desc',         tKey: 'sort_name_desc',    icon: 'fa-arrow-down-z-a' },
+    { id: 'files-desc',        tKey: 'sort_files',        icon: 'fa-file-arrow-down' },
+    { id: 'screenshots-desc',  tKey: 'sort_screenshots',  icon: 'fa-images' },
+    { id: 'extensions-desc',   tKey: 'sort_extensions',   icon: 'fa-puzzle-piece' },
+];
+
+const TAG_FILTERS = [
+    { id: 'favorites',       tKey: 'favorites',       icon: 'fa-star' },
+    { id: 'popular',         tKey: 'popular',         icon: 'fa-star' },
+    { id: 'optifine',        tKey: 'optifine',        icon: 'fa-bolt' },
+    { id: 'working',         tKey: 'working',         icon: 'fa-check-circle' },
+    { id: 'legacy',          tKey: 'legacy',          icon: 'fa-history' },
+    { id: 'trash',           tKey: 'trash',           icon: 'fa-trash' },
+    { id: 'has-screenshots', tKey: 'has_screenshots', icon: 'fa-images' },
+    { id: 'has-extensions',  tKey: 'has_extensions',  icon: 'fa-puzzle-piece' },
+];
+
+function loadPrefs() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || 'null');
+        if (!saved) {
+            const browserLang = (navigator.language || 'en').slice(0, 2).toLowerCase();
+            const defaults = { ...DEFAULT_PREFS };
+            if (typeof TRANSLATIONS !== 'undefined' && TRANSLATIONS[browserLang]) defaults.language = browserLang;
+            return defaults;
+        }
+        return { ...DEFAULT_PREFS, ...saved };
+    } catch { return { ...DEFAULT_PREFS }; }
+}
+
+// ── QoL: i18n ──
+function t(key, params) {
+    const dict = (typeof TRANSLATIONS !== 'undefined' && TRANSLATIONS[prefs.language]) ? TRANSLATIONS[prefs.language] : (typeof TRANSLATIONS !== 'undefined' ? TRANSLATIONS.en : null);
+    let s = (dict && dict[key]) || (typeof TRANSLATIONS !== 'undefined' && TRANSLATIONS.en && TRANSLATIONS.en[key]) || key;
+    if (params) for (const k in params) s = s.replace('{' + k + '}', params[k]);
+    return s;
+}
+function applyTranslations() {
+    document.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
+    document.querySelectorAll('[data-t-attr]').forEach(el => {
+        const [attr, key] = el.dataset.tAttr.split('|');
+        el.setAttribute(attr, t(key));
+    });
+    const si = document.getElementById('search-input');
+    if (si) si.placeholder = t('search_placeholder');
+}
+function setLanguage(code) {
+    if (!TRANSLATIONS[code]) return;
+    prefs.language = code;
+    savePrefs();
+    applyTranslations();
+    if (allClients.length > 0) {
+        renderTabs();
+        renderStats();
+        renderFilterChips();
+        renderClients(currentQuery);
+        renderRecentlyViewed();
+    }
+}
+
+// ── QoL: Recently viewed ──
+function loadRecent() { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; } }
+function saveRecent(arr) { try { localStorage.setItem(RECENT_KEY, JSON.stringify(arr.slice(0, 10))); } catch {} }
+function trackRecentlyViewed(clientId) {
+    let arr = loadRecent().filter(id => id !== clientId);
+    arr.unshift(clientId);
+    saveRecent(arr);
+    renderRecentlyViewed();
+}
+function renderRecentlyViewed() {
+    let el = document.getElementById('recently-viewed');
+    const ids = loadRecent();
+    const main = document.getElementById('main-content');
+    if (!main) return;
+    const items = ids.map(id => allClients.find(c => c.id === id)).filter(Boolean).slice(0, 10);
+    if (items.length === 0) {
+        el?.remove();
+        return;
+    }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'recently-viewed';
+        el.className = 'recently-viewed';
+        const target = document.getElementById('client-container');
+        target.parentNode.insertBefore(el, target);
+    }
+    el.innerHTML = `<span class="recently-viewed-label"><i class="fa-solid fa-clock-rotate-left"></i> ${t('recently_viewed')}</span>
+        <div class="recently-viewed-strip">${items.map(c => `
+            <button class="recently-chip" onclick="scrollToClient('${c.id}')">
+                ${c.iconUrl ? `<img src="${c.iconUrl}" alt="" loading="lazy" onerror="this.outerHTML='<span class=\\'icon-placeholder\\'><i class=\\'fa-solid fa-cube\\'></i></span>'">` : `<span class="icon-placeholder"><i class="fa-solid fa-cube"></i></span>`}
+                <span>${c.displayName}</span>
+            </button>`).join('')}</div>`;
+}
+
+// ── QoL: Search history ──
+function loadSearchHistory() { try { return JSON.parse(localStorage.getItem(SEARCH_HIST_KEY) || '[]'); } catch { return []; } }
+function saveSearchHistory(arr) { try { localStorage.setItem(SEARCH_HIST_KEY, JSON.stringify(arr.slice(0, 5))); } catch {} }
+function recordSearch(q) {
+    const trimmed = q.trim();
+    if (!trimmed || trimmed.length < 2) return;
+    let arr = loadSearchHistory().filter(s => s.toLowerCase() !== trimmed.toLowerCase());
+    arr.unshift(trimmed);
+    saveSearchHistory(arr);
+}
+function clearSearchHistory() {
+    saveSearchHistory([]);
+    const si = document.getElementById('search-input');
+    if (si && !si.value) {
+        const dd = document.getElementById('search-dropdown');
+        dd.classList.add('hidden');
+    }
+    toast(t('toast_filters_cleared'), 'broom');
+}
+function renderSearchHistory() {
+    const dropdown = document.getElementById('search-dropdown');
+    const hist = loadSearchHistory();
+    if (hist.length === 0) return false;
+    dropdown.innerHTML = `<div class="search-history-header">
+        <span><i class="fa-solid fa-clock-rotate-left"></i> ${t('recently_viewed')}</span>
+        <button class="search-history-clear" onclick="event.stopPropagation();clearSearchHistory()">${t('clear_all')}</button>
+    </div>` + hist.map(q => `
+        <div class="search-history-item" onclick="useHistoryQuery('${escapeAttr(q)}')">
+            <i class="fa-solid fa-clock-rotate-left"></i><span>${q}</span>
+        </div>`).join('');
+    dropdown.classList.remove('hidden');
+    return true;
+}
+function useHistoryQuery(q) {
+    const si = document.getElementById('search-input');
+    si.value = q;
+    si.dispatchEvent(new Event('input'));
+    si.focus();
+}
+
+// ── QoL: Accent / density / motion ──
+function applyAccent() {
+    const c = ACCENT_COLORS[prefs.accent] || ACCENT_COLORS.violet;
+    const root = document.documentElement.style;
+    root.setProperty('--accent', c.main);
+    root.setProperty('--accent-light', c.light);
+    root.setProperty('--accent-dim', hexToRgba(c.main, 0.12));
+    root.setProperty('--accent-glow', hexToRgba(c.main, 0.35));
+    root.setProperty('--border-hover', hexToRgba(c.main, 0.3));
+    const theme = document.querySelector('meta[name="theme-color"]');
+    if (theme) theme.content = c.main;
+}
+function hexToRgba(hex, a) {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+function setAccent(key) {
+    if (!ACCENT_COLORS[key]) return;
+    prefs.accent = key;
+    savePrefs();
+    applyAccent();
+    renderAccentSwatches();
+}
+function applyDensity() { document.documentElement.dataset.density = prefs.density; }
+function setDensity(d) { prefs.density = d; savePrefs(); applyDensity(); renderSettingsSegmented(); }
+function applyMotion() {
+    if (prefs.motion === 'reduce') document.documentElement.dataset.motion = 'reduce';
+    else if (prefs.motion === 'full') document.documentElement.dataset.motion = 'full';
+    else document.documentElement.removeAttribute('data-motion');
+}
+function toggleReducedMotion() {
+    prefs.motion = (prefs.motion === 'reduce') ? 'auto' : 'reduce';
+    savePrefs();
+    applyMotion();
+    document.getElementById('setting-motion')?.classList.toggle('on', prefs.motion === 'reduce');
+}
+
+// ── QoL: Settings modal renderers ──
+function renderLanguageSelect() {
+    const sel = document.getElementById('setting-language');
+    if (!sel) return;
+    sel.innerHTML = LANGUAGE_LIST.map(l => `<option value="${l.code}" ${l.code === prefs.language ? 'selected' : ''}>${l.name}</option>`).join('');
+}
+function renderAccentSwatches() {
+    const wrap = document.getElementById('setting-accent');
+    if (!wrap) return;
+    wrap.innerHTML = Object.entries(ACCENT_COLORS).map(([k, c]) =>
+        `<button class="accent-swatch ${k === prefs.accent ? 'active' : ''}" style="background:${c.main}" onclick="setAccent('${k}')" aria-label="${c.name}" title="${c.name}"></button>`
+    ).join('');
+}
+function renderSettingsSegmented() {
+    const themes = [['auto', t('theme_auto')], ['dark', t('theme_dark')], ['light', t('theme_light')]];
+    const densities = [['cozy', t('density_cozy')], ['compact', t('density_compact')]];
+    const th = document.getElementById('setting-theme');
+    const de = document.getElementById('setting-density');
+    if (th) th.innerHTML = themes.map(([v, lbl]) => `<button onclick="setThemePref('${v}')" class="${prefs.theme === v ? 'active' : ''}">${lbl}</button>`).join('');
+    if (de) de.innerHTML = densities.map(([v, lbl]) => `<button onclick="setDensity('${v}')" class="${prefs.density === v ? 'active' : ''}">${lbl}</button>`).join('');
+    document.getElementById('setting-motion')?.classList.toggle('on', prefs.motion === 'reduce');
+}
+function setThemePref(v) { prefs.theme = v; savePrefs(); applyTheme(); renderSettingsSegmented(); }
+function openSettings() {
+    renderLanguageSelect();
+    renderAccentSwatches();
+    renderSettingsSegmented();
+    document.getElementById('settings-modal').classList.add('active');
+}
+function closeSettings() { document.getElementById('settings-modal').classList.remove('active'); }
+
+// ── QoL: Export / import favorites ──
+function exportFavorites() {
+    const data = { version: 1, favorites: [...favorites], exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nyxora-favorites-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast(t('toast_favs_exported'), 'file-export');
+}
+function importFavorites(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        try {
+            const data = JSON.parse(reader.result);
+            const list = Array.isArray(data) ? data : (data.favorites || []);
+            if (!Array.isArray(list)) throw new Error('bad format');
+            list.forEach(id => favorites.add(id));
+            saveFavorites();
+            renderTabs();
+            if (currentCategory === '__favorites__') renderClients(currentQuery);
+            document.querySelectorAll('[data-fav-id]').forEach(el => el.classList.toggle('active', favorites.has(el.dataset.favId)));
+            toast(t('toast_favs_imported'), 'file-import');
+        } catch {
+            toast(t('toast_import_failed'), 'triangle-exclamation');
+        }
+    };
+    reader.readAsText(file);
+}
+
+// ── QoL: Markdown renderer (minimal but safe) ──
+function renderMarkdown(text) {
+    if (!text) return '';
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const lines = esc(text).split('\n');
+    const out = [];
+    let inList = false;
+    for (let raw of lines) {
+        let l = raw.trimEnd();
+        const hMatch = l.match(/^(#{1,3})\s+(.*)$/);
+        if (hMatch) {
+            if (inList) { out.push('</ul>'); inList = false; }
+            const n = hMatch[1].length;
+            out.push(`<h${n}>${formatInline(hMatch[2])}</h${n}>`);
+            continue;
+        }
+        if (/^[-*]\s+/.test(l)) {
+            if (!inList) { out.push('<ul>'); inList = true; }
+            out.push(`<li>${formatInline(l.replace(/^[-*]\s+/, ''))}</li>`);
+            continue;
+        }
+        if (inList) { out.push('</ul>'); inList = false; }
+        if (l.trim() === '') { out.push(''); continue; }
+        out.push(`<p>${formatInline(l)}</p>`);
+    }
+    if (inList) out.push('</ul>');
+    return out.join('\n');
+}
+function formatInline(s) {
+    return s
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        .replace(/(?<!["=>])(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+}
+
+// ── QoL: Open all downloads ──
+function openAllDownloads(urlsJson) {
+    let urls;
+    try { urls = JSON.parse(decodeURIComponent(urlsJson)); } catch { return; }
+    if (!Array.isArray(urls) || urls.length === 0) return;
+    if (urls.length > 6 && !confirm(`Open ${urls.length} downloads in new tabs?`)) return;
+    urls.forEach((u, i) => setTimeout(() => window.open(u, '_blank', 'noopener'), i * 120));
+}
+
+// ── QoL: Animated counters ──
+function animateCount(el, to, durationMs = 700) {
+    const from = 0;
+    const start = performance.now();
+    el.classList.add('counting');
+    const tick = (now) => {
+        const p = Math.min(1, (now - start) / durationMs);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(from + (to - from) * eased);
+        if (p < 1) requestAnimationFrame(tick);
+        else { el.textContent = to; el.classList.remove('counting'); }
+    };
+    requestAnimationFrame(tick);
+}
+
+// ── QoL: Touch swipe on screenshot modal ──
+function attachSwipeOnScreenshots() {
+    const target = document.querySelector('#screenshots-modal .screenshot-main-container');
+    if (!target) return;
+    let sx = 0, sy = 0, active = false;
+    target.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) { active = false; return; }
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY; active = true;
+    }, { passive: true });
+    target.addEventListener('touchend', (e) => {
+        if (!active) return;
+        const dx = (e.changedTouches[0].clientX - sx);
+        const dy = (e.changedTouches[0].clientY - sy);
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            if (dx < 0) nextScreenshot(); else prevScreenshot();
+        }
+        active = false;
+    }, { passive: true });
+}
+function savePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch {} }
+function loadFavorites() {
+    try { return new Set(JSON.parse(localStorage.getItem(FAVS_KEY) || '[]')); }
+    catch { return new Set(); }
+}
+function saveFavorites() { try { localStorage.setItem(FAVS_KEY, JSON.stringify([...favorites])); } catch {} }
+
+// ── QoL: Theme ──
+function applyTheme() {
+    const mode = prefs.theme === 'auto'
+        ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+        : prefs.theme;
+    document.documentElement.dataset.theme = mode;
+    const btn = document.getElementById('theme-toggle');
+    if (btn) {
+        const icons = { auto: 'fa-circle-half-stroke', dark: 'fa-moon', light: 'fa-sun' };
+        btn.innerHTML = `<i class="fa-solid ${icons[prefs.theme]}"></i>`;
+        btn.title = `Theme: ${prefs.theme} (T to cycle)`;
+    }
+}
+function cycleTheme() {
+    const order = ['auto', 'dark', 'light'];
+    prefs.theme = order[(order.indexOf(prefs.theme) + 1) % order.length];
+    savePrefs();
+    applyTheme();
+    const label = { auto: t('theme_auto'), dark: t('theme_dark'), light: t('theme_light') }[prefs.theme];
+    toast(`${t('toast_theme')}: ${label}`, 'palette');
+    renderSettingsSegmented();
+}
+
+// ── QoL: Toast ──
+function toast(message, icon = 'circle-check') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `<i class="fa-solid fa-${icon}"></i><span>${message}</span>`;
+    container.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('visible'));
+    setTimeout(() => {
+        el.classList.remove('visible');
+        setTimeout(() => el.remove(), 250);
+    }, 2200);
+}
+
+// ── QoL: Copy + share ──
+async function copyText(text, label) {
+    try {
+        await navigator.clipboard.writeText(text);
+        toast(label || t('toast_copied'), 'copy');
+    } catch {
+        toast('Copy failed', 'triangle-exclamation');
+    }
+}
+function copyFilename(name) { copyText(name, `${t('toast_copied')}: ${name}`); }
+function copyDownload(url) { copyText(url, t('toast_link_copied')); }
+function shareClient(clientId, name) {
+    const url = `${location.origin}${location.pathname}#client=${encodeURIComponent(clientId)}`;
+    copyText(url, t('toast_link_copied'));
+}
+
+// ── QoL: Favorites ──
+function toggleFavorite(clientId, name) {
+    if (favorites.has(clientId)) {
+        favorites.delete(clientId);
+        toast(`${name}: ${t('toast_removed_fav')}`, 'star-half-stroke');
+    } else {
+        favorites.add(clientId);
+        toast(`${name}: ${t('toast_added_fav')}`, 'star');
+    }
+    saveFavorites();
+    document.querySelectorAll(`[data-fav-id="${clientId}"]`).forEach(el => {
+        el.classList.toggle('active', favorites.has(clientId));
+    });
+    renderTabs();
+    if (currentCategory === '__favorites__') renderClients(currentQuery);
+}
+
+// ── QoL: Random ──
+function randomClient() {
+    if (allClients.length === 0) return;
+    const c = allClients[Math.floor(Math.random() * allClients.length)];
+    scrollToClient(c.id);
+    toast(`${t('toast_random')}: ${c.displayName}`, 'shuffle');
+}
+
+// ── QoL: Sort + filter ──
+function applySortFilter(clients) {
+    const tagFilters = prefs.tagFilters;
+    let arr = clients;
+    if (tagFilters.length > 0) {
+        arr = arr.filter(c => tagFilters.every(t => {
+            if (t === 'favorites')       return favorites.has(c.id);
+            if (t === 'popular')         return c.isPopular;
+            if (t === 'optifine')        return c.isOptifine;
+            if (t === 'has-screenshots') return c.screenshots && c.screenshots.length > 0;
+            if (t === 'has-extensions')  return c.extensions && c.extensions.length > 0;
+            return c.tags.includes(t);
+        }));
+    }
+    const sortFn = {
+        'name-asc':         (a, b) => a.displayName.localeCompare(b.displayName),
+        'name-desc':        (a, b) => b.displayName.localeCompare(a.displayName),
+        'files-desc':       (a, b) => (b.files.length + b.extensions.length) - (a.files.length + a.extensions.length),
+        'screenshots-desc': (a, b) => (b.screenshots?.length || 0) - (a.screenshots?.length || 0),
+        'extensions-desc':  (a, b) => b.extensions.length - a.extensions.length,
+    }[prefs.sort] || ((a, b) => a.displayName.localeCompare(b.displayName));
+    return [...arr].sort(sortFn);
+}
+
+// ── QoL: Toolbar menus ──
+function renderSortMenu() {
+    const menu = document.getElementById('sort-menu');
+    if (!menu) return;
+    menu.innerHTML = SORT_OPTIONS.map(o => `
+        <button onclick="setSort('${o.id}')" class="${prefs.sort === o.id ? 'active' : ''}" role="menuitem">
+            <i class="fa-solid ${o.icon}"></i><span>${t(o.tKey)}</span><i class="fa-solid fa-check"></i>
+        </button>`).join('');
+}
+function toggleSortMenu(e) {
+    e?.stopPropagation();
+    const menu = document.getElementById('sort-menu');
+    renderSortMenu();
+    menu.classList.toggle('hidden');
+}
+function setSort(id) {
+    prefs.sort = id;
+    savePrefs();
+    document.getElementById('sort-menu').classList.add('hidden');
+    renderClients(currentQuery);
+}
+
+function renderFilterChips() {
+    const wrap = document.getElementById('filter-chips');
+    if (!wrap) return;
+    wrap.innerHTML = TAG_FILTERS.map(f => {
+        const active = prefs.tagFilters.includes(f.id);
+        return `<button class="filter-chip ${active ? 'active' : ''}" onclick="toggleTagFilter('${f.id}')"><i class="fa-solid ${f.icon}"></i>${t(f.tKey)}</button>`;
+    }).join('');
+    const badge = document.getElementById('filter-badge');
+    const clear = document.getElementById('clear-filters');
+    if (prefs.tagFilters.length > 0) {
+        badge.textContent = prefs.tagFilters.length;
+        badge.classList.remove('hidden');
+        clear.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+        clear.classList.add('hidden');
+    }
+}
+function toggleFilterPanel() {
+    document.getElementById('filter-panel').classList.toggle('hidden');
+}
+function toggleTagFilter(id) {
+    const i = prefs.tagFilters.indexOf(id);
+    if (i >= 0) prefs.tagFilters.splice(i, 1);
+    else prefs.tagFilters.push(id);
+    savePrefs();
+    renderFilterChips();
+    renderClients(currentQuery);
+}
+function toggleTagFilterFromTag(tag) {
+    document.getElementById('filter-panel')?.classList.remove('hidden');
+    toggleTagFilter(tag);
+}
+function clearAllFilters() {
+    prefs.tagFilters = [];
+    savePrefs();
+    renderFilterChips();
+    renderClients(currentQuery);
+    toast(t('toast_filters_cleared'), 'broom');
+}
+
+// ── QoL: Help modal ──
+function openHelp() { document.getElementById('help-modal').classList.add('active'); }
+function closeHelp() { document.getElementById('help-modal').classList.remove('active'); }
+
+// ── QoL: Hash routing ──
+function applyHashOnce() {
+    const hash = location.hash.slice(1);
+    if (!hash) return;
+    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const cat = params.get('cat');
+    const client = params.get('client');
+    if (cat && libraryTree.some(c => c.name === cat)) {
+        switchCategory(cat);
+    }
+    if (client) {
+        setTimeout(() => scrollToClient(client), 350);
+    }
+}
+
+// ── QoL: Keyboard navigation across cards ──
+function moveKbFocus(delta) {
+    const blocks = Array.from(document.querySelectorAll('.client-block'));
+    if (blocks.length === 0) return;
+    kbFocusIndex = Math.max(0, Math.min(blocks.length - 1, (kbFocusIndex < 0 ? 0 : kbFocusIndex + delta)));
+    blocks.forEach((b, i) => b.classList.toggle('kb-focused', i === kbFocusIndex));
+    blocks[kbFocusIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function getMonetizedUrl(targetUrl) {
     if (!USE_MONETIZATION || !LINKVERTISE_USER_ID) return targetUrl;
     try {
@@ -52,7 +597,8 @@ function toggleClientCollapse(clientId) {
     const btn = document.getElementById(`collapse-btn-${clientId}`);
     if (btn) {
         const c = body.classList.contains('collapsed');
-        btn.innerHTML = `<i class="fa-solid fa-chevron-${c ? 'down' : 'up'}"></i><span class="hide-mobile">${c ? 'Expand' : 'Collapse'}</span>`;
+        const lbl = c ? (typeof t === 'function' ? t('expand_all').replace(/\s.+/, '') : 'Expand') : (typeof t === 'function' ? t('collapse_all').replace(/\s.+/, '') : 'Collapse');
+        btn.innerHTML = `<i class="fa-solid fa-chevron-${c ? 'down' : 'up'}"></i><span class="hide-mobile">${lbl}</span>`;
     }
 }
 
@@ -63,7 +609,7 @@ function toggleDescription(clientId) {
     const opening = !panel.classList.contains('open');
     panel.classList.toggle('open');
     btn.classList.toggle('open');
-    btn.innerHTML = `${opening ? 'Hide Details' : 'Show Details'} <i class="fa-solid fa-chevron-down"></i>`;
+    btn.innerHTML = `${opening ? t('hide_details') : t('show_details')} <i class="fa-solid fa-chevron-down"></i>`;
 }
 
 function toggleDropdown(clientId) {
@@ -81,8 +627,8 @@ function toggleFileList(clientId) {
     const showing = hidden[0]?.style.display !== 'none';
     hidden.forEach(el => el.style.display = showing ? 'none' : '');
     btn.innerHTML = showing
-        ? `<i class="fa-solid fa-angles-down"></i>Show ${hidden.length} more`
-        : `<i class="fa-solid fa-angles-up"></i>Show Less`;
+        ? `<i class="fa-solid fa-angles-down"></i>${t('show_more', { n: hidden.length })}`
+        : `<i class="fa-solid fa-angles-up"></i>${t('show_less')}`;
 }
 
 function expandCollapseAll() {
@@ -91,15 +637,15 @@ function expandCollapseAll() {
     if (allExpanded) {
         bodies.forEach(b => b.classList.add('collapsed'));
         document.querySelectorAll('[id^="collapse-btn-"]').forEach(b => {
-            b.innerHTML = '<i class="fa-solid fa-chevron-down"></i><span class="hide-mobile">Expand</span>';
+            b.innerHTML = `<i class="fa-solid fa-chevron-down"></i><span class="hide-mobile">${t('expand_all').replace(/\s.+/, '')}</span>`;
         });
-        btn.innerHTML = '<i class="fa-solid fa-angles-up"></i><span>Collapse All</span>';
+        btn.innerHTML = `<i class="fa-solid fa-angles-up"></i><span>${t('collapse_all')}</span>`;
     } else {
         bodies.forEach(b => b.classList.remove('collapsed'));
         document.querySelectorAll('[id^="collapse-btn-"]').forEach(b => {
-            b.innerHTML = '<i class="fa-solid fa-chevron-up"></i><span class="hide-mobile">Collapse</span>';
+            b.innerHTML = `<i class="fa-solid fa-chevron-up"></i><span class="hide-mobile">${t('collapse_all').replace(/\s.+/, '')}</span>`;
         });
-        btn.innerHTML = '<i class="fa-solid fa-angles-down"></i><span>Expand All</span>';
+        btn.innerHTML = `<i class="fa-solid fa-angles-down"></i><span>${t('expand_all')}</span>`;
     }
     allExpanded = !allExpanded;
 }
@@ -197,6 +743,7 @@ function renderSearchDropdown(query) {
 }
 
 function scrollToClient(clientId) {
+    trackRecentlyViewed(clientId);
     const el = document.getElementById(`block-${clientId}`);
     if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -229,19 +776,43 @@ function clearSearch() {
 
 // ── Screenshots ──
 
+function renderScreenshotMedia(item) {
+    const mainImg = document.getElementById('screenshot-main');
+    const mainVid = document.getElementById('screenshot-video');
+    mainVid.pause();
+    if (item.type === 'video') {
+        mainImg.hidden = true;
+        mainImg.removeAttribute('src');
+        mainImg.classList.remove('zoomed');
+        mainVid.hidden = false;
+        mainVid.src = item.url;
+    } else {
+        mainVid.hidden = true;
+        mainVid.removeAttribute('src');
+        mainVid.load();
+        mainImg.hidden = false;
+        mainImg.src = item.url;
+        mainImg.classList.remove('zoomed');
+    }
+}
+
+function thumbnailMarkup(s, i, activeIndex) {
+    const activeClass = i === activeIndex ? 'active' : '';
+    if (s.type === 'video') {
+        return `<div class="screenshot-thumbnail screenshot-thumbnail-video ${activeClass}" onclick="showScreenshot(${i})" role="button" aria-label="Video ${i+1}"><video src="${s.url}" muted playsinline preload="metadata"></video><span class="screenshot-thumb-play"><i class="fa-solid fa-play"></i></span></div>`;
+    }
+    return `<img src="${s.url}" class="screenshot-thumbnail ${activeClass}" onclick="showScreenshot(${i})" alt="Thumbnail ${i+1}" loading="lazy">`;
+}
+
 function openScreenshots(clientId, screenshots, index = 0) {
     currentScreenshots = screenshots;
     currentScreenshotIndex = index;
     isZoomed = false;
     const modal = document.getElementById('screenshots-modal');
-    const mainImg = document.getElementById('screenshot-main');
     if (screenshots.length > 0) {
-        mainImg.src = screenshots[index].url;
-        mainImg.classList.remove('zoomed');
+        renderScreenshotMedia(screenshots[index]);
         document.getElementById('screenshot-counter').textContent = `${index + 1} / ${screenshots.length}`;
-        document.getElementById('screenshot-thumbnails').innerHTML = screenshots.map((s, i) =>
-            `<img src="${s.url}" class="screenshot-thumbnail ${i === index ? 'active' : ''}" onclick="showScreenshot(${i})" alt="Thumbnail ${i+1}" loading="lazy">`
-        ).join('');
+        document.getElementById('screenshot-thumbnails').innerHTML = screenshots.map((s, i) => thumbnailMarkup(s, i, index)).join('');
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
@@ -250,6 +821,10 @@ function openScreenshots(clientId, screenshots, index = 0) {
 function closeScreenshots() {
     document.getElementById('screenshots-modal').classList.remove('active');
     document.body.style.overflow = '';
+    const mainVid = document.getElementById('screenshot-video');
+    mainVid.pause();
+    mainVid.removeAttribute('src');
+    mainVid.load();
     currentScreenshots = [];
     currentScreenshotIndex = 0;
     isZoomed = false;
@@ -259,14 +834,13 @@ function showScreenshot(index) {
     if (index < 0 || index >= currentScreenshots.length) return;
     currentScreenshotIndex = index;
     isZoomed = false;
-    const mainImg = document.getElementById('screenshot-main');
-    mainImg.src = currentScreenshots[index].url;
-    mainImg.classList.remove('zoomed');
+    renderScreenshotMedia(currentScreenshots[index]);
     document.getElementById('screenshot-counter').textContent = `${index + 1} / ${currentScreenshots.length}`;
     document.querySelectorAll('.screenshot-thumbnail').forEach((t, i) => t.classList.toggle('active', i === index));
 }
 
 function toggleZoom() {
+    if (currentScreenshots[currentScreenshotIndex]?.type === 'video') return;
     isZoomed = !isZoomed;
     document.getElementById('screenshot-main').classList.toggle('zoomed', isZoomed);
 }
@@ -352,7 +926,7 @@ function escapeAttr(str) {
 
 // ── Stats ──
 
-function renderStats() {
+function renderStats(animate = false) {
     const statsBar = document.getElementById('stats-bar');
     let totalClients = 0, totalFiles = 0, totalCategories = libraryTree.length;
     libraryTree.forEach(cat => {
@@ -361,10 +935,13 @@ function renderStats() {
     });
 
     statsBar.innerHTML = `
-        <span class="stat-chip"><i class="fa-solid fa-layer-group"></i><strong>${totalCategories}</strong> categories</span>
-        <span class="stat-chip"><i class="fa-solid fa-cube"></i><strong>${totalClients}</strong> clients</span>
-        <span class="stat-chip"><i class="fa-solid fa-file-arrow-down"></i><strong>${totalFiles}</strong> files</span>
+        <span class="stat-chip"><i class="fa-solid fa-layer-group"></i><strong data-num="${totalCategories}">${animate ? 0 : totalCategories}</strong> ${t('categories')}</span>
+        <span class="stat-chip"><i class="fa-solid fa-cube"></i><strong data-num="${totalClients}">${animate ? 0 : totalClients}</strong> ${t('clients')}</span>
+        <span class="stat-chip"><i class="fa-solid fa-file-arrow-down"></i><strong data-num="${totalFiles}">${animate ? 0 : totalFiles}</strong> ${t('files')}</span>
     `;
+    if (animate && prefs.motion !== 'reduce') {
+        statsBar.querySelectorAll('strong[data-num]').forEach(el => animateCount(el, parseInt(el.dataset.num, 10)));
+    }
 }
 
 // ── Build search string for a client (pre-computed, called once) ──
@@ -451,7 +1028,9 @@ async function init() {
                     client.author = entry.content;
                 }
             } else if (lowerName.match(/\.(png|jpg|jpeg|gif|webp)$/) && (parts.some(p => p.toLowerCase() === 'screenshots') || lowerName.includes('screenshot'))) {
-                client.screenshots.push({ url: fullUrl, name: fileName });
+                client.screenshots.push({ url: fullUrl, name: fileName, type: 'image' });
+            } else if (lowerName.match(/\.(mp4|webm|mov|m4v|ogv)$/) && (parts.some(p => p.toLowerCase() === 'screenshots') || lowerName.includes('screenshot'))) {
+                client.screenshots.push({ url: fullUrl, name: fileName, type: 'video' });
             } else if (['working','legacy','trash'].includes(lowerName)) {
                 if (!client.tags.includes(lowerName)) client.tags.push(lowerName);
             } else {
@@ -535,8 +1114,14 @@ async function init() {
             main.style.opacity = '0';
             main.style.transition = 'opacity 0.4s ease';
             renderTabs();
-            renderStats();
-            switchCategory("ALL");
+            renderStats(true);
+            renderFilterChips();
+            renderRecentlyViewed();
+            const targetCat = (prefs.category && (prefs.category === 'ALL' || prefs.category === '__favorites__' || libraryTree.some(c => c.name === prefs.category)))
+                ? prefs.category : 'ALL';
+            switchCategory(targetCat);
+            applyHashOnce();
+            attachSwipeOnScreenshots();
             // Set up tab cycler
             const scrollContainer = document.getElementById('category-tabs');
             if (scrollContainer) {
@@ -551,7 +1136,7 @@ async function init() {
         }, 250);
     } catch (err) {
         console.error('Failed to load library:', err);
-        document.getElementById('status-text').textContent = "Failed to load library. Please check connection.";
+        document.getElementById('status-text').textContent = t('failed_load');
         document.querySelector('.spinner')?.classList.add('hidden');
     }
 }
@@ -559,32 +1144,57 @@ async function init() {
 function renderTabs() {
     const container = document.getElementById('category-tabs');
     const tabs = ["ALL", ...libraryTree.map(c => c.name)];
-    container.innerHTML = tabs.map(t => {
-        const cat = libraryTree.find(c => c.name === t);
-        const label = t === "ALL" ? "All" : (cat ? cat.displayName : (t.startsWith('1_') ? `Version: ${t.replace('_','.')}` : t));
-        return `<button onclick="switchCategory('${t}')" id="tab-${t}" class="tab-btn">${label}</button>`;
-    }).join('');
-    // update cycler after rendering
+    const favCount = favorites.size;
+    const countFor = (name) => {
+        if (name === 'ALL') return allClients.length;
+        if (name === '__favorites__') return favCount;
+        const cat = libraryTree.find(c => c.name === name);
+        return cat ? cat.clients.length : 0;
+    };
+    const buttons = tabs.map(name => {
+        const cat = libraryTree.find(c => c.name === name);
+        const label = name === "ALL" ? t('all') : (cat ? cat.displayName : (name.startsWith('1_') ? `Version: ${name.replace('_','.')}` : name));
+        return `<button onclick="switchCategory('${name}')" id="tab-${name}" class="tab-btn">${label}<span class="tab-count">${countFor(name)}</span></button>`;
+    });
+    if (favCount > 0) {
+        buttons.splice(1, 0, `<button onclick="switchCategory('__favorites__')" id="tab-__favorites__" class="tab-btn"><i class="fa-solid fa-star" style="color:#fbbf24;margin-right:0.3rem"></i>${t('favorites')}<span class="tab-count">${favCount}</span></button>`);
+    }
+    container.innerHTML = buttons.join('');
+    document.getElementById(`tab-${currentCategory}`)?.classList.add('active');
     setTimeout(updateTabScrollButtons, 10);
 }
 
 function switchCategory(name) {
     currentCategory = name;
+    prefs.category = name;
+    savePrefs();
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(`tab-${name}`)?.classList.add('active');
-    renderClients();
+    kbFocusIndex = -1;
+    renderClients(currentQuery);
     if (window.innerWidth < 768) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── Render ──
 
 function renderClients(query = '') {
+    currentQuery = query;
     const container = document.getElementById('client-container');
     const q = query.toLowerCase().trim();
-    const toShow = currentCategory === "ALL" ? libraryTree : libraryTree.filter(c => c.name === currentCategory);
+    let toShow;
+    if (currentCategory === '__favorites__') {
+        const favClients = allClients.filter(c => favorites.has(c.id));
+        if (favClients.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fa-regular fa-star"></i></div><div class="empty-title">${t('no_favorites')}</div><div class="empty-desc">${t('tap_star')}</div></div>`;
+            return;
+        }
+        toShow = [{ name: '__favorites__', displayName: t('favorites'), clients: favClients }];
+    } else {
+        toShow = currentCategory === "ALL" ? libraryTree : libraryTree.filter(c => c.name === currentCategory);
+    }
 
     if (toShow.length === 0) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-search"></i></div><div class="empty-title">No content available</div><div class="empty-desc">This category is empty</div></div>`;
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-search"></i></div><div class="empty-title">${t('no_results')}</div><div class="empty-desc">${t('try_different')}</div></div>`;
         return;
     }
 
@@ -592,7 +1202,8 @@ function renderClients(query = '') {
 
     toShow.forEach(cat => {
         const filtered = [];
-        for (const client of cat.clients) {
+        const orderedClients = applySortFilter(cat.clients);
+        for (const client of orderedClients) {
             if (!q || client._search.includes(q)) {
                 const broad = !q || client.displayName.toLowerCase().includes(q) || client.description?.toLowerCase().includes(q) || client.tags.some(t => t.includes(q));
                 filtered.push({
@@ -617,23 +1228,33 @@ function renderClients(query = '') {
 
             parts.push(`<div class="client-block" id="block-${client.id}" style="content-visibility:auto;contain-intrinsic-size:auto 300px">`);
 
+            const isFav = favorites.has(client.id);
+            const safeName = escapeAttr(client.displayName);
+            const iconHtml = client.iconUrl
+                ? `<img src="${client.iconUrl}" class="client-icon" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'client-icon icon-placeholder\\'><i class=\\'fa-solid fa-cube\\'></i></div>'">`
+                : `<div class="client-icon icon-placeholder"><i class="fa-solid fa-cube"></i></div>`;
             parts.push(`<div class="client-header">
                 <div class="client-info">
-                    ${client.iconUrl ? `<img src="${client.iconUrl}" class="client-icon" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+                    ${iconHtml}
                     <div class="client-meta">
                         <div class="client-name">${client.displayName}</div>
                         <div class="tag-row">
-                            ${client.isPopular ? '<span class="tag tag-popular"><i class="fa-solid fa-star"></i>Popular</span>' : ''}
-                            ${client.isOptifine ? '<span class="tag tag-optifine"><i class="fa-solid fa-bolt"></i>Optifine</span>' : ''}
+                            ${client.isPopular ? `<button class="tag tag-popular clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('popular')"><i class="fa-solid fa-star"></i>${t('popular')}</button>` : ''}
+                            ${client.isOptifine ? `<button class="tag tag-optifine clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('optifine')"><i class="fa-solid fa-bolt"></i>${t('optifine')}</button>` : ''}
                             ${client.originalCategory && client.isOptifine ? `<span class="tag tag-category"><i class="fa-solid fa-layer-group"></i>${client.originalCategory}</span>` : ''}
-                            ${client.tags.map(t => `<span class="tag tag-${t}"><i class="fa-solid ${TAG_ICONS[t]||'fa-tag'}"></i>${t.charAt(0).toUpperCase()+t.slice(1)}</span>`).join('')}
+                            ${client.tags.map(tg => `<button class="tag tag-${tg} clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('${tg}')" title="${t('filter')}: ${t(tg) || tg}"><i class="fa-solid ${TAG_ICONS[tg]||'fa-tag'}"></i>${(t(tg) || tg).charAt(0).toUpperCase()+(t(tg) || tg).slice(1)}</button>`).join('')}
                             ${(client.compatVersions && client.compatVersions.length > 0) ? client.compatVersions.map(v => `<span class="tag tag-version"><i class="fa-solid fa-code-branch"></i>${v.replace('_','.')}</span>`).join('') : ''}
                         </div>
                     </div>
                 </div>
-                <button id="collapse-btn-${client.id}" onclick="toggleClientCollapse('${client.id}')" class="collapse-btn">
-                    <i class="fa-solid fa-chevron-up"></i><span class="hide-mobile">Collapse</span>
-                </button>
+                <div class="client-actions">
+                    ${(client.files.length + client.extensions.length) > 1 ? `<button class="action-icon" onclick="openAllDownloads('${escapeAttr(encodeURIComponent(JSON.stringify([...client.files, ...client.extensions].map(f => getMonetizedUrl(f.url)))))}')" aria-label="${t('open_all')}" title="${t('open_all')}"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>` : ''}
+                    <button class="action-icon fav-btn ${isFav ? 'active' : ''}" data-fav-id="${client.id}" onclick="toggleFavorite('${client.id}', '${safeName}')" aria-label="${t('favorites')}" title="${t('favorites')}"><i class="fa-${isFav ? 'solid' : 'regular'} fa-star"></i></button>
+                    <button class="action-icon" onclick="shareClient('${client.id}', '${safeName}')" aria-label="${t('share')}" title="${t('share')}"><i class="fa-solid fa-link"></i></button>
+                    <button id="collapse-btn-${client.id}" onclick="toggleClientCollapse('${client.id}')" class="collapse-btn">
+                        <i class="fa-solid fa-chevron-up"></i><span class="hide-mobile">${t('collapse_all').replace(/\s.+/, '')}</span>
+                    </button>
+                </div>
             </div>`);
 
             parts.push(`<div id="body-${client.id}" class="client-body"><div class="client-body-inner">`);
@@ -644,17 +1265,20 @@ function renderClients(query = '') {
                 if (hasSS) {
                     parts.push(`<div style="margin-bottom:1rem">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
-                            <span style="display:flex;align-items:center;gap:0.4rem;font-weight:600;color:var(--white)"><i class="fa-solid fa-images" style="color:var(--accent)"></i>Screenshots (${client.screenshots.length})</span>
-                            <button onclick="openScreenshots('${client.id}',${ssJson})" style="background:none;border:none;color:var(--accent);font-size:0.8125rem;font-weight:600;cursor:pointer">View All</button>
+                            <span style="display:flex;align-items:center;gap:0.4rem;font-weight:600;color:var(--white)"><i class="fa-solid fa-images" style="color:var(--accent)"></i>${t('screenshots')} (${client.screenshots.length})</span>
+                            <button onclick="openScreenshots('${client.id}',${ssJson})" style="background:none;border:none;color:var(--accent);font-size:0.8125rem;font-weight:600;cursor:pointer">${t('view_all')}</button>
                         </div>
-                        <div class="ss-grid">${client.screenshots.slice(0,6).map((ss, i) =>
-                            `<div class="ss-thumb" onclick="openScreenshots('${client.id}',${ssJson},${i})"><img src="${ss.url}" alt="Screenshot ${i+1}" loading="lazy"><div class="ss-thumb-overlay"><span class="ss-badge">${i+1}</span></div></div>`
-                        ).join('')}</div>
+                        <div class="ss-grid">${client.screenshots.slice(0,6).map((ss, i) => {
+                            const media = ss.type === 'video'
+                                ? `<video src="${ss.url}" muted playsinline preload="metadata"></video><span class="ss-thumb-play"><i class="fa-solid fa-play"></i></span>`
+                                : `<img src="${ss.url}" alt="Screenshot ${i+1}" loading="lazy">`;
+                            return `<div class="ss-thumb" onclick="openScreenshots('${client.id}',${ssJson},${i})">${media}<div class="ss-thumb-overlay"><span class="ss-badge">${i+1}</span></div></div>`;
+                        }).join('')}</div>
                     </div>`);
                 }
 
                 if (hasDesc) {
-                    parts.push(`<div style="margin-bottom:0.75rem">${client.description.split('\n').map(l => `<p style="margin-bottom:0.4rem">${l}</p>`).join('')}</div>`);
+                    parts.push(`<div class="md" style="margin-bottom:0.75rem">${renderMarkdown(client.description)}</div>`);
                 }
 
                 if (hasAuthor) {
@@ -667,7 +1291,7 @@ function renderClients(query = '') {
                 }
 
                 parts.push(`</div></div></div>`);
-                parts.push(`<button id="details-btn-${client.id}" onclick="toggleDescription('${client.id}')" class="details-toggle">Show Details <i class="fa-solid fa-chevron-down"></i></button>`);
+                parts.push(`<button id="details-btn-${client.id}" onclick="toggleDescription('${client.id}')" class="details-toggle">${t('show_details')} <i class="fa-solid fa-chevron-down"></i></button>`);
             }
 
             if (client.matchingFiles.length > 0) {
@@ -676,15 +1300,17 @@ function renderClients(query = '') {
                     const hiddenClass = (!q && manyFiles && idx >= 5) ? `file-hidden-${client.id}` : '';
                     const hiddenStyle = (!q && manyFiles && idx >= 5) ? ' style="display:none"' : '';
                     const downloadUrl = getMonetizedUrl(file.url);
+                    const fNameAttr = escapeAttr(file.rawName);
+                    const fUrlAttr = escapeAttr(file.url);
                     parts.push(`<div class="file-card ${hiddenClass}"${hiddenStyle}>
-                        ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="file-card-banner" loading="lazy" alt=""><div class="file-card-overlay"></div>` : ''}
+                        ${client.bannerUrl ? `<img src="${client.bannerUrl}" class="file-card-banner" loading="lazy" alt="" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='none')"><div class="file-card-overlay"></div>` : ''}
                         <div class="file-card-body">
                             <div class="file-info">
-                                <div class="file-name"><i class="fa-solid fa-file-arrow-down"></i>${file.display}</div>
+                                <div class="file-name"><i class="fa-solid fa-file-arrow-down"></i>${file.display}<span class="file-actions"><button class="file-icon-btn" onclick="copyFilename('${fNameAttr}')" title="${t('copy_filename')}" aria-label="${t('copy_filename')}"><i class="fa-solid fa-copy"></i></button><button class="file-icon-btn" onclick="copyDownload('${fUrlAttr}')" title="${t('copy_link')}" aria-label="${t('copy_link')}"><i class="fa-solid fa-link"></i></button></span></div>
                                 <div class="file-raw">${file.rawName}</div>
                                 ${file.size ? `<div class="file-size"><i class="fa-solid fa-weight-scale"></i>${file.size}</div>` : ''}
                             </div>
-                            <a href="${downloadUrl}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>Download</a>
+                            <a href="${downloadUrl}" target="_blank" rel="noopener" class="btn-dl"><i class="fa-solid fa-download"></i>${t('download')}</a>
                         </div>
                     </div>`);
                 });
@@ -692,22 +1318,24 @@ function renderClients(query = '') {
             }
 
             if (!q && manyFiles) {
-                parts.push(`<button id="more-btn-${client.id}" onclick="toggleFileList('${client.id}')" class="show-more-btn"><i class="fa-solid fa-angles-down"></i>Show ${client.matchingFiles.length - 5} more</button>`);
+                parts.push(`<button id="more-btn-${client.id}" onclick="toggleFileList('${client.id}')" class="show-more-btn"><i class="fa-solid fa-angles-down"></i>${t('show_more', { n: client.matchingFiles.length - 5 })}</button>`);
             }
 
             if (client.matchingExtensions.length > 0) {
                 parts.push(`<div class="ext-section">
                     <button id="ext-header-${client.id}" onclick="toggleDropdown('${client.id}')" class="ext-header">
-                        <span><i class="fa-solid fa-puzzle-piece" style="margin-right:0.4rem;color:var(--text-dim)"></i>Extensions (${client.matchingExtensions.length})</span>
+                        <span><i class="fa-solid fa-puzzle-piece" style="margin-right:0.4rem;color:var(--text-dim)"></i>${t('extensions')} (${client.matchingExtensions.length})</span>
                         <i class="fa-solid fa-chevron-down chevron"></i>
                     </button>
                     <div id="ext-body-${client.id}" class="ext-body"><div class="ext-body-inner">
                         ${client.matchingExtensions.map(ext => {
                             const extDownloadUrl = getMonetizedUrl(ext.url);
+                            const eName = escapeAttr(ext.rawName);
+                            const eUrl = escapeAttr(ext.url);
                             return `
                             <div class="ext-row">
                                 <div class="file-info">
-                                    <div class="file-name" style="font-size:0.8125rem">${ext.display}</div>
+                                    <div class="file-name" style="font-size:0.8125rem">${ext.display}<span class="file-actions"><button class="file-icon-btn" onclick="copyFilename('${eName}')" title="${t('copy_filename')}" aria-label="${t('copy_filename')}"><i class="fa-solid fa-copy"></i></button><button class="file-icon-btn" onclick="copyDownload('${eUrl}')" title="${t('copy_link')}" aria-label="${t('copy_link')}"><i class="fa-solid fa-link"></i></button></span></div>
                                     <div class="file-raw">${ext.rawName}</div>
                                     ${ext.size ? `<div class="file-size"><i class="fa-solid fa-weight-scale"></i>${ext.size}</div>` : ''}
                                 </div>
@@ -725,12 +1353,29 @@ function renderClients(query = '') {
         parts.push(`</div>`);
     });
 
-    container.innerHTML = parts.join('') || `<div class="empty-state"><div class="empty-icon"><i class="fa-solid fa-search"></i></div><div class="empty-title">No results found</div><div class="empty-desc">Try a different search term or browse the categories above</div></div>`;
+    if (parts.length === 0) {
+        const hasFilters = prefs.tagFilters.length > 0;
+        container.innerHTML = `<div class="empty-state">
+            <div class="empty-icon"><i class="fa-solid fa-search"></i></div>
+            <div class="empty-title">${t('no_results')}</div>
+            <div class="empty-desc">${hasFilters ? t('try_filters') : t('try_different')}</div>
+            ${hasFilters ? `<button class="clear-filters" style="margin-top:1rem" onclick="clearAllFilters()"><i class="fa-solid fa-xmark"></i> ${t('clear_all')}</button>` : ''}
+        </div>`;
+    } else {
+        container.innerHTML = parts.join('');
+    }
 }
 
 // ── Events ──
 
 document.addEventListener('DOMContentLoaded', () => {
+    applyAccent();
+    applyDensity();
+    applyMotion();
+    applyTheme();
+    applyTranslations();
+    matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => { if (prefs.theme === 'auto') applyTheme(); });
+
     const searchInput = document.getElementById('search-input');
     const searchClear = document.getElementById('search-clear');
 
@@ -744,7 +1389,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     searchInput.addEventListener('focus', () => {
         if (searchInput.value.trim()) renderSearchDropdown(searchInput.value);
+        else renderSearchHistory();
     });
+    searchInput.addEventListener('change', () => recordSearch(searchInput.value));
+    searchInput.addEventListener('blur', () => { setTimeout(() => recordSearch(searchInput.value), 50); });
 
     searchClear.addEventListener('click', clearSearch);
 
@@ -753,7 +1401,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!wrapper.contains(e.target)) {
             document.getElementById('search-dropdown').classList.add('hidden');
         }
+        // Dismiss sort menu when clicking outside
+        const sortWrap = document.getElementById('sort-btn')?.parentElement;
+        const sortMenu = document.getElementById('sort-menu');
+        if (sortMenu && sortWrap && !sortWrap.contains(e.target)) {
+            sortMenu.classList.add('hidden');
+        }
     });
+
+    window.addEventListener('hashchange', applyHashOnce);
 
     document.addEventListener('keydown', (e) => {
         if (document.getElementById('screenshots-modal').classList.contains('active')) {
@@ -761,6 +1417,14 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (e.key === 'ArrowLeft') prevScreenshot();
             else if (e.key === 'ArrowRight') nextScreenshot();
             else if (e.key === 'z' || e.key === 'Z') toggleZoom();
+            return;
+        }
+        if (document.getElementById('help-modal').classList.contains('active')) {
+            if (e.key === 'Escape') closeHelp();
+            return;
+        }
+        if (document.getElementById('settings-modal').classList.contains('active')) {
+            if (e.key === 'Escape') closeSettings();
             return;
         }
 
@@ -776,8 +1440,22 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 searchInput.blur();
                 document.getElementById('search-dropdown').classList.add('hidden');
+                document.getElementById('sort-menu')?.classList.add('hidden');
             }
             return;
+        }
+
+        // Global single-key shortcuts (not while typing)
+        const typing = document.activeElement === searchInput || ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);
+        if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            if (e.key === '?') { e.preventDefault(); openHelp(); return; }
+            if (e.key === 'j') { e.preventDefault(); moveKbFocus(+1); return; }
+            if (e.key === 'k') { e.preventDefault(); moveKbFocus(-1); return; }
+            if (e.key === 'g') { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+            if (e.key === 'G') { e.preventDefault(); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); return; }
+            if (e.key === 'r' || e.key === 'R') { e.preventDefault(); randomClient(); return; }
+            if (e.key === 't' || e.key === 'T') { e.preventDefault(); cycleTheme(); return; }
+            if (e.key === 's' || e.key === 'S') { e.preventDefault(); openSettings(); return; }
         }
 
         if (document.activeElement === searchInput) {
