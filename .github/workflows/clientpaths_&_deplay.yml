@@ -42,7 +42,7 @@ jobs:
           valid_exts = {".zip", ".dll", ".so", ".apk", ".mcpack", ".mcaddon"}
           image_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
           video_exts = {".mp4", ".webm", ".mov", ".m4v", ".ogv"}
-          tag_names = {"working", "legacy", "trash"}
+          tag_names = {"working", "legacy", "trash", "popular"}
 
           entries = []
           for root, dirs, files in os.walk(library_dir):
