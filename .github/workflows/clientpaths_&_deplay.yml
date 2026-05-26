@@ -42,7 +42,8 @@ jobs:
           valid_exts = {".zip", ".dll", ".so", ".apk", ".mcpack", ".mcaddon"}
           image_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
           video_exts = {".mp4", ".webm", ".mov", ".m4v", ".ogv"}
-          tag_names = {"working", "legacy", "trash", "popular"}
+          def is_tag(name):
+              return "." not in name and name.lower() not in ("readme", "license")
 
           entries = []
           for root, dirs, files in os.walk(library_dir):
@@ -71,7 +72,7 @@ jobs:
                       except:
                           entry["content"] = {}
                       entries.append(entry)
-                  elif low in tag_names:
+                  elif is_tag(fname):
                       entries.append(entry)
                   elif any(low.endswith(e) for e in valid_exts):
                       try:

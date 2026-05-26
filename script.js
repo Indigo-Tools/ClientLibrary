@@ -1031,7 +1031,7 @@ async function init() {
                 client.screenshots.push({ url: fullUrl, name: fileName, type: 'image' });
             } else if (lowerName.match(/\.(mp4|webm|mov|m4v|ogv)$/) && (parts.some(p => p.toLowerCase() === 'screenshots') || lowerName.includes('screenshot'))) {
                 client.screenshots.push({ url: fullUrl, name: fileName, type: 'video' });
-            } else if (['working','legacy','trash','popular'].includes(lowerName)) {
+            } else if (!lowerName.includes('.') && !['readme','license'].includes(lowerName)) {
                 if (!client.tags.includes(lowerName)) client.tags.push(lowerName);
             } else {
                 detectTags(parts).forEach(t => { if (!client.tags.includes(t)) client.tags.push(t); });
