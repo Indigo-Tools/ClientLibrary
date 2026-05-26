@@ -1069,6 +1069,20 @@ async function init() {
             structured["Optifine Packs"] = optifineClients;
             detectedCategories.add("Optifine Packs");
         }
+
+        const popularClients = {};
+        Object.keys(structured).forEach(cat => {
+            if (cat === "Popular Clients") return;
+            Object.entries(structured[cat]).forEach(([name, data]) => {
+                if ((data.tags || []).includes('popular')) {
+                    popularClients[name] = { ...data, originalCategory: cat };
+                }
+            });
+        });
+        if (Object.keys(popularClients).length > 0) {
+            structured["Popular Clients"] = popularClients;
+            detectedCategories.add("Popular Clients");
+        }
         Object.keys(structured).forEach(cat => { if (Object.keys(structured[cat]).length === 0) { delete structured[cat]; detectedCategories.delete(cat); } });
 
         const sorted = sortCategories(Array.from(detectedCategories).map(name => ({
