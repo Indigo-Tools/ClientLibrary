@@ -379,6 +379,36 @@ function buildSearchString(client) {
     return s;
 }
 
+// ── Tab cycler ──
+
+function updateTabScrollButtons() {
+    const scrollContainer = document.getElementById('category-tabs');
+    const leftBtn = document.getElementById('tab-scroll-left');
+    const rightBtn = document.getElementById('tab-scroll-right');
+    if (!scrollContainer || !leftBtn || !rightBtn) return;
+    const canScroll = scrollContainer.scrollWidth > scrollContainer.clientWidth;
+    if (canScroll) {
+        leftBtn.classList.add('visible');
+        rightBtn.classList.add('visible');
+        // Hide left button at start, right at end
+        leftBtn.style.opacity = scrollContainer.scrollLeft <= 1 ? '0' : '1';
+        rightBtn.style.opacity = scrollContainer.scrollLeft + scrollContainer.clientWidth >= scrollContainer.scrollWidth - 2 ? '0' : '1';
+    } else {
+        leftBtn.classList.remove('visible');
+        rightBtn.classList.remove('visible');
+    }
+}
+
+function scrollTabs(direction) {
+    const container = document.getElementById('category-tabs');
+    if (!container) return;
+    const scrollAmount = 200;
+    container.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+    });
+}
+
 // ── Init ──
 
 async function init() {
@@ -507,6 +537,16 @@ async function init() {
             renderTabs();
             renderStats();
             switchCategory("ALL");
+            // Set up tab cycler
+            const scrollContainer = document.getElementById('category-tabs');
+            if (scrollContainer) {
+                scrollContainer.addEventListener('scroll', updateTabScrollButtons);
+                window.addEventListener('resize', updateTabScrollButtons);
+                document.getElementById('tab-scroll-left').addEventListener('click', () => scrollTabs('left'));
+                document.getElementById('tab-scroll-right').addEventListener('click', () => scrollTabs('right'));
+                // initial check
+                setTimeout(updateTabScrollButtons, 50);
+            }
             requestAnimationFrame(() => { main.style.opacity = '1'; });
         }, 250);
     } catch (err) {
@@ -524,6 +564,8 @@ function renderTabs() {
         const label = t === "ALL" ? "All" : (cat ? cat.displayName : (t.startsWith('1_') ? `Version: ${t.replace('_','.')}` : t));
         return `<button onclick="switchCategory('${t}')" id="tab-${t}" class="tab-btn">${label}</button>`;
     }).join('');
+    // update cycler after rendering
+    setTimeout(updateTabScrollButtons, 10);
 }
 
 function switchCategory(name) {

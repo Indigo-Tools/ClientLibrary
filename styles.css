@@ -73,17 +73,51 @@ a:hover { color: var(--accent-light); text-decoration: underline; }
 .loading-text { margin-top: 1rem; color: var(--text-muted); font-size: 0.875rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Tabs ── */
+/* ── Tabs with cycler ── */
 .tabs-bar {
     position: sticky; top: 0; z-index: 40;
     background: rgba(10, 11, 13, 0.85);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
     margin: 0 -1.25rem; padding: 0 1.25rem;
+    display: flex; align-items: center;
+    gap: 0.25rem;
 }
 
-.tabs-scroll { display: flex; overflow-x: auto; gap: 0.375rem; padding: 0.75rem 0; scrollbar-width: none; }
+.tabs-scroll {
+    display: flex; overflow-x: auto; gap: 0.375rem;
+    padding: 0.75rem 0; flex: 1;
+    scrollbar-width: none;
+    scroll-behavior: smooth;
+}
 .tabs-scroll::-webkit-scrollbar { display: none; }
+
+/* Cyclic scroll arrows */
+.tab-scroll-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.6875rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tab-scroll-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.tab-scroll-btn:hover {
+    color: var(--white);
+    border-color: var(--border-hover);
+    box-shadow: 0 0 14px var(--accent-dim);
+    background: rgba(108,92,231,0.1);
+}
 
 .tab-btn {
     white-space: nowrap; padding: 0.4rem 0.875rem; border-radius: var(--radius-sm);
@@ -320,7 +354,7 @@ a:hover { color: var(--accent-light); text-decoration: underline; }
 
 .client-body-inner { overflow: hidden; display: flex; flex-direction: column; gap: 0.5rem; }
 
-/* ── File Cards ── */
+/* ── File Cards (banner visibility improved) ── */
 .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 0.75rem; }
 
 .file-card {
@@ -334,8 +368,18 @@ a:hover { color: var(--accent-light); text-decoration: underline; }
     box-shadow: 0 4px 24px rgba(0,0,0,0.25), 0 0 20px var(--accent-dim);
 }
 
-.file-card-banner { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.1; }
-.file-card-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, var(--card) 40%, transparent); }
+/* Increased banner opacity & softer gradient */
+.file-card-banner {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0.25; /* was 0.1 – now much more visible */
+}
+
+.file-card-overlay {
+    position: absolute; inset: 0;
+    /* Lighter gradient to keep text readable while showing banner */
+    background: linear-gradient(90deg, rgba(21,23,28,0.7) 25%, transparent 70%);
+}
 
 .file-card-body {
     position: relative; display: flex; align-items: center;
