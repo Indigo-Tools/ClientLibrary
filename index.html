@@ -15,10 +15,24 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"></noscript>
   <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
   <div class="site-wrapper">
+
+    <button id="theme-toggle" class="icon-btn theme-toggle" onclick="cycleTheme()" aria-label="Toggle theme" title="Toggle theme (T)">
+      <i class="fa-solid fa-circle-half-stroke"></i>
+    </button>
+    <button id="help-toggle" class="icon-btn help-toggle" onclick="openHelp()" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
+      <i class="fa-solid fa-keyboard"></i>
+    </button>
+    <button id="settings-toggle" class="icon-btn settings-toggle" onclick="openSettings()" aria-label="Settings" title="Settings (S)">
+      <i class="fa-solid fa-gear"></i>
+    </button>
 
     <header class="site-header">
       <div class="header-icon">
@@ -30,7 +44,7 @@
 
     <div id="status-container" class="loading-state">
       <div class="spinner"></div>
-      <p id="status-text" class="loading-text">Indexing Library...</p>
+      <p id="status-text" class="loading-text" data-t="loading">Indexing Library...</p>
     </div>
 
     <div id="main-content" class="hidden">
@@ -64,17 +78,64 @@
       <div class="toolbar">
         <div id="stats-bar" class="stats-bar"></div>
         <div class="toolbar-actions">
+          <div class="toolbar-menu-wrapper">
+            <button id="sort-btn" onclick="toggleSortMenu(event)" class="toolbar-btn" aria-haspopup="true">
+              <i class="fa-solid fa-arrow-down-wide-short"></i>
+              <span data-t="sort">Sort</span>
+              <i class="fa-solid fa-chevron-down chev"></i>
+            </button>
+            <div id="sort-menu" class="toolbar-menu hidden" role="menu"></div>
+          </div>
+          <button id="filter-btn" onclick="toggleFilterPanel()" class="toolbar-btn">
+            <i class="fa-solid fa-filter"></i>
+            <span data-t="filter">Filter</span>
+            <span id="filter-badge" class="toolbar-badge hidden">0</span>
+          </button>
+          <button onclick="randomClient()" class="toolbar-btn" title="Surprise me (R)">
+            <i class="fa-solid fa-shuffle"></i>
+            <span class="hide-mobile" data-t="random">Random</span>
+          </button>
           <button id="expand-all-btn" onclick="expandCollapseAll()" class="toolbar-btn">
             <i class="fa-solid fa-angles-down"></i>
-            <span>Expand All</span>
+            <span data-t="expand_all">Expand All</span>
           </button>
         </div>
+      </div>
+
+      <div id="filter-panel" class="filter-panel hidden">
+        <div class="filter-chips" id="filter-chips"></div>
+        <button id="clear-filters" class="clear-filters hidden" onclick="clearAllFilters()">
+          <i class="fa-solid fa-xmark"></i> <span data-t="clear_all">Clear all</span>
+        </button>
       </div>
 
       <div id="client-container" class="client-list"></div>
 
     </div>
   </div>
+
+  <!-- Help / shortcuts modal -->
+  <div id="help-modal" class="help-modal" onclick="closeHelp()">
+    <div class="help-content" onclick="event.stopPropagation()">
+      <button class="help-close" onclick="closeHelp()" aria-label="Close"><i class="fa-solid fa-times"></i></button>
+      <h2 class="help-title"><i class="fa-solid fa-keyboard"></i> Keyboard Shortcuts</h2>
+      <div class="help-grid">
+        <div class="help-row"><kbd>/</kbd><span>Focus search</span></div>
+        <div class="help-row"><kbd>Esc</kbd><span>Close / clear</span></div>
+        <div class="help-row"><kbd>j</kbd> / <kbd>k</kbd><span>Next / previous client</span></div>
+        <div class="help-row"><kbd>g</kbd><span>Jump to top</span></div>
+        <div class="help-row"><kbd>G</kbd><span>Jump to bottom</span></div>
+        <div class="help-row"><kbd>r</kbd><span>Random client</span></div>
+        <div class="help-row"><kbd>t</kbd><span>Cycle theme</span></div>
+        <div class="help-row"><kbd>?</kbd><span>Show this help</span></div>
+        <div class="help-row"><kbd>&larr;</kbd> / <kbd>&rarr;</kbd><span>Prev / next screenshot</span></div>
+        <div class="help-row"><kbd>z</kbd><span>Zoom screenshot</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <!-- Back to top -->
   <button id="back-to-top" class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top">
@@ -95,12 +156,47 @@
       </button>
       <div class="screenshot-main-container">
         <img id="screenshot-main" class="screenshot-img" src="" alt="Screenshot" onclick="toggleZoom()">
+        <video id="screenshot-video" class="screenshot-video" controls playsinline preload="metadata" hidden></video>
         <div id="screenshot-counter" class="screenshot-counter"></div>
       </div>
       <div id="screenshot-thumbnails" class="screenshot-thumbnails"></div>
     </div>
   </div>
 
+  <!-- Settings modal -->
+  <div id="settings-modal" class="help-modal" onclick="closeSettings()">
+    <div class="help-content settings-content" onclick="event.stopPropagation()">
+      <button class="help-close" onclick="closeSettings()" aria-label="Close"><i class="fa-solid fa-times"></i></button>
+      <h2 class="help-title"><i class="fa-solid fa-gear"></i> <span data-t="settings">Settings</span></h2>
+      <div class="settings-section">
+        <label class="settings-label" data-t="language">Language</label>
+        <select id="setting-language" class="settings-select" onchange="setLanguage(this.value)"></select>
+      </div>
+      <div class="settings-section">
+        <label class="settings-label" data-t="theme">Theme</label>
+        <div class="settings-segmented" id="setting-theme"></div>
+      </div>
+      <div class="settings-section">
+        <label class="settings-label" data-t="accent">Accent color</label>
+        <div class="accent-swatches" id="setting-accent"></div>
+      </div>
+      <div class="settings-section">
+        <label class="settings-label" data-t="density">Density</label>
+        <div class="settings-segmented" id="setting-density"></div>
+      </div>
+      <div class="settings-section settings-row">
+        <label class="settings-label" data-t="reduce_motion">Reduce motion</label>
+        <button id="setting-motion" class="settings-switch" onclick="toggleReducedMotion()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-section settings-actions">
+        <button class="toolbar-btn" onclick="exportFavorites()"><i class="fa-solid fa-file-export"></i><span data-t="export_favs">Export favorites</span></button>
+        <button class="toolbar-btn" onclick="document.getElementById('import-input').click()"><i class="fa-solid fa-file-import"></i><span data-t="import_favs">Import favorites</span></button>
+        <input id="import-input" type="file" accept="application/json,.json" style="display:none" onchange="importFavorites(event)">
+      </div>
+    </div>
+  </div>
+
+  <script src="translations.js" defer></script>
   <script src="script.js" defer></script>
 </body>
 </html>
