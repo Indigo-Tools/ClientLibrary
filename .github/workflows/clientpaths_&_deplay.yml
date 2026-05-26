@@ -4,6 +4,11 @@ on:
   push:
     paths:
       - 'ClientLibrary/**'
+      - '**.html'
+      - '**.css'
+      - '**.js'
+      - 'manifest.json'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
