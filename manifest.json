@@ -10,7 +10,7 @@
   "theme_color": "#6c5ce7",
   "icons": [
     {
-      "src": "BG.png",
+      "src": "logo.png",
       "sizes": "any",
       "type": "image/png"
     }
