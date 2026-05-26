@@ -1,4 +1,4 @@
-name: Generate Library Index
+name: Generate Library Index & Deploy
 
 on:
   push:
@@ -6,11 +6,20 @@ on:
       - 'ClientLibrary/**'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    environment:
+      name: github-pages
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -71,18 +80,24 @@ jobs:
               json.dump(entries, f, separators=(",", ":"))
 
           print(f"Generated paths.json with {len(entries)} entries")
-          dl_files = [e for e in entries if any(e["path"].lower().endswith(x) for x in valid_exts)]
-          print(f"  Downloadable files: {len(dl_files)}")
-          desc_files = [e for e in entries if "content" in e and ("description" in e["path"].lower())]
-          print(f"  Descriptions (inlined): {len(desc_files)}")
-          author_files = [e for e in entries if "content" in e and ("author" in e["path"].lower() or "creator" in e["path"].lower())]
-          print(f"  Author files (inlined): {len(author_files)}")
           PYEOF
 
-      - name: Commit and Push
+      - name: Commit and Push updated index
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add paths.json
           git commit -m "chore: update comprehensive library index [skip ci]" || exit 0
           git push
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
