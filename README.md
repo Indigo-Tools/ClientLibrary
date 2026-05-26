@@ -44,4 +44,7 @@ When adding new assets to the library, please adhere to the following guidelines
 
 ---
 
-> © 2025 Indigo Tools
+> © 2026 Indigo / Nyxora Tools
+
+
+-> note if you want your client off this / swapped to your own link, you may request it, in our discord | discord.glacierclient.xyz | 
