@@ -29,59 +29,95 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          lfs: true
+          lfs: false
+
+      - name: Fetch LFS file sizes from pointers
+        run: |
+          git lfs install --local
+          git lfs ls-files --size 2>/dev/null | awk '{
+            size=$NF; gsub(/[^0-9]/, "", size)
+            $NF=""; sub(/ \* /, "", $0); sub(/ - /, "", $0); sub(/^ /, "", $0); sub(/ $/, "", $0)
+            print $0 "\t" size
+          }' > lfs_sizes.tsv || touch lfs_sizes.tsv
+          echo "LFS size entries: $(wc -l < lfs_sizes.tsv)"
 
       - name: Generate paths.json with metadata
         run: |
           echo "Generating comprehensive library index with metadata..."
 
           python3 - <<'PYEOF'
-          import os, json, stat
+          import os, json
 
           library_dir = "ClientLibrary"
           valid_exts = {".zip", ".dll", ".so", ".apk", ".mcpack", ".mcaddon"}
           image_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
-          video_exts = {".mp4", ".webm", ".mov", ".m4v", ".ogv"}
+          video_exts  = {".mp4", ".webm", ".mov", ".m4v", ".ogv"}
+
           def is_tag(name):
               return "." not in name and name.lower() not in ("readme", "license")
+
+          # Load LFS sizes from the TSV generated in the previous step
+          lfs_sizes = {}
+          try:
+              with open("lfs_sizes.tsv") as f:
+                  for line in f:
+                      parts = line.strip().split("\t")
+                      if len(parts) == 2:
+                          path_key = parts[0].replace("\\", "/")
+                          try:
+                              lfs_sizes[path_key] = int(parts[1])
+                          except ValueError:
+                              pass
+              print(f"Loaded {len(lfs_sizes)} LFS size entries")
+          except FileNotFoundError:
+              print("No lfs_sizes.tsv found, sizes will be 0 for LFS files")
 
           entries = []
           for root, dirs, files in os.walk(library_dir):
               for fname in files:
                   fpath = os.path.join(root, fname)
-                  rel = fpath.replace("\\", "/")
+                  rel   = fpath.replace("\\", "/")
                   parts = rel.split("/")
                   if len(parts) < 3:
                       continue
-                  low = fname.lower()
+                  low   = fname.lower()
                   entry = {"path": rel}
 
-                  if low == "pack_icon.png" or low == "pack_banner.png":
+                  if low in ("pack_icon.png", "pack_banner.png"):
                       entries.append(entry)
+
                   elif low in ("description.txt", "description.md"):
                       try:
                           with open(fpath, "r", encoding="utf-8", errors="replace") as f:
                               entry["content"] = f.read()
-                      except:
+                      except Exception:
                           entry["content"] = ""
                       entries.append(entry)
+
                   elif low in ("author.json", "creator.json"):
                       try:
                           with open(fpath, "r", encoding="utf-8", errors="replace") as f:
                               entry["content"] = json.loads(f.read())
-                      except:
+                      except Exception:
                           entry["content"] = {}
                       entries.append(entry)
+
                   elif is_tag(fname):
                       entries.append(entry)
+
                   elif any(low.endswith(e) for e in valid_exts):
-                      try:
-                          entry["size"] = os.path.getsize(fpath)
-                      except:
-                          pass
+                      # Try real file size first (non-LFS), fall back to LFS pointer size
+                      real_size = os.path.getsize(fpath)
+                      if real_size <= 140:
+                          # Almost certainly an LFS pointer stub (pointers are ~130 bytes)
+                          entry["size"] = lfs_sizes.get(rel, 0)
+                      else:
+                          entry["size"] = real_size
                       entries.append(entry)
+
                   elif any(low.endswith(e) for e in image_exts):
                       entries.append(entry)
+
                   elif any(low.endswith(e) for e in video_exts):
                       entries.append(entry)
 
@@ -106,9 +142,9 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html script.js styles.css translations.js manifest.json paths.json _site/
-          [ -f BG.png ] && cp BG.png _site/ || true
+          [ -f BG.png ]   && cp BG.png   _site/ || true
           [ -f logo.png ] && cp logo.png _site/ || true
-          [ -f CNAME ] && cp CNAME _site/ || true
+          [ -f CNAME ]    && cp CNAME    _site/ || true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
