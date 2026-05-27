@@ -222,67 +222,222 @@
   </div>
 
   <!-- Settings modal -->
-  <div id="settings-modal" class="help-modal" onclick="closeSettings()">
+  <div id="settings-modal" class="help-modal settings-modal-v2" onclick="closeSettings()">
     <div class="help-content settings-content" onclick="event.stopPropagation()">
       <button class="help-close" onclick="closeSettings()" aria-label="Close"><i class="fa-solid fa-times"></i></button>
       <h2 class="help-title"><i class="fa-solid fa-gear"></i> <span data-t="settings">Settings</span></h2>
-      <div class="settings-section">
-        <label class="settings-label" data-t="language">Language</label>
-        <select id="setting-language" class="settings-select" onchange="setLanguage(this.value)"></select>
-      </div>
-      <div class="settings-section">
-        <label class="settings-label" data-t="theme">Theme</label>
-        <div class="settings-segmented" id="setting-theme"></div>
-      </div>
-      <div class="settings-section">
-        <label class="settings-label" data-t="accent">Accent color</label>
-        <div class="accent-swatches" id="setting-accent"></div>
-        <div class="accent-custom">
-          <label class="accent-custom-card" for="setting-accent-picker">
-            <input type="color" id="setting-accent-picker" value="#6c5ce7" onchange="setCustomAccent(this.value)" oninput="setCustomAccent(this.value)" aria-label="Pick a custom accent color">
-            <span class="accent-custom-swatch" id="setting-accent-swatch"></span>
-            <span class="accent-custom-info">
-              <span class="accent-custom-title"><i class="fa-solid fa-eye-dropper"></i>Custom color</span>
-              <span id="setting-accent-hex" class="accent-hex" onclick="event.preventDefault();copyText('#6c5ce7','Hex copied')">#6c5ce7</span>
-            </span>
-          </label>
-          <button class="accent-random-btn" onclick="randomAccent()" title="Random color" aria-label="Random color"><i class="fa-solid fa-dice"></i></button>
+
+      <div class="settings-shell">
+        <!-- Sidebar / mobile tabbar -->
+        <nav class="settings-nav" role="tablist" aria-label="Settings sections">
+          <button type="button" class="settings-nav-btn active" role="tab" aria-selected="true" data-tab="appearance" onclick="switchSettingsTab('appearance')">
+            <i class="fa-solid fa-palette"></i><span>Appearance</span>
+          </button>
+          <button type="button" class="settings-nav-btn" role="tab" aria-selected="false" data-tab="behavior" onclick="switchSettingsTab('behavior')">
+            <i class="fa-solid fa-universal-access"></i><span>Behavior &amp; Accessibility</span>
+          </button>
+          <button type="button" class="settings-nav-btn" role="tab" aria-selected="false" data-tab="tools" onclick="switchSettingsTab('tools')">
+            <i class="fa-solid fa-toolbox"></i><span>Tools &amp; Data</span>
+          </button>
+        </nav>
+
+        <!-- Mobile dropdown selector (visible only on small screens) -->
+        <select class="settings-nav-select" id="settings-nav-select" onchange="switchSettingsTab(this.value)" aria-label="Settings section">
+          <option value="appearance">Appearance</option>
+          <option value="behavior">Behavior &amp; Accessibility</option>
+          <option value="tools">Tools &amp; Data</option>
+        </select>
+
+        <div class="settings-panels">
+          <!-- ── Appearance ── -->
+          <section class="settings-panel active" data-panel="appearance" role="tabpanel">
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-circle-half-stroke"></i><span data-t="theme">Theme</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <div class="settings-segmented" id="setting-theme"></div>
+              </div>
+              <div class="settings-desc">Choose between Auto (follow system), Dark, Light, or Schedule to switch automatically based on time of day.</div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-droplet"></i><span data-t="accent">Accent color</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <div class="accent-swatches" id="setting-accent"></div>
+                <div class="accent-custom">
+                  <button type="button" class="accent-custom-card" id="setting-accent-picker-btn"
+                          onclick="openAccentPicker(event)" aria-haspopup="dialog" aria-expanded="false"
+                          aria-controls="accent-picker-popover">
+                    <span class="accent-custom-swatch" id="setting-accent-swatch"></span>
+                    <span class="accent-custom-info">
+                      <span class="accent-custom-title"><i class="fa-solid fa-eye-dropper"></i>Custom color</span>
+                      <span id="setting-accent-hex" class="accent-hex">#6c5ce7</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-down accent-custom-chev" aria-hidden="true"></i>
+                  </button>
+                  <button class="accent-random-btn" onclick="randomAccent()" title="Random color" aria-label="Random color"><i class="fa-solid fa-dice"></i></button>
+                  <div id="accent-picker-popover" class="cp-popover hidden" role="dialog" aria-modal="false" aria-label="Color picker">
+                    <div class="cp-sv" id="cp-sv">
+                      <div class="cp-sv-sat"></div>
+                      <div class="cp-sv-val"></div>
+                      <div class="cp-sv-handle" id="cp-sv-handle"></div>
+                    </div>
+                    <div class="cp-hue" id="cp-hue">
+                      <div class="cp-hue-handle" id="cp-hue-handle"></div>
+                    </div>
+                    <div class="cp-row">
+                      <span class="cp-preview" id="cp-preview"></span>
+                      <span class="cp-hex-prefix">#</span>
+                      <input type="text" id="cp-hex" class="cp-hex-input" maxlength="6"
+                             aria-label="Hex color value" autocomplete="off" spellcheck="false">
+                      <button type="button" class="cp-copy" id="cp-copy" title="Copy hex" aria-label="Copy hex">
+                        <i class="fa-solid fa-copy"></i>
+                      </button>
+                    </div>
+                    <div class="cp-presets" id="cp-presets" aria-label="Preset colors"></div>
+                  </div>
+                </div>
+                <div class="accent-recents" id="accent-recents"></div>
+              </div>
+              <div class="settings-desc">Pick a preset, drop in a custom hex value (e.g. <code>#6c5ce7</code>), or roll the dice for a random accent. Used across buttons, highlights and focus rings.</div>
+            </div>
+
+            <div class="settings-item settings-item-row">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-moon"></i><span>Night Shift</span></div>
+                <div class="settings-item-tools">
+                  <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+                  <button id="setting-nightshift" class="settings-switch" onclick="toggleNightShift()" role="switch" aria-checked="false" title="Warm overlay to reduce blue light"><span class="switch-knob"></span></button>
+                </div>
+              </div>
+              <div class="settings-desc">Applies a warm overlay to reduce blue light at night. Adjust strength below once enabled.</div>
+            </div>
+
+            <div class="settings-item" id="nightshift-strength-row" style="display:none">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-sliders"></i><span>Night Shift strength</span></div>
+              </div>
+              <div class="settings-item-control">
+                <input type="range" id="setting-nightshift-strength" min="10" max="80" step="5" oninput="setNightShiftStrength(this.value)" class="nightshift-slider">
+              </div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-table-cells-large"></i><span data-t="density">Density</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <select id="setting-density-select" class="settings-select" onchange="setDensity(this.value)">
+                  <option value="cozy">Cozy</option>
+                  <option value="compact">Compact</option>
+                </select>
+              </div>
+              <div class="settings-desc">Cozy gives content more breathing room; Compact tightens spacing so more cards fit on screen at once.</div>
+            </div>
+
+            <div class="settings-item settings-item-row">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-grip"></i><span>Compact file cards</span></div>
+                <div class="settings-item-tools">
+                  <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+                  <button id="setting-compact-cards" class="settings-switch" onclick="toggleCompactCards()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+                </div>
+              </div>
+              <div class="settings-desc">Hides the banner art on file cards and tightens padding for a denser list view.</div>
+            </div>
+          </section>
+
+          <!-- ── Behavior & Accessibility ── -->
+          <section class="settings-panel" data-panel="behavior" role="tabpanel" hidden>
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-language"></i><span data-t="language">Language</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <select id="setting-language" class="settings-select" onchange="setLanguage(this.value)"></select>
+              </div>
+              <div class="settings-desc">Switches the interface language. Some user-generated client descriptions remain in their original language.</div>
+            </div>
+
+            <div class="settings-item settings-item-row">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-feather"></i><span data-t="reduce_motion">Reduce motion</span></div>
+                <div class="settings-item-tools">
+                  <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+                  <button id="setting-motion" class="settings-switch" onclick="toggleReducedMotion()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+                </div>
+              </div>
+              <div class="settings-desc">Disables non-essential animations and transitions. Helpful for motion sensitivity or low-power devices.</div>
+            </div>
+
+            <div class="settings-item settings-item-row">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-chevrons-up"></i><span>Auto-collapse on switch</span></div>
+                <div class="settings-item-tools">
+                  <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+                  <button id="setting-auto-collapse" class="settings-switch" onclick="toggleAutoCollapse()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+                </div>
+              </div>
+              <div class="settings-desc">Automatically collapses expanded client cards when switching between categories, keeping the view tidy.</div>
+            </div>
+          </section>
+
+          <!-- ── Tools & Data ── -->
+          <section class="settings-panel" data-panel="tools" role="tabpanel" hidden>
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-rotate-left"></i><span>Reset preferences</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <button class="toolbar-btn" onclick="resetAllPrefs()"><i class="fa-solid fa-rotate-left"></i><span>Reset preferences</span></button>
+              </div>
+              <div class="settings-desc">Restores theme, accent, density and all other UI preferences to their defaults. Your favorites are not affected.</div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-chart-simple"></i><span>Your stats</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <button class="toolbar-btn" onclick="closeSettings();openStats()"><i class="fa-solid fa-chart-simple"></i><span>Open stats</span></button>
+              </div>
+              <div class="settings-desc">Opens a personalised dashboard with totals, recent activity and favourite counts.</div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-bolt"></i><span>Command palette</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <button class="toolbar-btn" onclick="closeSettings();openCmdK()"><i class="fa-solid fa-bolt"></i><span>Open palette</span></button>
+              </div>
+              <div class="settings-desc">A keyboard-driven launcher (<kbd>Ctrl</kbd>+<kbd>K</kbd>) for jumping to clients, categories and actions instantly.</div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-file-export"></i><span data-t="export_favs">Export favorites</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control settings-actions">
+                <button class="toolbar-btn" onclick="exportFavorites()"><i class="fa-solid fa-file-export"></i><span data-t="export_favs">Export</span></button>
+                <button class="toolbar-btn" onclick="document.getElementById('import-input').click()"><i class="fa-solid fa-file-import"></i><span data-t="import_favs">Import</span></button>
+                <input id="import-input" type="file" accept="application/json,.json" style="display:none" onchange="importFavorites(event)">
+              </div>
+              <div class="settings-desc">Saves your favorites list to a JSON file, or restores it on another device. The format is forward-compatible.</div>
+            </div>
+          </section>
         </div>
-        <div class="accent-recents" id="accent-recents"></div>
-      </div>
-      <div class="settings-section settings-row">
-        <label class="settings-label">Night Shift</label>
-        <button id="setting-nightshift" class="settings-switch" onclick="toggleNightShift()" role="switch" aria-checked="false" title="Warm overlay to reduce blue light"><span class="switch-knob"></span></button>
-      </div>
-      <div class="settings-section" id="nightshift-strength-row" style="display:none">
-        <label class="settings-label">Night Shift strength</label>
-        <input type="range" id="setting-nightshift-strength" min="10" max="80" step="5" oninput="setNightShiftStrength(this.value)" class="nightshift-slider">
-      </div>
-      <div class="settings-section">
-        <label class="settings-label" data-t="density">Density</label>
-        <div class="settings-segmented" id="setting-density"></div>
-      </div>
-      <div class="settings-section settings-row">
-        <label class="settings-label" data-t="reduce_motion">Reduce motion</label>
-        <button id="setting-motion" class="settings-switch" onclick="toggleReducedMotion()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
-      </div>
-      <div class="settings-section settings-row">
-        <label class="settings-label">Compact file cards</label>
-        <button id="setting-compact-cards" class="settings-switch" onclick="toggleCompactCards()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
-      </div>
-      <div class="settings-section settings-row">
-        <label class="settings-label">Auto-collapse on switch</label>
-        <button id="setting-auto-collapse" class="settings-switch" onclick="toggleAutoCollapse()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
-      </div>
-      <div class="settings-section settings-actions">
-        <button class="toolbar-btn" onclick="resetAllPrefs()"><i class="fa-solid fa-rotate-left"></i><span>Reset preferences</span></button>
-      </div>
-      <div class="settings-section settings-actions">
-        <button class="toolbar-btn" onclick="closeSettings();openStats()"><i class="fa-solid fa-chart-simple"></i><span>Your stats</span></button>
-        <button class="toolbar-btn" onclick="closeSettings();openCmdK()"><i class="fa-solid fa-bolt"></i><span>Command palette</span></button>
-        <button class="toolbar-btn" onclick="exportFavorites()"><i class="fa-solid fa-file-export"></i><span data-t="export_favs">Export favorites</span></button>
-        <button class="toolbar-btn" onclick="document.getElementById('import-input').click()"><i class="fa-solid fa-file-import"></i><span data-t="import_favs">Import favorites</span></button>
-        <input id="import-input" type="file" accept="application/json,.json" style="display:none" onchange="importFavorites(event)">
       </div>
     </div>
   </div>

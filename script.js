@@ -124,6 +124,12 @@ function trackRecentlyViewed(clientId) {
     saveRecent(arr);
     renderRecentlyViewed();
 }
+function clearRecentlyViewed() {
+    saveRecent([]);
+    document.getElementById('recently-viewed')?.remove();
+    try { toast(t('toast_filters_cleared') || 'Cleared', 'broom'); } catch {}
+}
+window.clearRecentlyViewed = clearRecentlyViewed;
 function renderRecentlyViewed() {
     let el = document.getElementById('recently-viewed');
     const ids = loadRecent();
@@ -146,7 +152,10 @@ function renderRecentlyViewed() {
             <button class="recently-chip" onclick="scrollToClient(${jsArg(c.id)})">
                 ${c.iconUrl ? `<img src="${c.iconUrl}" alt="" loading="lazy" onerror="this.outerHTML='<span class=\\'icon-placeholder\\'><i class=\\'fa-solid fa-cube\\'></i></span>'">` : `<span class="icon-placeholder"><i class="fa-solid fa-cube"></i></span>`}
                 <span>${escapeHtml(c.displayName)}</span>
-            </button>`).join('')}</div>`;
+            </button>`).join('')}</div>
+        <button class="recently-clear" onclick="clearRecentlyViewed()" title="${t('clear_all')}" aria-label="${t('clear_all')}">
+            <i class="fa-solid fa-xmark"></i>
+        </button>`;
 }
 
 // ── QoL: Search history ──
@@ -231,7 +240,183 @@ function setCustomAccent(hex) {
     renderAccentSwatches();
     const hx = document.getElementById('setting-accent-hex');
     if (hx) hx.textContent = hex;
+    const sw = document.getElementById('setting-accent-swatch');
+    if (sw) sw.style.background = hex;
 }
+
+// ── Custom color picker (replaces native <input type="color">) ──
+const CP = { h: 264, s: 60, v: 91, _bound: false };
+
+function _hexToRgb(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+function _rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+}
+function _rgbToHsv(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    let h = 0;
+    if (d) {
+        switch (max) {
+            case r: h = ((g - b) / d) % 6; break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h *= 60; if (h < 0) h += 360;
+    }
+    return { h, s: max === 0 ? 0 : (d / max) * 100, v: max * 100 };
+}
+function _hsvToRgb(h, s, v) {
+    s /= 100; v /= 100;
+    const c = v * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = v - c;
+    let r = 0, g = 0, b = 0;
+    if (h < 60)      { r = c; g = x; }
+    else if (h < 120){ r = x; g = c; }
+    else if (h < 180){ g = c; b = x; }
+    else if (h < 240){ g = x; b = c; }
+    else if (h < 300){ r = x; b = c; }
+    else             { r = c; b = x; }
+    return { r: (r + m) * 255, g: (g + m) * 255, b: (b + m) * 255 };
+}
+function _hsvToHex(h, s, v) { const { r, g, b } = _hsvToRgb(h, s, v); return _rgbToHex(r, g, b); }
+
+function _renderCpPresets() {
+    const wrap = document.getElementById('cp-presets'); if (!wrap) return;
+    const presets = Object.values(ACCENT_COLORS || {}).map(c => c.main).filter(Boolean);
+    const fallback = ['#6c5ce7','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#14b8a6'];
+    const list = presets.length ? presets : fallback;
+    wrap.innerHTML = list.map(c => `<button type="button" class="cp-preset" style="background:${c}" data-hex="${c}" title="${c}" aria-label="${c}"></button>`).join('');
+    wrap.querySelectorAll('.cp-preset').forEach(b => {
+        b.addEventListener('click', () => {
+            const hex = b.dataset.hex;
+            const rgb = _hexToRgb(hex); if (!rgb) return;
+            const hsv = _rgbToHsv(rgb.r, rgb.g, rgb.b);
+            CP.h = hsv.h; CP.s = hsv.s; CP.v = hsv.v;
+            _renderCp(); setCustomAccent(hex);
+        });
+    });
+}
+
+function _renderCp() {
+    const sv = document.getElementById('cp-sv');
+    const svHandle = document.getElementById('cp-sv-handle');
+    const hueHandle = document.getElementById('cp-hue-handle');
+    const hexInput = document.getElementById('cp-hex');
+    const preview = document.getElementById('cp-preview');
+    if (!sv) return;
+    const hueOnlyHex = _hsvToHex(CP.h, 100, 100);
+    sv.style.background = `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, ${hueOnlyHex})`;
+    svHandle.style.left = CP.s + '%';
+    svHandle.style.top = (100 - CP.v) + '%';
+    hueHandle.style.left = (CP.h / 360 * 100) + '%';
+    const hex = _hsvToHex(CP.h, CP.s, CP.v);
+    if (hexInput && document.activeElement !== hexInput) hexInput.value = hex.replace('#','');
+    if (preview) preview.style.background = hex;
+}
+
+function _cpFromPointer(e, el, axisX, axisY) {
+    const rect = el.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    if (axisX) {
+        const x = Math.max(0, Math.min(rect.width, t.clientX - rect.left));
+        const y = Math.max(0, Math.min(rect.height, t.clientY - rect.top));
+        return { x: x / rect.width, y: y / rect.height };
+    }
+    const x = Math.max(0, Math.min(rect.width, t.clientX - rect.left));
+    return { x: x / rect.width };
+}
+
+function _bindCpOnce() {
+    if (CP._bound) return; CP._bound = true;
+
+    const sv = document.getElementById('cp-sv');
+    const hue = document.getElementById('cp-hue');
+    const hex = document.getElementById('cp-hex');
+    const copyBtn = document.getElementById('cp-copy');
+
+    const drag = (el, onMove) => {
+        const start = (e) => {
+            e.preventDefault();
+            onMove(e);
+            const move = (ev) => onMove(ev);
+            const end = () => {
+                window.removeEventListener('pointermove', move);
+                window.removeEventListener('pointerup', end);
+            };
+            window.addEventListener('pointermove', move);
+            window.addEventListener('pointerup', end);
+        };
+        el.addEventListener('pointerdown', start);
+    };
+
+    drag(sv, (e) => {
+        const p = _cpFromPointer(e, sv, true, true);
+        CP.s = p.x * 100; CP.v = (1 - p.y) * 100;
+        _renderCp(); setCustomAccent(_hsvToHex(CP.h, CP.s, CP.v));
+    });
+    drag(hue, (e) => {
+        const p = _cpFromPointer(e, hue, true, false);
+        CP.h = p.x * 360;
+        _renderCp(); setCustomAccent(_hsvToHex(CP.h, CP.s, CP.v));
+    });
+
+    hex.addEventListener('input', () => {
+        const v = '#' + hex.value.trim().replace(/^#/, '');
+        const rgb = _hexToRgb(v); if (!rgb) return;
+        const hsv = _rgbToHsv(rgb.r, rgb.g, rgb.b);
+        CP.h = hsv.h; CP.s = hsv.s; CP.v = hsv.v;
+        _renderCp(); setCustomAccent(v);
+    });
+
+    copyBtn.addEventListener('click', () => {
+        const v = _hsvToHex(CP.h, CP.s, CP.v);
+        try { copyText(v, 'Hex copied'); } catch { navigator.clipboard?.writeText(v); }
+    });
+
+    // dismiss on outside click / Esc
+    document.addEventListener('pointerdown', (e) => {
+        const pop = document.getElementById('accent-picker-popover');
+        const btn = document.getElementById('setting-accent-picker-btn');
+        if (!pop || pop.classList.contains('hidden')) return;
+        if (pop.contains(e.target) || btn?.contains(e.target)) return;
+        closeAccentPicker();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const pop = document.getElementById('accent-picker-popover');
+            if (pop && !pop.classList.contains('hidden')) closeAccentPicker();
+        }
+    });
+}
+
+function openAccentPicker(e) {
+    e?.stopPropagation();
+    const pop = document.getElementById('accent-picker-popover');
+    const btn = document.getElementById('setting-accent-picker-btn');
+    if (!pop) return;
+    _bindCpOnce();
+    _renderCpPresets();
+    const cur = (prefs.customAccent || '#6c5ce7');
+    const rgb = _hexToRgb(cur); if (rgb) {
+        const hsv = _rgbToHsv(rgb.r, rgb.g, rgb.b);
+        CP.h = hsv.h; CP.s = hsv.s; CP.v = hsv.v;
+    }
+    _renderCp();
+    pop.classList.remove('hidden');
+    btn?.setAttribute('aria-expanded', 'true');
+}
+function closeAccentPicker() {
+    const pop = document.getElementById('accent-picker-popover');
+    const btn = document.getElementById('setting-accent-picker-btn');
+    pop?.classList.add('hidden');
+    btn?.setAttribute('aria-expanded', 'false');
+}
+window.openAccentPicker = openAccentPicker;
+window.closeAccentPicker = closeAccentPicker;
 function applyNightShift() {
     const overlay = document.getElementById('night-shift-overlay');
     if (!overlay) return;
@@ -361,6 +546,7 @@ function renderSettingsSegmented() {
     const de = document.getElementById('setting-density');
     if (th) th.innerHTML = themes.map(([v, lbl]) => `<button onclick="setThemePref('${v}')" class="${prefs.theme === v ? 'active' : ''}">${escapeHtml(lbl)}</button>`).join('');
     if (de) de.innerHTML = densities.map(([v, lbl]) => `<button onclick="setDensity('${v}')" class="${prefs.density === v ? 'active' : ''}">${escapeHtml(lbl)}</button>`).join('');
+    const ds = document.getElementById('setting-density-select'); if (ds) ds.value = prefs.density || 'cozy';
     setSwitchState('setting-motion', prefs.motion === 'reduce');
 }
 function setThemePref(v) { prefs.theme = v; savePrefs(); applyTheme(); renderSettingsSegmented(); }
@@ -377,9 +563,40 @@ function openSettings() {
     const cur = (prefs.accent === 'custom' && prefs.customAccent) ? prefs.customAccent : (ACCENT_COLORS[prefs.accent]?.main || '#6c5ce7');
     if (pk) pk.value = cur;
     const hx = document.getElementById('setting-accent-hex'); if (hx) hx.textContent = cur;
-    document.getElementById('settings-modal').classList.add('active');
+    const ds = document.getElementById('setting-density-select'); if (ds) ds.value = prefs.density || 'cozy';
+    switchSettingsTab(prefs._settingsTab || 'appearance');
+    const _sm = document.getElementById('settings-modal');
+    _sm.classList.remove('hidden');
+    _sm.classList.add('active');
 }
 function closeSettings() { document.getElementById('settings-modal').classList.remove('active'); }
+
+function switchSettingsTab(tab) {
+    const valid = ['appearance', 'behavior', 'tools'];
+    if (!valid.includes(tab)) tab = 'appearance';
+    prefs._settingsTab = tab;
+    document.querySelectorAll('.settings-nav-btn').forEach(b => {
+        const on = b.dataset.tab === tab;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    document.querySelectorAll('.settings-panel').forEach(p => {
+        const on = p.dataset.panel === tab;
+        p.classList.toggle('active', on);
+        if (on) p.removeAttribute('hidden'); else p.setAttribute('hidden', '');
+    });
+    const sel = document.getElementById('settings-nav-select');
+    if (sel && sel.value !== tab) sel.value = tab;
+}
+
+function toggleSettingDesc(btn) {
+    const item = btn.closest('.settings-item');
+    if (!item) return;
+    const desc = item.querySelector('.settings-desc');
+    if (!desc) return;
+    const open = desc.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
 
 // ── QoL: Export / import favorites ──
 function exportFavorites() {
@@ -1765,9 +1982,13 @@ function matchesOps(client, ops) {
 }
 
 // ── Similar clients (by tag/version overlap) ──
+// Dedupes by rawName so a client that exists in several categories is shown once.
+// Excludes the active client both by id and by rawName so it never recommends itself.
 function similarClients(client, limit) {
     limit = limit || 5;
     const tags = new Set([...(client.tags || []), client.isOptifine ? 'optifine' : '', client.isPopular ? 'popular' : ''].filter(Boolean));
+    const activeKey = (client.rawName || client.displayName || client.id).toLowerCase();
+    const seen = new Set([activeKey]);
     return allClients
         .filter(c => c.id !== client.id)
         .map(c => {
@@ -1778,6 +1999,12 @@ function similarClients(client, limit) {
         })
         .filter(x => x.score > 0)
         .sort((a, b) => b.score - a.score)
+        .filter(x => {
+            const key = (x.c.rawName || x.c.displayName || x.c.id).toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
         .slice(0, limit)
         .map(x => x.c);
 }
