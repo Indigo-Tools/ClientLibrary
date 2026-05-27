@@ -1,4 +1,3 @@
-
 const GITHUB_ORG = 'Indigo-Tools';
 const REPO_NAME = 'ClientLibrary';
 const BRANCH = 'main';
@@ -1015,13 +1014,14 @@ function detectTags(parts) {
     return ['working', 'legacy', 'trash'].filter(tag => parts.some(p => p.toLowerCase() === tag));
 }
 
+// ── FIXED version detection (avoids false positives like v1.1.15 → 1.15) ──
 function detectVersionsFromFilename(filename) {
     const versions = new Set();
     const patterns = [
         /MCPE[- ]?(\d+)[._](\d+)/gi,
         /MC[- ]?(\d+)[._](\d+)/gi,
         /\b(\d+)[._](\d+)[._](\d+)\b/g,
-        /\b(\d+)[._](\d{2})\b/g,
+        /(?<![.\d])(\d+)[._](\d{2})\b/g   // ← negative lookbehind added here
     ];
     for (const pat of patterns) {
         let m;
@@ -1055,6 +1055,12 @@ function formatDiscordLink(str) {
 function extractVersion(name) {
     const m = name.match(/^(\d+)_(\d+)$/);
     return m ? { major: parseInt(m[1]), minor: parseInt(m[2]) } : null;
+}
+
+// ── Display helper: 1_26 → v26 (new naming convention) ──
+function formatVersionDisplay(versionStr) {
+    if (versionStr.startsWith('1_')) return 'v' + versionStr.slice(2).replace('_', '.');
+    return versionStr.replace('_', '.');
 }
 
 function sortCategories(categories) {
@@ -1253,7 +1259,10 @@ async function init() {
         Object.keys(structured).forEach(cat => { if (Object.keys(structured[cat]).length === 0) { delete structured[cat]; detectedCategories.delete(cat); } });
 
         const sorted = sortCategories(Array.from(detectedCategories).map(name => ({
-            name, displayName: extractVersion(name) ? `Version: ${name.replace('_', '.')}` : name
+            name,
+            displayName: extractVersion(name)
+                ? `Version: ${formatVersionDisplay(name)}`   // ← display v26 style
+                : name
         })));
 
         libraryTree = sorted.map(({ name, displayName }) => {
@@ -1303,14 +1312,12 @@ async function init() {
             switchCategory(targetCat);
             applyHashOnce();
             attachSwipeOnScreenshots();
-            // Set up tab cycler
             const scrollContainer = document.getElementById('category-tabs');
             if (scrollContainer) {
                 scrollContainer.addEventListener('scroll', updateTabScrollButtons);
                 window.addEventListener('resize', updateTabScrollButtons);
                 document.getElementById('tab-scroll-left').addEventListener('click', () => scrollTabs('left'));
                 document.getElementById('tab-scroll-right').addEventListener('click', () => scrollTabs('right'));
-                // initial check
                 setTimeout(updateTabScrollButtons, 50);
             }
             requestAnimationFrame(() => { main.style.opacity = '1'; });
@@ -1334,7 +1341,9 @@ function renderTabs() {
     };
     const buttons = tabs.map(name => {
         const cat = libraryTree.find(c => c.name === name);
-        const label = name === "ALL" ? t('all') : (cat ? cat.displayName : (name.startsWith('1_') ? `Version: ${name.replace('_','.')}` : name));
+        const label = name === "ALL"
+            ? t('all')
+            : (cat ? cat.displayName : (extractVersion(name) ? `Version: ${formatVersionDisplay(name)}` : name));
         return `<button onclick="switchCategory(${jsArg(name)})" id="tab-${escapeAttr(name)}" class="tab-btn">${escapeHtml(label)}<span class="tab-count">${countFor(name)}</span></button>`;
     });
     if (favCount > 0) {
@@ -1436,7 +1445,7 @@ function renderClients(query = '') {
                             ${client.isOptifine ? `<button class="tag tag-optifine clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('optifine')"><i class="fa-solid fa-bolt"></i>${escapeHtml(t('optifine'))}</button>` : ''}
                             ${client.originalCategory && client.isOptifine ? `<span class="tag tag-category"><i class="fa-solid fa-layer-group"></i>${escapeHtml(client.originalCategory)}</span>` : ''}
                             ${client.tags.map(tg => { const label = t(tg) || tg; return `<button class="tag tag-${escapeAttr(tg)} clickable" onclick="event.stopPropagation();toggleTagFilterFromTag(${jsArg(tg)})" title="${escapeAttr(t('filter'))}: ${escapeAttr(label)}"><i class="fa-solid ${TAG_ICONS[tg]||'fa-tag'}"></i>${escapeHtml(label.charAt(0).toUpperCase()+label.slice(1))}</button>`; }).join('')}
-                            ${(client.compatVersions && client.compatVersions.length > 0) ? client.compatVersions.map(v => `<span class="tag tag-version"><i class="fa-solid fa-code-branch"></i>${v.replace('_','.')}</span>`).join('') : ''}
+                            ${(client.compatVersions && client.compatVersions.length > 0) ? client.compatVersions.map(v => `<span class="tag tag-version"><i class="fa-solid fa-code-branch"></i>${formatVersionDisplay(v)}</span>`).join('') : ''}
                         </div>
                     </div>
                 </div>
@@ -1618,7 +1627,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!wrapper.contains(e.target)) {
             document.getElementById('search-dropdown').classList.add('hidden');
         }
-        // Dismiss sort menu when clicking outside
         const sortWrap = document.getElementById('sort-btn')?.parentElement;
         const sortMenu = document.getElementById('sort-menu');
         if (sortMenu && sortWrap && !sortWrap.contains(e.target) && !document.getElementById('sheet-backdrop')?.contains(e.target)) {
@@ -1662,7 +1670,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Global single-key shortcuts (not while typing)
         const typing = document.activeElement === searchInput || ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);
         if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
             if (e.key === '?') { e.preventDefault(); openHelp(); return; }
@@ -1984,13 +1991,11 @@ function decorateClientActions() {
             <button class="action-icon note-btn ${hasNote ? 'has-note' : ''}" data-note-id="${escapeAttr(id)}" onclick="openNote(${safeId},${safeName})" title="Personal note" aria-label="Personal note"><i class="fa-solid fa-note-sticky"></i></button>
             <button class="action-icon qr-btn" onclick="openQr(${safeId},${safeName})" title="QR code" aria-label="QR code"><i class="fa-solid fa-qrcode"></i></button>
         `;
-        // insert before the share button (icon link)
         const shareBtn = actions.querySelector('button[onclick^="shareClient"]');
         if (shareBtn) shareBtn.insertAdjacentHTML('beforebegin', html);
         else actions.insertAdjacentHTML('afterbegin', html);
     });
 
-    // Inject "Similar" strip into open details when they have a similar-section placeholder
     document.querySelectorAll('.details-inner').forEach(panel => {
         if (panel.dataset.simInjected) return;
         const block = panel.closest('.client-block');
@@ -2003,7 +2008,6 @@ function decorateClientActions() {
         panel.insertAdjacentHTML('beforeend', html);
     });
 
-    // Sort: pinned clients first within their category
     if (pinned.size > 0) {
         document.querySelectorAll('.category-group').forEach(group => {
             const blocks = [...group.querySelectorAll('.client-block')];
@@ -2016,7 +2020,6 @@ function decorateClientActions() {
         });
     }
 
-    // Inline note display
     Object.entries(loadNotes()).forEach(([id, text]) => {
         const block = document.getElementById('block-' + id); if (!block) return;
         if (block.querySelector('.client-note-inline')) return;
@@ -2029,30 +2032,23 @@ function decorateClientActions() {
 (function patchRender() {
     const originalRender = window.renderClients;
     if (!originalRender) return;
-    let lastQuery = '';
     window.renderClients = function (query) {
-        // Strip operator tokens from text before delegating
         const parsed = parseSearch(query || '');
         window._lastSearchOps = parsed.ops;
-        const r = originalRender(parsed.text);
-        // Apply ops filter after the fact: hide non-matching blocks
+        originalRender(parsed.text);
         if (parsed.ops.tag.length + parsed.ops.version.length + parsed.ops.has.length > 0) {
             document.querySelectorAll('.client-block').forEach(el => {
                 const id = el.id.replace(/^block-/, '');
                 const c = allClients.find(x => x.id === id);
                 if (c && !matchesOps(c, parsed.ops)) el.remove();
             });
-            // Remove now-empty groups
             document.querySelectorAll('.category-group').forEach(g => { if (!g.querySelector('.client-block')) g.remove(); });
         }
         decorateClientActions();
         updateBulkBar();
-        return r;
     };
 })();
 
-// Re-decorate after init paints (delay a tick after main becomes visible)
-// Use a mutation observer because init may already be running
 const mo = new MutationObserver(() => { decorateClientActions(); updateBulkBar(); });
 document.addEventListener('DOMContentLoaded', () => {
     const c = document.getElementById('client-container');
