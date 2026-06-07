@@ -2421,7 +2421,9 @@ function aiCatalog() {
         const v = (c.compatVersions || []).map(formatVersionDisplay).join('/');
         const tags = [...(c.tags || []), c.isOptifine ? 'optifine' : '', c.isPopular ? 'popular' : ''].filter(Boolean).join(',');
         const files = c.files.length + c.extensions.length;
-        lines.push(`- ${c.displayName} | url:${SITE_URL}/${slug}${v ? ` | versions:${v}` : ''}${tags ? ` | tags:${tags}` : ''} | files:${files}${c.screenshots && c.screenshots.length ? ' | screenshots' : ''}`);
+        const by = c.author && c.author.name ? ` | by:${c.author.name}` : '';
+        const about = c.description ? ` | about:${c.description.replace(/\s+/g, ' ').trim().slice(0, 500)}` : '';
+        lines.push(`- ${c.displayName} | url:${SITE_URL}/${slug}${v ? ` | versions:${v}` : ''}${tags ? ` | tags:${tags}` : ''} | files:${files}${c.screenshots && c.screenshots.length ? ' | screenshots' : ''}${by}${about}`);
         if (lines.length >= 250) break;
     }
     return lines.join('\n');
