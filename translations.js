@@ -25,7 +25,7 @@ const TRANSLATIONS = {
         tap_star: 'Tap the star on any client to add it here.',
         try_different: 'Try a different search term or browse the categories above.',
         try_filters: 'Try clearing filters or searching for something different.',
-        recently_viewed: 'Recently viewed', shortcuts: 'Keyboard shortcuts',
+        recently_viewed: 'Recently viewed', recent_searches: 'Recent searches', try_operators: 'Try operators', shortcuts: 'Keyboard shortcuts',
         all: 'All', loading: 'Indexing Library...', failed_load: 'Failed to load library. Please check connection.',
         categories: 'categories', clients: 'clients', files: 'files',
         toast_copied: 'Copied', toast_added_fav: 'Added to favorites', toast_removed_fav: 'Removed from favorites',

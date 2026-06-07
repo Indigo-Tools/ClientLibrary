@@ -442,6 +442,36 @@
     </div>
   </div>
 
+  <!-- AI Assistant -->
+  <button id="ai-fab" class="ai-fab" onclick="toggleAiChat()" aria-label="Ask Nyxora AI" title="Ask Nyxora AI">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+  </button>
+  <div id="ai-chat" class="ai-chat hidden" role="dialog" aria-modal="true" aria-label="Nyxora AI chat">
+    <div class="ai-chat-backdrop" onclick="closeAiChat()"></div>
+    <div class="ai-chat-panel">
+      <header class="ai-chat-header">
+        <div class="ai-chat-title">
+          <span class="ai-chat-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+          <div>
+            <div class="ai-chat-name">Nyxora AI</div>
+            <div class="ai-chat-sub">Clients, versions &amp; packs</div>
+          </div>
+        </div>
+        <div class="ai-chat-tools">
+          <button class="ai-icon-btn" onclick="clearAiChat()" title="New chat" aria-label="New chat"><i class="fa-solid fa-rotate-left"></i></button>
+          <button class="ai-icon-btn" onclick="closeAiChat()" title="Close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </header>
+      <div id="ai-messages" class="ai-messages"></div>
+      <div id="ai-suggestions" class="ai-suggestions"></div>
+      <form id="ai-input-bar" class="ai-input-bar" onsubmit="return false;">
+        <textarea id="ai-input" class="ai-input" rows="1" placeholder="Ask anything about the library…" autocomplete="off" aria-label="Message Nyxora AI"></textarea>
+        <button id="ai-send" class="ai-send" onclick="sendAiMessage()" aria-label="Send message"><i class="fa-solid fa-arrow-up"></i></button>
+      </form>
+      <div class="ai-disclaimer">AI can make mistakes — verify important details.</div>
+    </div>
+  </div>
+
   <script src="translations.js" defer></script>
   <script src="script.js" defer></script>
 </body>

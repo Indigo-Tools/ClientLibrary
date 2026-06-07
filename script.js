@@ -6,6 +6,8 @@ const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAM
 const LINKVERTISE_USER_ID = 499358;
 function isMonetizationOn() { return true; }
 
+const GEMINI_PROXY_URL = '';
+
 const DL_COUNTS_KEY = 'nyxora_dl_counts_v1';
 function loadDlCounts() { try { return JSON.parse(localStorage.getItem(DL_COUNTS_KEY) || '{}'); } catch { return {}; } }
 function saveDlCounts(o) { try { localStorage.setItem(DL_COUNTS_KEY, JSON.stringify(o)); } catch {} }
@@ -177,17 +179,30 @@ function clearSearchHistory() {
     }
     toast(t('toast_filters_cleared'), 'broom');
 }
+const SEARCH_OPERATOR_HINTS = [
+    { op: 'tag:working',      icon: 'fa-check-circle' },
+    { op: 'version:1.21',     icon: 'fa-code-branch' },
+    { op: 'has:screenshots',  icon: 'fa-images' },
+    { op: 'has:favorites',    icon: 'fa-star' },
+];
 function renderSearchHistory() {
     const dropdown = document.getElementById('search-dropdown');
     const hist = loadSearchHistory();
-    if (hist.length === 0) return false;
-    dropdown.innerHTML = `<div class="search-history-header">
-        <span><i class="fa-solid fa-clock-rotate-left"></i> ${t('recently_viewed')}</span>
-        <button class="search-history-clear" onclick="event.stopPropagation();clearSearchHistory()">${t('clear_all')}</button>
-    </div>` + hist.map(q => `
-        <div class="search-history-item" onclick="useHistoryQuery(${jsArg(q)})">
-            <i class="fa-solid fa-clock-rotate-left"></i><span>${escapeHtml(q)}</span>
-        </div>`).join('');
+    let html = '';
+    if (hist.length > 0) {
+        html += `<div class="search-history-header">
+            <span><i class="fa-solid fa-clock-rotate-left"></i> ${t('recent_searches')}</span>
+            <button class="search-history-clear" onclick="event.stopPropagation();clearSearchHistory()">${t('clear_all')}</button>
+        </div>` + hist.map(q => `
+            <div class="search-history-item" onclick="useHistoryQuery(${jsArg(q)})">
+                <i class="fa-solid fa-clock-rotate-left"></i><span>${escapeHtml(q)}</span>
+            </div>`).join('');
+    }
+    html += `<div class="search-ops">
+        <span class="search-ops-label"><i class="fa-solid fa-wand-magic-sparkles"></i> ${t('try_operators')}</span>
+        <div class="search-ops-chips">${SEARCH_OPERATOR_HINTS.map(o => `<button class="search-op-chip" onclick="useHistoryQuery(${jsArg(o.op)})"><i class="fa-solid ${o.icon}"></i>${escapeHtml(o.op)}</button>`).join('')}</div>
+    </div>`;
+    dropdown.innerHTML = html;
     dropdown.classList.remove('hidden');
     return true;
 }
@@ -243,6 +258,34 @@ function setCustomAccent(hex) {
     const sw = document.getElementById('setting-accent-swatch');
     if (sw) sw.style.background = hex;
 }
+
+const ACCENT_RECENTS_KEY = 'nyxora_accent_recents_v1';
+function loadAccentRecents() { try { return JSON.parse(localStorage.getItem(ACCENT_RECENTS_KEY) || '[]'); } catch { return []; } }
+function recordAccentRecent(hex) {
+    if (!/^#[0-9a-f]{6}$/i.test(hex)) return;
+    hex = hex.toLowerCase();
+    const arr = [hex, ...loadAccentRecents().filter(c => c.toLowerCase() !== hex)].slice(0, 8);
+    try { localStorage.setItem(ACCENT_RECENTS_KEY, JSON.stringify(arr)); } catch {}
+    renderAccentRecents();
+}
+function renderAccentRecents() {
+    const wrap = document.getElementById('accent-recents');
+    if (!wrap) return;
+    const current = (prefs.accent === 'custom' && prefs.customAccent || '').toLowerCase();
+    wrap.innerHTML = loadAccentRecents().map(c =>
+        `<button class="accent-swatch ${c === current ? 'active' : ''}" style="background:${escapeAttr(c)}" onclick="setCustomAccent('${escapeAttr(c)}');recordAccentRecent('${escapeAttr(c)}')" title="${escapeAttr(c)}" aria-label="${escapeAttr(c)}"></button>`
+    ).join('');
+}
+function randomAccent() {
+    const hex = _hsvToHex(Math.floor(Math.random() * 360), 55 + Math.random() * 30, 75 + Math.random() * 20);
+    setCustomAccent(hex);
+    recordAccentRecent(hex);
+    const rgb = _hexToRgb(hex);
+    if (rgb) { const hsv = _rgbToHsv(rgb.r, rgb.g, rgb.b); CP.h = hsv.h; CP.s = hsv.s; CP.v = hsv.v; _renderCp(); }
+    toast(t('toast_random'), 'dice');
+}
+window.randomAccent = randomAccent;
+window.recordAccentRecent = recordAccentRecent;
 
 // ── Custom color picker (replaces native <input type="color">) ──
 const CP = { h: 264, s: 60, v: 91, _bound: false };
@@ -414,6 +457,7 @@ function closeAccentPicker() {
     const btn = document.getElementById('setting-accent-picker-btn');
     pop?.classList.add('hidden');
     btn?.setAttribute('aria-expanded', 'false');
+    if (prefs.accent === 'custom' && prefs.customAccent) recordAccentRecent(prefs.customAccent);
 }
 window.openAccentPicker = openAccentPicker;
 window.closeAccentPicker = closeAccentPicker;
@@ -541,11 +585,8 @@ function renderAccentSwatches() {
 }
 function renderSettingsSegmented() {
     const themes = [['auto', t('theme_auto')], ['dark', t('theme_dark')], ['light', t('theme_light')], ['schedule', 'Schedule']];
-    const densities = [['cozy', t('density_cozy')], ['compact', t('density_compact')]];
     const th = document.getElementById('setting-theme');
-    const de = document.getElementById('setting-density');
     if (th) th.innerHTML = themes.map(([v, lbl]) => `<button onclick="setThemePref('${v}')" class="${prefs.theme === v ? 'active' : ''}">${escapeHtml(lbl)}</button>`).join('');
-    if (de) de.innerHTML = densities.map(([v, lbl]) => `<button onclick="setDensity('${v}')" class="${prefs.density === v ? 'active' : ''}">${escapeHtml(lbl)}</button>`).join('');
     const ds = document.getElementById('setting-density-select'); if (ds) ds.value = prefs.density || 'cozy';
     setSwitchState('setting-motion', prefs.motion === 'reduce');
 }
@@ -553,6 +594,7 @@ function setThemePref(v) { prefs.theme = v; savePrefs(); applyTheme(); renderSet
 function openSettings() {
     renderLanguageSelect();
     renderAccentSwatches();
+    renderAccentRecents();
     renderSettingsSegmented();
     setSwitchState('setting-compact-cards', !!prefs.compactCards);
     setSwitchState('setting-auto-collapse', !!prefs.autoCollapse);
@@ -897,6 +939,16 @@ function toggleTagFilterFromTag(tag) {
     document.getElementById('filter-panel')?.classList.remove('hidden');
     toggleTagFilter(tag);
 }
+function filterByVersion(versionStr) {
+    const ver = String(versionStr).replace('_', '.');
+    const si = document.getElementById('search-input');
+    if (!si) return;
+    si.value = `version:${ver}`;
+    si.dispatchEvent(new Event('input'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast(`${t('filter')}: ${formatVersionDisplay(versionStr)}`, 'code-branch');
+}
+window.filterByVersion = filterByVersion;
 function clearAllFilters() {
     prefs.tagFilters = [];
     savePrefs();
@@ -1062,9 +1114,12 @@ function renderSearchDropdown(query) {
     const dropdown = document.getElementById('search-dropdown');
     const clearBtn = document.getElementById('search-clear');
     const countEl = document.getElementById('search-results-count');
-    const q = query.trim();
+    const raw = query.trim();
+    const parsed = parseSearch(raw);
+    const q = parsed.text.trim();
+    const opsActive = parsed.ops.tag.length + parsed.ops.version.length + parsed.ops.has.length > 0;
 
-    if (!q) {
+    if (!raw) {
         dropdown.classList.add('hidden');
         clearBtn.classList.add('hidden');
         countEl.classList.add('hidden');
@@ -1073,6 +1128,13 @@ function renderSearchDropdown(query) {
     }
 
     clearBtn.classList.remove('hidden');
+
+    if (!q && opsActive) {
+        countEl.classList.add('hidden');
+        dropdown.classList.add('hidden');
+        dropdownIndex = -1;
+        return;
+    }
 
     const { results, total } = searchClients(q, 8);
 
@@ -1114,7 +1176,14 @@ function renderSearchDropdown(query) {
 
 function scrollToClient(clientId) {
     trackRecentlyViewed(clientId);
-    const el = document.getElementById(`block-${clientId}`);
+    const searchInput = document.getElementById('search-input');
+    let el = document.getElementById(`block-${clientId}`);
+    if (!el) {
+        if (searchInput) searchInput.value = '';
+        if (currentCategory !== 'ALL') switchCategory('ALL');
+        renderClients('');
+        el = document.getElementById(`block-${clientId}`);
+    }
     if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.style.outline = '2px solid var(--accent)';
@@ -1130,7 +1199,7 @@ function scrollToClient(clientId) {
     if (body?.classList.contains('collapsed')) toggleClientCollapse(clientId);
 
     document.getElementById('search-dropdown').classList.add('hidden');
-    document.getElementById('search-input').blur();
+    if (searchInput) searchInput.blur();
 }
 
 function clearSearch() {
@@ -1274,9 +1343,13 @@ function extractVersion(name) {
     return m ? { major: parseInt(m[1]), minor: parseInt(m[2]) } : null;
 }
 
-// ── Display helper: 1_26 → v26 (new naming convention) ──
+// ── Display helper: legacy "1.x" (≤1.21) vs new year-based naming (≥22 → v26) ──
 function formatVersionDisplay(versionStr) {
-    if (versionStr.startsWith('1_')) return 'v' + versionStr.slice(2).replace('_', '.');
+    const m = versionStr.match(/^(\d+)_(\d+)$/);
+    if (m) {
+        const major = parseInt(m[1], 10), minor = parseInt(m[2], 10);
+        return (major === 1 && minor >= 22) ? 'v' + minor : major + '.' + minor;
+    }
     return versionStr.replace('_', '.');
 }
 
@@ -1662,7 +1735,7 @@ function renderClients(query = '') {
                             ${client.isOptifine ? `<button class="tag tag-optifine clickable" onclick="event.stopPropagation();toggleTagFilterFromTag('optifine')"><i class="fa-solid fa-bolt"></i>${escapeHtml(t('optifine'))}</button>` : ''}
                             ${client.originalCategory && client.isOptifine ? `<span class="tag tag-category"><i class="fa-solid fa-layer-group"></i>${escapeHtml(client.originalCategory)}</span>` : ''}
                             ${client.tags.map(tg => { const label = t(tg) || tg; return `<button class="tag tag-${escapeAttr(tg)} clickable" onclick="event.stopPropagation();toggleTagFilterFromTag(${jsArg(tg)})" title="${escapeAttr(t('filter'))}: ${escapeAttr(label)}"><i class="fa-solid ${TAG_ICONS[tg]||'fa-tag'}"></i>${escapeHtml(label.charAt(0).toUpperCase()+label.slice(1))}</button>`; }).join('')}
-                            ${(client.compatVersions && client.compatVersions.length > 0) ? client.compatVersions.map(v => `<span class="tag tag-version"><i class="fa-solid fa-code-branch"></i>${formatVersionDisplay(v)}</span>`).join('') : ''}
+                            ${(client.compatVersions && client.compatVersions.length > 0) ? client.compatVersions.map(v => `<button class="tag tag-version clickable" onclick="event.stopPropagation();filterByVersion(${jsArg(v)})" title="${escapeAttr(t('filter'))}: ${escapeAttr(formatVersionDisplay(v))}"><i class="fa-solid fa-code-branch"></i>${formatVersionDisplay(v)}</button>`).join('') : ''}
                         </div>
                     </div>
                 </div>
@@ -2223,16 +2296,22 @@ function decorateClientActions() {
         else actions.insertAdjacentHTML('afterbegin', html);
     });
 
-    document.querySelectorAll('.details-inner').forEach(panel => {
-        if (panel.dataset.simInjected) return;
-        const block = panel.closest('.client-block');
-        const id = block?.id?.replace(/^block-/, ''); if (!id) return;
+    document.querySelectorAll('.client-block').forEach(block => {
+        if (block.dataset.simInjected) return;
+        const id = block.id.replace(/^block-/, ''); if (!id) return;
         const client = allClients.find(c => c.id === id); if (!client) return;
         const sims = similarClients(client, 5);
         if (sims.length === 0) return;
-        panel.dataset.simInjected = '1';
-        const html = `<div class="similar-strip"><span class="similar-label"><i class="fa-solid fa-shuffle"></i> Similar clients</span><div class="similar-list">${sims.map(s => `<button class="similar-chip" onclick="scrollToClient(${jsArg(s.id)})">${s.iconUrl?`<img src="${escapeAttr(s.iconUrl)}" alt="" loading="lazy">`:'<i class="fa-solid fa-cube"></i>'}<span>${escapeHtml(s.displayName)}</span></button>`).join('')}</div></div>`;
-        panel.insertAdjacentHTML('beforeend', html);
+        block.dataset.simInjected = '1';
+        const stripHtml = `<div class="similar-strip"><span class="similar-label"><i class="fa-solid fa-shuffle"></i> Similar clients</span><div class="similar-list">${sims.map(s => `<button class="similar-chip" onclick="scrollToClient(${jsArg(s.id)})">${s.iconUrl?`<img src="${escapeAttr(s.iconUrl)}" alt="" loading="lazy">`:'<i class="fa-solid fa-cube"></i>'}<span>${escapeHtml(s.displayName)}</span></button>`).join('')}</div></div>`;
+        const existing = block.querySelector('.details-inner');
+        if (existing) { existing.insertAdjacentHTML('beforeend', stripHtml); return; }
+        const bodyInner = block.querySelector('.client-body-inner');
+        if (!bodyInner) return;
+        const safeId = jsArg(id);
+        const panelHtml = `<div id="details-${escapeAttr(id)}" class="details-panel"><div class="details-panel-inner"><div class="details-inner">${stripHtml}</div></div></div>`
+            + `<button id="details-btn-${escapeAttr(id)}" onclick="toggleDescription(${safeId})" class="details-toggle">${escapeHtml(t('show_details'))} <i class="fa-solid fa-chevron-down"></i></button>`;
+        bodyInner.insertAdjacentHTML('afterbegin', panelHtml);
     });
 
     if (pinned.size > 0) {
@@ -2280,6 +2359,198 @@ const mo = new MutationObserver(() => { decorateClientActions(); updateBulkBar()
 document.addEventListener('DOMContentLoaded', () => {
     const c = document.getElementById('client-container');
     if (c) mo.observe(c, { childList: true });
+});
+
+// ── Gemini AI assistant ──
+const AI_HISTORY_KEY = 'nyxora_ai_history_v1';
+let aiHistory = [];
+let aiBusy = false;
+
+function loadAiHistory() { try { return JSON.parse(localStorage.getItem(AI_HISTORY_KEY) || '[]'); } catch { return []; } }
+function saveAiHistory() { try { localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(aiHistory.slice(-30))); } catch {} }
+
+function aiCatalog() {
+    return allClients.slice(0, 200).map(c => {
+        const v = (c.compatVersions || []).map(formatVersionDisplay).join('/');
+        const tags = [...(c.tags || []), c.isOptifine ? 'optifine' : '', c.isPopular ? 'popular' : ''].filter(Boolean).join(',');
+        return `- ${c.displayName}${v ? ` [${v}]` : ''}${tags ? ` {${tags}}` : ''}`;
+    }).join('\n');
+}
+function aiSystemPrompt() {
+    return `You are Nyxora AI, the assistant for the Nyxora Library (mca.glacierclient.xyz), an archive of Minecraft Bedrock (MCPE) clients and texture packs. Help users find and choose clients. Be concise, friendly, and use light Markdown. Recommend specific clients from the catalog when relevant and mention their version and tags. If something is not in the catalog, say so. Version naming: "1.21" and below use the legacy scheme; "v26" and up use Minecraft's new year-based scheme.\n\nCatalog (name [versions] {tags}):\n${aiCatalog()}`;
+}
+
+function toggleAiChat() {
+    const el = document.getElementById('ai-chat');
+    if (!el) return;
+    if (el.classList.contains('hidden')) openAiChat(); else closeAiChat();
+}
+function openAiChat() {
+    const el = document.getElementById('ai-chat');
+    if (!el) return;
+    el.classList.remove('hidden');
+    requestAnimationFrame(() => el.classList.add('open'));
+    document.body.style.overflow = 'hidden';
+    renderAiMessages();
+    renderAiSuggestions();
+    setTimeout(() => document.getElementById('ai-input')?.focus(), 120);
+}
+function closeAiChat() {
+    const el = document.getElementById('ai-chat');
+    if (!el) return;
+    el.classList.remove('open');
+    document.body.style.overflow = '';
+    setTimeout(() => el.classList.add('hidden'), 250);
+}
+function clearAiChat() {
+    aiHistory = [];
+    saveAiHistory();
+    renderAiMessages();
+    renderAiSuggestions();
+}
+
+function renderAiMessages() {
+    const box = document.getElementById('ai-messages');
+    if (!box) return;
+    if (aiHistory.length === 0) {
+        box.innerHTML = `<div class="ai-empty">
+            <span class="ai-empty-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+            <h3>Nyxora AI</h3>
+            <p>Ask me to recommend a client, compare packs, or find something for your Minecraft version.</p>
+        </div>`;
+        return;
+    }
+    box.innerHTML = aiHistory.map((m, i) => {
+        const isUser = m.role === 'user';
+        const inner = isUser
+            ? escapeHtml(m.text)
+            : (m.text ? renderMarkdown(m.text) : '<span class="ai-typing"><i></i><i></i><i></i></span>');
+        return `<div class="ai-msg ai-msg-${isUser ? 'user' : 'bot'}">
+            ${isUser ? '' : '<span class="ai-msg-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></span>'}
+            <div class="ai-bubble md" id="ai-bubble-${i}">${inner}</div>
+        </div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+}
+function updateAiBubble(i, html) {
+    const el = document.getElementById('ai-bubble-' + i);
+    if (el) el.innerHTML = html;
+    const box = document.getElementById('ai-messages');
+    if (box) box.scrollTop = box.scrollHeight;
+}
+function renderAiSuggestions() {
+    const wrap = document.getElementById('ai-suggestions');
+    if (!wrap) return;
+    if (aiHistory.length > 0) { wrap.innerHTML = ''; return; }
+    const s = ['Best client for v26?', 'Show me Optifine packs', 'A lightweight client for 1.19', 'What is popular right now?'];
+    wrap.innerHTML = s.map(q => `<button class="ai-suggestion" onclick="aiQuick(${jsArg(q)})">${escapeHtml(q)}</button>`).join('');
+}
+function aiQuick(q) {
+    const i = document.getElementById('ai-input');
+    if (i) i.value = q;
+    sendAiMessage();
+}
+function setAiBusy(b) {
+    aiBusy = b;
+    const s = document.getElementById('ai-send');
+    if (s) { s.disabled = b; s.innerHTML = b ? '<i class="fa-solid fa-spinner fa-spin"></i>' : '<i class="fa-solid fa-arrow-up"></i>'; }
+}
+function autoGrowAi(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+async function sendAiMessage() {
+    const input = document.getElementById('ai-input');
+    if (!input) return;
+    const text = (input.value || '').trim();
+    if (!text || aiBusy) return;
+    input.value = '';
+    autoGrowAi(input);
+    aiHistory.push({ role: 'user', text });
+    renderAiMessages();
+    renderAiSuggestions();
+    saveAiHistory();
+
+    if (!GEMINI_PROXY_URL) {
+        aiHistory.push({ role: 'model', text: "⚙️ I'm not connected yet. Set **GEMINI_PROXY_URL** in `script.js` to your Cloudflare Worker URL (see **AI_SETUP.md**) and I'll come to life." });
+        renderAiMessages();
+        saveAiHistory();
+        return;
+    }
+
+    setAiBusy(true);
+    const botIndex = aiHistory.push({ role: 'model', text: '' }) - 1;
+    renderAiMessages();
+
+    try {
+        const res = await fetch(GEMINI_PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                system: aiSystemPrompt(),
+                messages: aiHistory.slice(0, -1).map(m => ({ role: m.role, text: m.text }))
+            })
+        });
+        if (!res.ok) throw new Error('Proxy returned ' + res.status);
+        const ct = res.headers.get('content-type') || '';
+        let full = '';
+        if (res.body && ct.includes('text/event-stream')) {
+            const reader = res.body.getReader();
+            const dec = new TextDecoder();
+            let buf = '';
+            for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buf += dec.decode(value, { stream: true });
+                const lines = buf.split('\n');
+                buf = lines.pop();
+                for (const line of lines) {
+                    const tline = line.trim();
+                    if (!tline.startsWith('data:')) continue;
+                    const payload = tline.slice(5).trim();
+                    if (!payload || payload === '[DONE]') continue;
+                    try {
+                        const j = JSON.parse(payload);
+                        const piece = j?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+                        if (piece) { full += piece; aiHistory[botIndex].text = full; updateAiBubble(botIndex, renderMarkdown(full)); }
+                    } catch {}
+                }
+            }
+        } else {
+            const data = await res.json().catch(() => null);
+            full = data?.text || data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || data?.error || '';
+        }
+        if (!full) full = '(no response)';
+        aiHistory[botIndex].text = full;
+        updateAiBubble(botIndex, renderMarkdown(full));
+    } catch (e) {
+        aiHistory[botIndex].text = '⚠️ ' + (e.message || 'Request failed');
+        updateAiBubble(botIndex, escapeHtml(aiHistory[botIndex].text));
+    } finally {
+        setAiBusy(false);
+        saveAiHistory();
+        const box = document.getElementById('ai-messages');
+        if (box) box.scrollTop = box.scrollHeight;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    aiHistory = loadAiHistory();
+    const input = document.getElementById('ai-input');
+    if (input) {
+        input.addEventListener('input', () => autoGrowAi(input));
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAiMessage(); }
+        });
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const el = document.getElementById('ai-chat');
+            if (el && el.classList.contains('open')) closeAiChat();
+        }
+    });
 });
 
 
