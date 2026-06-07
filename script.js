@@ -8,6 +8,21 @@ function isMonetizationOn() { return true; }
 
 const GEMINI_PROXY_URL = 'https://nyxora-ai.pepeoncloudeflare.workers.dev';
 
+const SITE_URL = 'https://mca.glacierclient.xyz';
+const slugMap = {};
+function slugify(s) { return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+function clientUrl(c) { return `${SITE_URL}/${c.slug || slugify(c.displayName)}`; }
+function findClientByRef(ref) {
+    if (!ref) return null;
+    try { ref = decodeURIComponent(ref); } catch {}
+    let c = allClients.find(x => x.id === ref);
+    if (c) return c;
+    const slug = slugify(ref);
+    const id = slugMap[slug];
+    if (id) c = allClients.find(x => x.id === id);
+    return c || allClients.find(x => x.slug === slug) || null;
+}
+
 const DL_COUNTS_KEY = 'nyxora_dl_counts_v1';
 function loadDlCounts() { try { return JSON.parse(localStorage.getItem(DL_COUNTS_KEY) || '{}'); } catch { return {}; } }
 function saveDlCounts(o) { try { localStorage.setItem(DL_COUNTS_KEY, JSON.stringify(o)); } catch {} }
@@ -677,18 +692,35 @@ function importFavorites(event) {
     reader.readAsText(file);
 }
 
-// ── QoL: Markdown renderer (minimal but safe) ──
+// ── QoL: Markdown renderer (minimal but safe; supports tables) ──
 function renderMarkdown(text) {
     if (!text) return '';
     const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const lines = esc(text).split('\n');
     const out = [];
     let inList = false;
-    for (let raw of lines) {
-        let l = raw.trimEnd();
+    const closeList = () => { if (inList) { out.push('</ul>'); inList = false; } };
+    const isTableSep = (s) => /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(s);
+    const splitRow = (s) => s.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+    for (let i = 0; i < lines.length; i++) {
+        let l = lines[i].trimEnd();
+        if (l.includes('|') && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+            closeList();
+            const headers = splitRow(l);
+            i += 2;
+            const rows = [];
+            while (i < lines.length && lines[i].includes('|') && lines[i].trim() !== '') { rows.push(splitRow(lines[i])); i++; }
+            i--;
+            out.push('<table class="md-table"><thead><tr>'
+                + headers.map(h => `<th>${formatInline(h)}</th>`).join('')
+                + '</tr></thead><tbody>'
+                + rows.map(r => '<tr>' + headers.map((_, ci) => `<td>${formatInline(r[ci] || '')}</td>`).join('') + '</tr>').join('')
+                + '</tbody></table>');
+            continue;
+        }
         const hMatch = l.match(/^(#{1,3})\s+(.*)$/);
         if (hMatch) {
-            if (inList) { out.push('</ul>'); inList = false; }
+            closeList();
             const n = hMatch[1].length;
             out.push(`<h${n}>${formatInline(hMatch[2])}</h${n}>`);
             continue;
@@ -698,11 +730,11 @@ function renderMarkdown(text) {
             out.push(`<li>${formatInline(l.replace(/^[-*]\s+/, ''))}</li>`);
             continue;
         }
-        if (inList) { out.push('</ul>'); inList = false; }
+        closeList();
         if (l.trim() === '') { out.push(''); continue; }
         out.push(`<p>${formatInline(l)}</p>`);
     }
-    if (inList) out.push('</ul>');
+    closeList();
     return out.join('\n');
 }
 function formatInline(s) {
@@ -816,7 +848,8 @@ async function copyText(text, label) {
 function copyFilename(name) { copyText(name, `${t('toast_copied')}: ${name}`); }
 function copyDownload(url) { copyText(url, t('toast_link_copied')); }
 function shareClient(clientId, name) {
-    const url = `${location.origin}${location.pathname}#client=${encodeURIComponent(clientId)}`;
+    const c = allClients.find(x => x.id === clientId);
+    const url = c ? clientUrl(c) : `${location.origin}${location.pathname}#client=${encodeURIComponent(clientId)}`;
     copyText(url, t('toast_link_copied'));
 }
 
@@ -961,18 +994,20 @@ function clearAllFilters() {
 function openHelp() { document.getElementById('help-modal').classList.add('active'); }
 function closeHelp() { document.getElementById('help-modal').classList.remove('active'); }
 
-// ── QoL: Hash routing ──
+// ── QoL: Hash routing (supports ?client=, #cat=, and bare #slug deep links) ──
 function applyHashOnce() {
     const hash = location.hash.slice(1);
     if (!hash) return;
-    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const params = new URLSearchParams(hash);
     const cat = params.get('cat');
-    const client = params.get('client');
+    let clientRef = params.get('client');
+    if (!clientRef && !hash.includes('=') && !hash.includes('&')) clientRef = hash;
     if (cat && libraryTree.some(c => c.name === cat)) {
         switchCategory(cat);
     }
-    if (client) {
-        setTimeout(() => scrollToClient(client), 350);
+    if (clientRef) {
+        const c = findClientByRef(clientRef);
+        if (c) setTimeout(() => scrollToClient(c.id), 350);
     }
 }
 
@@ -1292,8 +1327,10 @@ function prevScreenshot() { showScreenshot(currentScreenshotIndex === 0 ? curren
 const smartSort = (a, b) => a.rawName.localeCompare(b.rawName, undefined, { numeric: true, sensitivity: 'base' });
 
 function isOptifinePack(name, desc) {
-    const text = (name + ' ' + (desc || '')).toLowerCase();
-    return ['opti', 'fps', 'performance', 'boost', 'optimize', 'optimization'].some(k => text.includes(k));
+    const n = (name || '').toLowerCase();
+    const d = (desc || '').toLowerCase();
+    if (/opti\s*-?\s*fine/.test(n) || /opti\s*-?\s*fine/.test(d)) return true;
+    return ['opti', 'fps'].some(k => n.includes(k));
 }
 
 function detectTags(parts) {
@@ -1583,6 +1620,11 @@ async function init() {
 
         allClients = [];
         libraryTree.forEach(cat => cat.clients.forEach(c => allClients.push(c)));
+        allClients.forEach(c => {
+            const base = slugify(c.displayName) || c.id.toLowerCase();
+            c.slug = base;
+            if (!slugMap[base]) slugMap[base] = c.id;
+        });
 
         const status = document.getElementById('status-container');
         status.style.transition = 'opacity 0.3s ease';
@@ -2370,14 +2412,32 @@ function loadAiHistory() { try { return JSON.parse(localStorage.getItem(AI_HISTO
 function saveAiHistory() { try { localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(aiHistory.slice(-30))); } catch {} }
 
 function aiCatalog() {
-    return allClients.slice(0, 200).map(c => {
+    const seen = new Set();
+    const lines = [];
+    for (const c of allClients) {
+        const slug = c.slug || slugify(c.displayName);
+        if (seen.has(slug)) continue;
+        seen.add(slug);
         const v = (c.compatVersions || []).map(formatVersionDisplay).join('/');
         const tags = [...(c.tags || []), c.isOptifine ? 'optifine' : '', c.isPopular ? 'popular' : ''].filter(Boolean).join(',');
-        return `- ${c.displayName}${v ? ` [${v}]` : ''}${tags ? ` {${tags}}` : ''}`;
-    }).join('\n');
+        const files = c.files.length + c.extensions.length;
+        lines.push(`- ${c.displayName} | url:${SITE_URL}/${slug}${v ? ` | versions:${v}` : ''}${tags ? ` | tags:${tags}` : ''} | files:${files}${c.screenshots && c.screenshots.length ? ' | screenshots' : ''}`);
+        if (lines.length >= 250) break;
+    }
+    return lines.join('\n');
 }
 function aiSystemPrompt() {
-    return `You are Nyxora AI, the assistant for the Nyxora Library (mca.glacierclient.xyz), an archive of Minecraft Bedrock (MCPE) clients and texture packs. Help users find and choose clients. Be concise, friendly, and use light Markdown. Recommend specific clients from the catalog when relevant and mention their version and tags. If something is not in the catalog, say so. Version naming: "1.21" and below use the legacy scheme; "v26" and up use Minecraft's new year-based scheme.\n\nCatalog (name [versions] {tags}):\n${aiCatalog()}`;
+    return `You are Nyxora AI, the assistant for the Nyxora Library (${SITE_URL}) — an archive of Minecraft Bedrock (MCPE) clients and texture packs.
+
+Rules:
+- Be concise, friendly, and accurate. Only recommend clients that appear in the catalog below; if something isn't there, say so briefly.
+- ALWAYS turn a client's name into a Markdown link using its url, e.g. [Glacier Client](${SITE_URL}/glacier-client).
+- When comparing two or more clients, respond with a Markdown table, e.g. | Client | Versions | Tags | Notes |.
+- Use light Markdown (bold, bullet lists, tables). Keep answers focused and skimmable.
+- Version naming: "1.21" and below use the legacy scheme; "v26" and up use Minecraft's new year-based scheme.
+
+Catalog (name | url | versions | tags | files):
+${aiCatalog()}`;
 }
 
 function toggleAiChat() {
@@ -2430,11 +2490,29 @@ function renderAiMessages() {
             <div class="ai-bubble md" id="ai-bubble-${i}">${inner}</div>
         </div>`;
     }).join('');
+    enhanceAiClientLinks(box);
     box.scrollTop = box.scrollHeight;
+}
+function enhanceAiClientLinks(scope) {
+    if (!scope) return;
+    scope.querySelectorAll('a:not([data-icon])').forEach(a => {
+        let u; try { u = new URL(a.getAttribute('href'), location.href); } catch { return; }
+        const sameSite = u.hostname === location.hostname || u.hostname.endsWith('glacierclient.xyz');
+        if (!sameSite) return;
+        const ref = u.hash ? u.hash.replace(/^#(client=)?/, '') : u.pathname.replace(/^\/+/, '');
+        const c = findClientByRef(ref);
+        if (!c) return;
+        a.dataset.icon = '1';
+        a.classList.add('ai-client-link');
+        const icon = c.iconUrl
+            ? `<img src="${escapeAttr(c.iconUrl)}" class="ai-link-icon" alt="" loading="lazy" onerror="this.outerHTML='<span class=\\'ai-link-icon ai-link-icon-ph\\'><i class=\\'fa-solid fa-cube\\'></i></span>'">`
+            : `<span class="ai-link-icon ai-link-icon-ph"><i class="fa-solid fa-cube"></i></span>`;
+        a.insertAdjacentHTML('afterbegin', icon);
+    });
 }
 function updateAiBubble(i, html) {
     const el = document.getElementById('ai-bubble-' + i);
-    if (el) el.innerHTML = html;
+    if (el) { el.innerHTML = html; enhanceAiClientLinks(el); }
     const box = document.getElementById('ai-messages');
     if (box) box.scrollTop = box.scrollHeight;
 }
@@ -2551,6 +2629,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (el && el.classList.contains('open')) closeAiChat();
         }
     });
+    const msgs = document.getElementById('ai-messages');
+    if (msgs) {
+        msgs.addEventListener('click', (e) => {
+            const a = e.target.closest('a');
+            if (!a) return;
+            const href = a.getAttribute('href') || '';
+            let u; try { u = new URL(href, location.href); } catch { return; }
+            const sameSite = u.hostname === location.hostname || u.hostname.endsWith('glacierclient.xyz');
+            if (!sameSite) return;
+            const ref = u.hash ? u.hash.replace(/^#(client=)?/, '') : u.pathname.replace(/^\/+/, '');
+            const c = findClientByRef(ref);
+            if (c) { e.preventDefault(); closeAiChat(); setTimeout(() => scrollToClient(c.id), 260); }
+        });
+    }
 });
 
 

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nyxora Library</title>
+  <script>
+    (function () {
+      var path = location.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+      var skip = /\.[a-z0-9]+$/i.test(path);
+      if (path && !skip) {
+        location.replace('/#' + path + location.search);
+      } else {
+        location.replace('/' + location.search + location.hash);
+      }
+    })();
+  </script>
+</head>
+<body></body>
+</html>

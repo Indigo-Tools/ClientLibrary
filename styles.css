@@ -2806,6 +2806,53 @@ a:hover {
 .ai-bubble.md a { color: var(--accent-light); text-decoration: underline; }
 .ai-msg-user .ai-bubble.md a { color: #fff; }
 
+.ai-msg-bot .ai-bubble:has(.md-table) { max-width: 96%; }
+.ai-bubble .md-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.4rem 0;
+    font-size: 0.78rem;
+}
+.ai-bubble .md-table th,
+.ai-bubble .md-table td {
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+}
+.ai-bubble .md-table th {
+    background: var(--accent-dim);
+    color: var(--white);
+    font-weight: 700;
+    white-space: nowrap;
+}
+.ai-bubble .md-table tr:nth-child(even) td { background: rgba(127, 127, 127, 0.06); }
+.ai-bubble .md-table a { white-space: nowrap; color: inherit; text-decoration: none; }
+
+.ai-client-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    vertical-align: middle;
+}
+.ai-link-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.ai-link-icon-ph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 0.6rem;
+    border-color: var(--border-hover);
+}
+
 .ai-typing { display: inline-flex; gap: 4px; padding: 0.15rem 0; }
 .ai-typing i {
     width: 6px;
