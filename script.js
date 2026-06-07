@@ -6,7 +6,7 @@ const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAM
 const LINKVERTISE_USER_ID = 499358;
 function isMonetizationOn() { return true; }
 
-const GEMINI_PROXY_URL = 'https://nyxora-ai.pepeoncloudeflare.workers.dev/';
+const GEMINI_PROXY_URL = 'https://nyxora-ai.pepeoncloudeflare.workers.dev';
 
 const DL_COUNTS_KEY = 'nyxora_dl_counts_v1';
 function loadDlCounts() { try { return JSON.parse(localStorage.getItem(DL_COUNTS_KEY) || '{}'); } catch { return {}; } }
