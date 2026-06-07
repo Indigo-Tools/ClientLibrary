@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: false
+          fetch-depth: 0   # full history so we can read each file's last-commit date
 
       - name: Fetch LFS file sizes from pointers
         run: |
@@ -46,15 +47,44 @@ jobs:
           echo "Generating comprehensive library index with metadata..."
 
           python3 - <<'PYEOF'
-          import os, json
+          import os, json, re, subprocess
+          from xml.sax.saxutils import escape as xml_escape
 
           library_dir = "ClientLibrary"
+          site_url = "https://mca.glacierclient.xyz"
           valid_exts = {".zip", ".dll", ".so", ".apk", ".mcpack", ".mcaddon"}
           image_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
           video_exts  = {".mp4", ".webm", ".mov", ".m4v", ".ogv"}
 
           def is_tag(name):
               return "." not in name and name.lower() not in ("readme", "license")
+
+          def slugify(s):
+              s = (s or "").lower().strip()
+              s = re.sub(r"[^a-z0-9]+", "-", s)
+              return s.strip("-")
+
+          # Map each tracked path -> unix time of its most recent commit (single git log pass).
+          mtimes = {}
+          try:
+              out = subprocess.run(
+                  ["git", "log", "--name-only", "--format=%ct", "--no-renames"],
+                  capture_output=True, text=True, check=False
+              ).stdout
+              cur = None
+              for line in out.splitlines():
+                  line = line.strip()
+                  if not line:
+                      continue
+                  if line.isdigit() and len(line) >= 9:
+                      cur = int(line)
+                  elif cur is not None:
+                      p = line.replace("\\", "/")
+                      if p not in mtimes:   # first time we see a path = most recent commit
+                          mtimes[p] = cur
+              print(f"Loaded commit times for {len(mtimes)} paths")
+          except Exception as e:
+              print(f"Could not read git history: {e}")
 
           # Load LFS sizes from the TSV generated in the previous step
           lfs_sizes = {}
@@ -113,6 +143,9 @@ jobs:
                           entry["size"] = lfs_sizes.get(rel, 0)
                       else:
                           entry["size"] = real_size
+                      mt = mtimes.get(rel)
+                      if mt:
+                          entry["mtime"] = mt
                       entries.append(entry)
 
                   elif any(low.endswith(e) for e in image_exts):
@@ -125,13 +158,49 @@ jobs:
               json.dump(entries, f, separators=(",", ":"))
 
           print(f"Generated paths.json with {len(entries)} entries")
+
+          # ── sitemap.xml: one URL per client slug (+ homepage) ──
+          import datetime
+          clients = {}   # slug -> latest mtime
+          for e in entries:
+              parts = e["path"].split("/")
+              if len(parts) < 3:
+                  continue
+              fname = parts[-1].lower()
+              if not any(fname.endswith(x) for x in valid_exts):
+                  continue
+              slug = slugify(parts[2])
+              if not slug:
+                  continue
+              mt = e.get("mtime") or 0
+              if slug not in clients or mt > clients[slug]:
+                  clients[slug] = mt
+
+          def iso(ts):
+              if not ts:
+                  return None
+              return datetime.datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d")
+
+          urls = ['  <url><loc>{}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>'.format(site_url)]
+          for slug in sorted(clients):
+              lm = iso(clients[slug])
+              lastmod = "<lastmod>{}</lastmod>".format(lm) if lm else ""
+              urls.append('  <url><loc>{}/{}</loc>{}<changefreq>weekly</changefreq><priority>0.7</priority></url>'.format(
+                  site_url, xml_escape(slug), lastmod))
+
+          sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n' \
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' \
+                    + "\n".join(urls) + "\n</urlset>\n"
+          with open("sitemap.xml", "w", encoding="utf-8") as f:
+              f.write(sitemap)
+          print(f"Generated sitemap.xml with {len(clients)} client URLs")
           PYEOF
 
       - name: Commit and Push updated index
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add paths.json
+          git add paths.json sitemap.xml
           git commit -m "chore: update comprehensive library index [skip ci]" || exit 0
           git push
 
@@ -142,6 +211,8 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html script.js styles.css translations.js manifest.json paths.json _site/
+          cp sw.js robots.txt sitemap.xml _site/
+          [ -f 404.html ] && cp 404.html _site/ || true
           [ -f BG.png ]   && cp BG.png   _site/ || true
           [ -f logo.png ] && cp logo.png _site/ || true
           [ -f CNAME ]    && cp CNAME    _site/ || true

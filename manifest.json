@@ -8,11 +8,37 @@
   "orientation": "any",
   "background_color": "#0a0b0d",
   "theme_color": "#6c5ce7",
+  "categories": ["games", "utilities", "entertainment"],
   "icons": [
     {
       "src": "logo.png",
-      "sizes": "any",
-      "type": "image/png"
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Favorites",
+      "short_name": "Favorites",
+      "url": "./#cat=__favorites__"
+    },
+    {
+      "name": "Popular Clients",
+      "short_name": "Popular",
+      "url": "./#cat=Popular Clients"
     }
   ]
 }

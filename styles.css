@@ -68,6 +68,7 @@ a:hover {
 
 /* layout container */
 .site-wrapper {
+    position: relative;
     max-width: min(1440px, 92vw);
     margin: 0 auto;
     padding: 2rem 1.25rem 4rem;
@@ -1394,14 +1395,15 @@ a:hover {
 
 /* floating icon buttons */
 .icon-btn {
-    position: fixed;
+    position: absolute;
     top: 1rem;
     z-index: 100;
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: var(--card);
+    background: var(--bg-elevated);
     border: 1px solid var(--border);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
     color: var(--text);
     cursor: pointer;
     display: flex;
@@ -1411,11 +1413,14 @@ a:hover {
     font-size: 0.875rem;
 }
 
-.icon-btn:hover {
-    background: var(--card-hover);
-    color: var(--accent);
-    transform: scale(1.05);
+@media (hover: hover) {
+    .icon-btn:hover {
+        background: var(--card-hover);
+        color: var(--accent);
+        transform: scale(1.05);
+    }
 }
+.icon-btn:active { transform: scale(0.95); }
 
 .theme-toggle {
     right: 1rem;
@@ -2946,3 +2951,181 @@ a:hover {
     }
     .ai-chat.open .ai-chat-panel { transform: translateY(0); }
 }
+/* ─────────────────────────────────────────────────────────────
+   New features: NEW badge, size/date tags, compare, tag cloud,
+   accessibility (contrast / text scale / data saver), update toast
+   ───────────────────────────────────────────────────────────── */
+
+.new-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    padding: 0.05rem 0.4rem;
+    font-size: 0.625rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    vertical-align: middle;
+    box-shadow: 0 0 0 1px var(--accent-glow);
+}
+.new-badge i { font-size: 0.6rem; }
+
+.tag-size, .tag-date {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+}
+.tag-date i, .tag-size i { opacity: 0.8; }
+
+.stat-chip-muted { color: var(--text-muted); opacity: 0.85; }
+
+/* Action toast with a button (SW update available) */
+.toast-action { gap: 0.75rem; }
+.toast-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.toast-btn:hover { background: var(--accent-light); }
+
+/* Compare action button active state */
+.cmp-btn.active { color: var(--accent); border-color: var(--border-hover); background: var(--accent-dim); }
+
+/* Floating compare bar */
+.compare-bar {
+    position: fixed;
+    left: 50%;
+    bottom: 1.25rem;
+    transform: translateX(-50%);
+    z-index: 7500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    animation: cmp-pop 0.25s var(--spring);
+}
+@keyframes cmp-pop { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.compare-bar.hidden { display: none; }
+.compare-count { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; font-weight: 700; color: var(--white); padding: 0 0.4rem; }
+.compare-count i { color: var(--accent); }
+.compare-bar .toolbar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Compare table */
+.cmp-scroll { overflow-x: auto; margin-top: 0.5rem; }
+.cmp-table { border-collapse: collapse; width: 100%; font-size: 0.8125rem; }
+.cmp-table th, .cmp-table td {
+    border: 1px solid var(--border);
+    padding: 0.55rem 0.7rem;
+    text-align: left;
+    vertical-align: top;
+}
+.cmp-table thead th { background: var(--card); position: sticky; top: 0; }
+.cmp-label { font-weight: 700; color: var(--text-muted); white-space: nowrap; background: var(--card); }
+.cmp-head { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; text-align: center; min-width: 120px; }
+.cmp-head img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
+.cmp-name { background: none; border: none; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 0.8125rem; }
+.cmp-name:hover { text-decoration: underline; }
+
+/* Tag cloud */
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.tag-cloud-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s var(--ease);
+    line-height: 1.1;
+}
+.tag-cloud-item:hover { border-color: var(--border-hover); color: var(--white); background: var(--card-hover); transform: translateY(-1px); }
+.tag-cloud-n { font-size: 0.7em; color: var(--text-muted); background: rgba(255,255,255,0.05); border-radius: 999px; padding: 0.05rem 0.4rem; }
+
+/* Settings inline value badge */
+.settings-inline-val { margin-left: 0.4rem; font-size: 0.75rem; color: var(--accent); font-weight: 700; }
+
+/* High-contrast mode */
+:root[data-contrast="high"] {
+    --text: #f2f4f8;
+    --text-muted: #c2c8d2;
+    --text-dim: #9aa2ad;
+    --border: rgba(255, 255, 255, 0.22);
+    --border-hover: var(--accent-light);
+}
+:root[data-contrast="high"] .tag,
+:root[data-contrast="high"] .file-raw { color: var(--text); }
+:root[data-contrast="high"][data-theme="light"] {
+    --text: #0a0d12;
+    --text-muted: #2a2f37;
+    --border: rgba(0, 0, 0, 0.28);
+}
+
+/* Data saver: hide heavy imagery */
+:root[data-data-saver="on"] .file-card-banner,
+:root[data-data-saver="on"] .file-card-overlay,
+:root[data-data-saver="on"] .ss-grid,
+:root[data-data-saver="on"] .similar-chip img { display: none !important; }
+
+/* Subtle skeleton shimmer shows through an <img> only until it paints */
+img.client-icon {
+    background: linear-gradient(100deg, var(--card) 30%, var(--card-hover) 50%, var(--card) 70%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+:root[data-motion="reduce"] img.client-icon { animation: none; }
+
+/* Base close button for non-settings modals (stats, qr, help, compare, tags) */
+.help-modal .help-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.16s var(--ease);
+    z-index: 2;
+}
+.help-modal .help-close:hover { color: var(--white); border-color: var(--border-hover); background: var(--card-hover); }
+.help-modal .help-content { position: relative; }
+
+/* Global download-count badge on client names */
+.dl-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    margin-left: 0.5rem;
+    padding: 0.05rem 0.45rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.5;
+    border-radius: 999px;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    vertical-align: middle;
+}
+.dl-count-badge i { font-size: 0.625rem; opacity: 0.85; }
+.dl-count-badge.hidden { display: none; }

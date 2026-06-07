@@ -21,6 +21,29 @@
   <meta property="og:image" content="logo.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Minecraft Client Archive — texture-pack clients and add-ons from 1.16 MCPE to the newest MCPE releases. Browse, search and download.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Nyxora Library">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Nyxora Library (Client Library)">
+  <meta name="twitter:description" content="Minecraft Client Archive — texture-pack clients from 1.16 MCPE to the newest MCPE clients.">
+  <meta name="twitter:image" content="logo.png">
+  <link rel="canonical" href="https://mca.glacierclient.xyz/">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Nyxora Library",
+    "alternateName": "Client Library",
+    "url": "https://mca.glacierclient.xyz/",
+    "description": "Minecraft Client Archive — texture-pack clients and add-ons from 1.16 MCPE to the newest MCPE releases.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://mca.glacierclient.xyz/#q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
 </head>
 
 <body>
@@ -105,6 +128,10 @@
             <span data-t="filter">Filter</span>
             <span id="filter-badge" class="toolbar-badge hidden">0</span>
           </button>
+          <button onclick="openTagBrowser()" class="toolbar-btn" title="Browse by tag (B)">
+            <i class="fa-solid fa-tags"></i>
+            <span class="hide-mobile">Tags</span>
+          </button>
           <button onclick="randomClient()" class="toolbar-btn" title="Surprise me (R)">
             <i class="fa-solid fa-shuffle"></i>
             <span class="hide-mobile" data-t="random">Random</span>
@@ -183,6 +210,9 @@
         <div class="help-row"><kbd>G</kbd><span>Jump to bottom</span></div>
         <div class="help-row"><kbd>r</kbd><span>Random client</span></div>
         <div class="help-row"><kbd>t</kbd><span>Cycle theme</span></div>
+        <div class="help-row"><kbd>s</kbd><span>Open settings</span></div>
+        <div class="help-row"><kbd>b</kbd><span>Browse by tag</span></div>
+        <div class="help-row"><kbd>c</kbd><span>Compare selected</span></div>
         <div class="help-row"><kbd>?</kbd><span>Show this help</span></div>
         <div class="help-row"><kbd>Ctrl</kbd>+<kbd>K</kbd><span>Command palette</span></div>
         <div class="help-row"><kbd>.</kbd><span>Your stats</span></div>
@@ -351,6 +381,28 @@
               </div>
               <div class="settings-desc">Hides the banner art on file cards and tightens padding for a denser list view.</div>
             </div>
+
+            <div class="settings-item settings-item-row">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-circle-half-stroke"></i><span>High contrast</span></div>
+                <div class="settings-item-tools">
+                  <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+                  <button id="setting-contrast" class="settings-switch" onclick="toggleHighContrast()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+                </div>
+              </div>
+              <div class="settings-desc">Boosts text and border contrast for improved readability.</div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-text-height"></i><span>Text size</span> <span id="text-scale-label" class="settings-inline-val">100%</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <input type="range" id="setting-text-scale" min="85" max="140" step="5" value="100" oninput="setTextScale(this.value)" class="nightshift-slider">
+              </div>
+              <div class="settings-desc">Scales the whole interface text from 85% to 140%.</div>
+            </div>
           </section>
 
           <!-- ── Behavior & Accessibility ── -->
@@ -386,6 +438,17 @@
                 </div>
               </div>
               <div class="settings-desc">Automatically collapses expanded client cards when switching between categories, keeping the view tidy.</div>
+            </div>
+
+            <div class="settings-item settings-item-row">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-gauge-high"></i><span>Data saver</span></div>
+                <div class="settings-item-tools">
+                  <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+                  <button id="setting-data-saver" class="settings-switch" onclick="toggleDataSaver()" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+                </div>
+              </div>
+              <div class="settings-desc">Hides banner art and screenshot thumbnails to save bandwidth on slow or metered connections.</div>
             </div>
           </section>
 
@@ -435,6 +498,28 @@
                 <input id="import-input" type="file" accept="application/json,.json" style="display:none" onchange="importFavorites(event)">
               </div>
               <div class="settings-desc">Saves your favorites list to a JSON file, or restores it on another device. The format is forward-compatible.</div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-file-csv"></i><span>Export catalogue</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <button class="toolbar-btn" onclick="exportCatalogCsv()"><i class="fa-solid fa-file-csv"></i><span>Export CSV</span></button>
+              </div>
+              <div class="settings-desc">Downloads the entire library as a spreadsheet-friendly CSV (name, category, versions, size, tags, link).</div>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-tags"></i><span>Browse by tag</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <button class="toolbar-btn" onclick="closeSettings();openTagBrowser()"><i class="fa-solid fa-tags"></i><span>Open tag cloud</span></button>
+              </div>
+              <div class="settings-desc">Opens a tag cloud (shortcut <kbd>B</kbd>) to jump straight to a tag's clients.</div>
             </div>
           </section>
         </div>
