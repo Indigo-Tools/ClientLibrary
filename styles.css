@@ -3129,3 +3129,232 @@ img.client-icon {
 }
 .dl-count-badge i { font-size: 0.625rem; opacity: 0.85; }
 .dl-count-badge.hidden { display: none; }
+
+/* ─────────────────────────────────────────────────────────────
+   Filter panel + chips (were unstyled -> default browser buttons)
+   ───────────────────────────────────────────────────────────── */
+.filter-panel {
+    margin: -0.25rem 0 1rem;
+    padding: 0.85rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    animation: filter-in 0.18s var(--ease);
+}
+.filter-panel.hidden { display: none; }
+@keyframes filter-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+.filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s var(--ease);
+    white-space: nowrap;
+    line-height: 1.2;
+}
+.filter-chip i { font-size: 0.8em; opacity: 0.85; }
+@media (hover: hover) {
+    .filter-chip:hover { color: var(--white); border-color: var(--border-hover); background: var(--card-hover); transform: translateY(-1px); }
+}
+.filter-chip.active {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 2px 10px var(--accent-glow);
+}
+.filter-chip.active i { opacity: 1; }
+
+.clear-filters {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s var(--ease);
+}
+.clear-filters.hidden { display: none; }
+@media (hover: hover) {
+    .clear-filters:hover { color: #fb7185; border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.08); }
+}
+
+/* Count badge on the Filter toolbar button */
+.toolbar-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    margin-left: 0.15rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.625rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.toolbar-badge.hidden { display: none; }
+
+/* ─────────────────────────────────────────────────────────────
+   Ambient effect overlay (snow / rain / sakura)
+   ───────────────────────────────────────────────────────────── */
+.weather-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 65;          /* above content, below modals (>=200) and night-shift (70) */
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Previously-unstyled features (audit fixes) — make every CSS work
+   ───────────────────────────────────────────────────────────── */
+
+/* Top scroll-progress bar (was height:0 -> invisible) */
+.scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0;
+    z-index: 200;
+    background: linear-gradient(90deg, var(--accent), var(--accent-light));
+    box-shadow: 0 0 8px var(--accent-glow);
+    transition: width 0.1s linear;
+    pointer-events: none;
+}
+
+/* Online / offline indicator pill */
+.net-indicator {
+    position: fixed;
+    bottom: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 8000;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--white);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+.net-indicator.hidden { display: none; }
+.net-indicator.online  { border-color: rgba(16, 185, 129, 0.5); color: #34d399; }
+.net-indicator.offline { border-color: rgba(244, 63, 94, 0.5);  color: #fb7185; }
+
+/* Stats dashboard grid + cards */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.9rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.stat-card > i { color: var(--accent); font-size: 1rem; margin-bottom: 0.15rem; }
+.stat-card-v { font-size: 1.15rem; font-weight: 800; color: var(--white); line-height: 1.2; word-break: break-word; }
+.stat-card-k { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Keyboard-shortcuts modal grid */
+.help-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1.25rem;
+    margin-top: 1rem;
+}
+.help-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8125rem;
+    color: var(--text);
+}
+.help-row span { color: var(--text-muted); }
+@media (max-width: 560px) { .help-grid { grid-template-columns: 1fr; } }
+
+/* Command-palette footer hints */
+.cmdk-footer {
+    display: flex;
+    gap: 1rem;
+    padding: 0.6rem 0.9rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+.cmdk-footer kbd {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.05rem 0.3rem;
+    font-size: 0.7rem;
+}
+
+/* Recent custom-accent swatches row */
+.accent-recents {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+}
+.accent-recents:empty { display: none; }
+
+/* QR modal */
+.qr-content { text-align: center; max-width: 340px; }
+#qr-target img { border-radius: var(--radius); background: #fff; padding: 8px; }
+.qr-url {
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    word-break: break-all;
+}
+
+/* Screenshot lightbox video */
+.screenshot-video {
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: var(--radius);
+    background: #000;
+}
+
+/* Night-shift strength range slider */
+.nightshift-slider { width: 100%; accent-color: var(--accent); cursor: pointer; }
+
+/* Settings rows that place a control inline on the right */
+.settings-item-row .settings-item-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.settings-item-row .settings-item-tools { display: inline-flex; align-items: center; gap: 0.5rem; }

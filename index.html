@@ -403,6 +403,22 @@
               </div>
               <div class="settings-desc">Scales the whole interface text from 85% to 140%.</div>
             </div>
+
+            <div class="settings-item">
+              <div class="settings-item-head">
+                <div class="settings-item-title"><i class="fa-solid fa-wand-sparkles"></i><span>Ambient effect</span></div>
+                <button type="button" class="settings-help" aria-expanded="false" onclick="toggleSettingDesc(this)" title="What is this?"><i class="fa-solid fa-circle-info"></i></button>
+              </div>
+              <div class="settings-item-control">
+                <select id="setting-effect" class="settings-select" onchange="setEffect(this.value)">
+                  <option value="none">None</option>
+                  <option value="snow">❄️ Snow</option>
+                  <option value="rain">🌧️ Rain</option>
+                  <option value="sakura">🌸 Sakura petals</option>
+                </select>
+              </div>
+              <div class="settings-desc">A gentle animated overlay (snow, rain or falling petals). Automatically paused when Reduce motion or Data saver is on.</div>
+            </div>
           </section>
 
           <!-- ── Behavior & Accessibility ── -->

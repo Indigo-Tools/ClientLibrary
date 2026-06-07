@@ -129,7 +129,7 @@ const FAVS_KEY = 'nyxora_favs_v1';
 const DEFAULT_PREFS = {
     theme: 'auto', sort: 'name-asc', tagFilters: [], category: 'ALL',
     language: 'en', accent: 'violet', density: 'cozy', motion: 'auto',
-    highContrast: false, textScale: 100, dataSaver: false,
+    highContrast: false, textScale: 100, dataSaver: false, effect: 'none',
     recentlyViewed: [], searchHistory: [],
 };
 const REPORT_DISCORD_URL = 'https://discord.glacierclient.xyz';
@@ -601,6 +601,7 @@ function toggleReducedMotion() {
     prefs.motion = (prefs.motion === 'reduce') ? 'auto' : 'reduce';
     savePrefs();
     applyMotion();
+    applyEffect();   // stop/restart ambient effect to respect the new motion setting
     setSwitchState('setting-motion', prefs.motion === 'reduce');
 }
 
@@ -650,8 +651,89 @@ function toggleDataSaver() {
     prefs.dataSaver = !prefs.dataSaver;
     savePrefs();
     applyDataSaver();
+    applyEffect();   // data saver also pauses ambient effects
     setSwitchState('setting-data-saver', !!prefs.dataSaver);
     toast(prefs.dataSaver ? 'Data saver on — images hidden' : 'Data saver off', 'gauge-high');
+}
+
+// ── Ambient effects: snow / rain / sakura (canvas overlay) ──
+let _fxRAF = null, _fxCanvas = null, _fxResize = null;
+function stopEffect() {
+    if (_fxRAF) { cancelAnimationFrame(_fxRAF); _fxRAF = null; }
+    if (_fxResize) { window.removeEventListener('resize', _fxResize); _fxResize = null; }
+    if (_fxCanvas) { _fxCanvas.remove(); _fxCanvas = null; }
+}
+function applyEffect() {
+    stopEffect();
+    const type = prefs.effect || 'none';
+    if (type === 'none') return;
+    // Honour reduced-motion + data-saver — no perpetual animation in those modes.
+    if (prefs.motion === 'reduce' || prefs.dataSaver) return;
+    startEffect(type);
+}
+function startEffect(type) {
+    const c = document.createElement('canvas');
+    c.className = 'weather-canvas';
+    c.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(c);
+    _fxCanvas = c;
+    const ctx = c.getContext('2d');
+    let w = 0, h = 0, parts = [];
+    const SAKURA = type === 'sakura', RAIN = type === 'rain';
+
+    function spawn() {
+        if (RAIN) return { x: Math.random() * w, y: Math.random() * -h, len: 9 + Math.random() * 13, sp: 7 + Math.random() * 7 };
+        // snow / sakura share a drifting model
+        return {
+            x: Math.random() * w, y: Math.random() * -h,
+            r: SAKURA ? 4 + Math.random() * 4 : 1 + Math.random() * 2.6,
+            sp: SAKURA ? 1 + Math.random() * 1.6 : 0.6 + Math.random() * 1.4,
+            ph: Math.random() * Math.PI * 2, amp: 0.4 + Math.random() * 1.1, rot: Math.random() * Math.PI
+        };
+    }
+    function init() {
+        const base = RAIN ? 5.5 : (SAKURA ? 14 : 9);
+        const count = Math.min(RAIN ? 240 : 170, Math.max(30, Math.floor(w / base)));
+        parts = Array.from({ length: count }, spawn);
+    }
+    function resize() { w = c.width = innerWidth; h = c.height = innerHeight; init(); }
+    function frame() {
+        ctx.clearRect(0, 0, w, h);
+        if (RAIN) {
+            ctx.strokeStyle = 'rgba(174, 200, 255, 0.45)';
+            ctx.lineWidth = 1.1;
+            for (const p of parts) {
+                p.y += p.sp; p.x += 1.4;
+                if (p.y > h) { p.y = -p.len; p.x = Math.random() * w; }
+                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 1.4 * (p.len / p.sp), p.y - p.len); ctx.stroke();
+            }
+        } else {
+            for (const p of parts) {
+                p.ph += 0.012; p.y += p.sp; p.x += Math.sin(p.ph) * p.amp; p.rot += 0.01;
+                if (p.y > h + 8) { p.y = -8; p.x = Math.random() * w; }
+                if (p.x > w + 8) p.x = -8; else if (p.x < -8) p.x = w + 8;
+                if (SAKURA) {
+                    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+                    ctx.fillStyle = 'rgba(255, 183, 206, 0.85)';
+                    ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                } else {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+        }
+        _fxRAF = requestAnimationFrame(frame);
+    }
+    _fxResize = resize;
+    window.addEventListener('resize', resize);
+    resize();
+    frame();
+}
+function setEffect(v) {
+    prefs.effect = v;
+    savePrefs();
+    applyEffect();
 }
 
 function resetAllPrefs() {
@@ -733,6 +815,7 @@ function openSettings() {
     setSwitchState('setting-contrast', !!prefs.highContrast);
     setSwitchState('setting-data-saver', !!prefs.dataSaver);
     const tsr = document.getElementById('setting-text-scale'); if (tsr) tsr.value = prefs.textScale || 100;
+    const efx = document.getElementById('setting-effect'); if (efx) efx.value = prefs.effect || 'none';
     applyTextScale();
     const ns = document.getElementById('nightshift-strength-row'); if (ns) ns.style.display = prefs.nightShift ? '' : 'none';
     const nss = document.getElementById('setting-nightshift-strength'); if (nss) nss.value = prefs.nightShiftStrength || 30;
@@ -2138,6 +2221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     applyHighContrast();
     applyTextScale();
     applyDataSaver();
+    applyEffect();
     applyTheme();
     applyTranslations();
 
