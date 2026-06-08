@@ -1259,7 +1259,10 @@ function moveKbFocus(delta) {
 function getMonetizedUrl(targetUrl) {
     if (!isMonetizationOn() || !LINKVERTISE_USER_ID) return targetUrl;
     try {
-        const encoded = encodeURIComponent(btoa(encodeURI(targetUrl)));
+        // targetUrl is already fully percent-encoded (see encodedPath above), so it is
+        // ASCII-safe for btoa. Do NOT re-encode it: encodeURI turns each '%' into '%25',
+        // double-encoding the path (e.g. %20 -> %2520, %5B -> %255B) and 404ing the link.
+        const encoded = encodeURIComponent(btoa(targetUrl));
         const random = Math.random() * 1000;
         return `https://link-to.net/${LINKVERTISE_USER_ID}/${random}/dynamic/?r=${encoded}`;
     } catch (e) {
