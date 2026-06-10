@@ -2,6 +2,11 @@ const GITHUB_ORG = 'Indigo-Tools';
 const REPO_NAME = 'ClientLibrary';
 const BRANCH = 'main';
 const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
+// LFS-tracked files (.mcpack/.mcaddon/.zip per .gitattributes) return a pointer
+// text file from raw.githubusercontent.com; the actual binary is served from the
+// media. endpoint. Images are NOT in LFS, so they stay on BASE_RAW_URL.
+const BASE_MEDIA_URL = `https://media.githubusercontent.com/media/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
+const LFS_EXTENSIONS = /\.(mcpack|mcaddon|zip)$/i;
 
 const LINKVERTISE_USER_ID = 499358;
 function isMonetizationOn() { return true; }
@@ -1815,6 +1820,8 @@ async function init() {
             }
             const encodedPath = parts.map(p => encodeURIComponent(p)).join('/');
             const fullUrl = `${BASE_RAW_URL}/${encodedPath}`;
+            // LFS binaries must be fetched from the media endpoint to get the real file.
+            const downloadUrl = LFS_EXTENSIONS.test(fileName) ? `${BASE_MEDIA_URL}/${encodedPath}` : fullUrl;
             const lowerName = fileName.toLowerCase();
             const client = structured[category][clientName];
 
@@ -1846,7 +1853,7 @@ async function init() {
                     const fileObj = {
                         display: formatName(fileName),
                         rawName: fileName,
-                        url: fullUrl,
+                        url: downloadUrl,
                         size: bytes ? formatFileSize(bytes) : null,
                         sizeBytes: bytes
                     };
