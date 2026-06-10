@@ -4,7 +4,7 @@
  * - Network-first for navigations, falling back to the cached shell.
  * Bump CACHE_VERSION whenever the shell assets change.
  */
-const CACHE_VERSION = 'nyxora-v3';
+const CACHE_VERSION = 'nyxora-v4';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const DATA_CACHE = `${CACHE_VERSION}-data`;
 
