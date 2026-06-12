@@ -30,7 +30,6 @@
   <url><loc>https://mca.glacierclient.xyz/blue-fox-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/blue-night</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/chest-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://mca.glacierclient.xyz/cleanui</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/cm-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/cosmo-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/curation-client</loc><lastmod>2026-06-12</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
@@ -59,6 +58,7 @@
   <url><loc>https://mca.glacierclient.xyz/lithium-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/lobox-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/luconia-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://mca.glacierclient.xyz/lumo</loc><lastmod>2026-06-12</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/max-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/modules</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/mp27-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
@@ -86,7 +86,6 @@
   <url><loc>https://mca.glacierclient.xyz/project-light</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/raven-tweaks-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/solar-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://mca.glacierclient.xyz/splatui</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/spy-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/tgc-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://mca.glacierclient.xyz/titan-client</loc><lastmod>2026-05-26</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
