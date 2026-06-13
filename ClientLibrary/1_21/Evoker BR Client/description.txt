@@ -1,1 +1,1 @@
-ancient code LOL, on wallahi this client sucked anyway
+Evoker BR client was created by EvokerMC to boost your FPS in Minecraft. The project later shifted its focus to the mod menu once Render Dragon was introduced, and was eventually entirely transformed into the Evoker UI Pack.
