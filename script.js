@@ -2,9 +2,6 @@ const GITHUB_ORG = 'Indigo-Tools';
 const REPO_NAME = 'ClientLibrary';
 const BRANCH = 'main';
 const BASE_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
-// LFS-tracked files (.mcpack/.mcaddon/.zip per .gitattributes) return a pointer
-// text file from raw.githubusercontent.com; the actual binary is served from the
-// media. endpoint. Images are NOT in LFS, so they stay on BASE_RAW_URL.
 const BASE_MEDIA_URL = `https://media.githubusercontent.com/media/${GITHUB_ORG}/${REPO_NAME}/${BRANCH}`;
 const LFS_EXTENSIONS = /\.(mcpack|mcaddon|zip)$/i;
 
@@ -15,7 +12,7 @@ const GEMINI_PROXY_URL = 'https://nyxora-ai.pepeoncloudeflare.workers.dev';
 
 const SITE_URL = 'https://mca.glacierclient.xyz';
 const slugMap = {};
-function slugify(s) { return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+function slugify(s) { return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/, ''); }
 function clientUrl(c) { return `${SITE_URL}/${c.slug || slugify(c.displayName)}`; }
 function findClientByRef(ref) {
     if (!ref) return null;
@@ -28,7 +25,6 @@ function findClientByRef(ref) {
     return c || allClients.find(x => x.slug === slug) || null;
 }
 
-// ── Personal (per-device) download tally — feeds "Your downloads" in stats ──
 const DL_COUNTS_KEY = 'nyxora_dl_counts_v1';
 function loadDlCounts() { try { return JSON.parse(localStorage.getItem(DL_COUNTS_KEY) || '{}'); } catch { return {}; } }
 function saveDlCounts(o) { try { localStorage.setItem(DL_COUNTS_KEY, JSON.stringify(o)); } catch {} }
@@ -40,9 +36,9 @@ function bumpDlCount(clientId) {
 }
 
 const DL_COUNTER_BASE = 'https://nyxora-counter.pepeoncloudeflare.workers.dev';
-const DL_COUNTER_NS   = 'nyxora-library';  
+const DL_COUNTER_NS   = 'nyxora-library';
 const DL_GLOBAL_KEY = 'nyxora_dl_global_v1';
-const DL_GLOBAL_TTL = 10 * 60 * 1000; // re-fetch a count at most every 10 min
+const DL_GLOBAL_TTL = 10 * 60 * 1000;
 function counterKey(c) { return (c && (c.slug || slugify(c.displayName))) || ''; }
 function loadGlobalDl() { try { return JSON.parse(localStorage.getItem(DL_GLOBAL_KEY) || '{}'); } catch { return {}; } }
 function setGlobalDl(key, n) {
@@ -74,8 +70,6 @@ async function hitGlobalDl(key) {
         return typeof j.value === 'number' ? j.value : null;
     } catch { return null; }
 }
-// Update every badge that maps to this counter key (a client may appear in
-// several categories, e.g. Popular + its version folder).
 function updateDlBadges(key, n) {
     if (n == null) return;
     allClients.filter(c => counterKey(c) === key).forEach(c => {
@@ -87,14 +81,12 @@ function updateDlBadges(key, n) {
         }
     });
 }
-// Record a real download: bump the global counter and refresh badges.
 function recordGlobalDownload(clientId) {
     const c = allClients.find(x => x.id === clientId);
     if (!c) return;
     const key = counterKey(c);
     hitGlobalDl(key).then(n => { if (n != null) { setGlobalDl(key, n); updateDlBadges(key, n); } });
 }
-// Lazy-load a block's count when it scrolls into view (cache-first).
 let _dlObserver = null;
 function ensureDlObserver() {
     if (_dlObserver) return _dlObserver;
@@ -128,7 +120,6 @@ let currentScreenshots = [];
 let currentScreenshotIndex = 0;
 let isZoomed = false;
 
-// ── QoL: Preferences & favorites ──
 const PREFS_KEY = 'nyxora_prefs_v1';
 const FAVS_KEY = 'nyxora_favs_v1';
 const DEFAULT_PREFS = {
@@ -136,6 +127,7 @@ const DEFAULT_PREFS = {
     language: 'en', accent: 'violet', density: 'cozy', motion: 'auto',
     highContrast: false, textScale: 100, dataSaver: false, effect: 'none',
     recentlyViewed: [], searchHistory: [],
+    aiSimilar: false,
 };
 const REPORT_DISCORD_URL = 'https://discord.glacierclient.xyz';
 const RECENT_KEY = 'nyxora_recent_v1';
@@ -189,7 +181,6 @@ function loadPrefs() {
     } catch { return { ...DEFAULT_PREFS }; }
 }
 
-// ── QoL: i18n ──
 function t(key, params) {
     const dict = (typeof TRANSLATIONS !== 'undefined' && TRANSLATIONS[prefs.language]) ? TRANSLATIONS[prefs.language] : (typeof TRANSLATIONS !== 'undefined' ? TRANSLATIONS.en : null);
     let s = (dict && dict[key]) || (typeof TRANSLATIONS !== 'undefined' && TRANSLATIONS.en && TRANSLATIONS.en[key]) || key;
@@ -219,7 +210,6 @@ function setLanguage(code) {
     }
 }
 
-// ── QoL: Recently viewed ──
 function loadRecent() { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; } }
 function saveRecent(arr) { try { localStorage.setItem(RECENT_KEY, JSON.stringify(arr.slice(0, 10))); } catch {} }
 function trackRecentlyViewed(clientId) {
@@ -262,7 +252,6 @@ function renderRecentlyViewed() {
         </button>`;
 }
 
-// ── QoL: Search history ──
 function loadSearchHistory() { try { return JSON.parse(localStorage.getItem(SEARCH_HIST_KEY) || '[]'); } catch { return []; } }
 function saveSearchHistory(arr) { try { localStorage.setItem(SEARCH_HIST_KEY, JSON.stringify(arr.slice(0, 5))); } catch {} }
 function recordSearch(q) {
@@ -315,7 +304,6 @@ function useHistoryQuery(q) {
     si.focus();
 }
 
-// ── QoL: Accent / density / motion ──
 function lightenHex(hex, pct) {
     const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
     const f = (v) => Math.min(255, Math.round(v + (255 - v) * pct)).toString(16).padStart(2,'0');
@@ -389,7 +377,6 @@ function randomAccent() {
 window.randomAccent = randomAccent;
 window.recordAccentRecent = recordAccentRecent;
 
-// ── Custom color picker (replaces native <input type="color">) ──
 const CP = { h: 264, s: 60, v: 91, _bound: false };
 
 function _hexToRgb(hex) {
@@ -522,7 +509,6 @@ function _bindCpOnce() {
         try { copyText(v, 'Hex copied'); } catch { navigator.clipboard?.writeText(v); }
     });
 
-    // dismiss on outside click / Esc
     document.addEventListener('pointerdown', (e) => {
         const pop = document.getElementById('accent-picker-popover');
         const btn = document.getElementById('setting-accent-picker-btn');
@@ -606,7 +592,7 @@ function toggleReducedMotion() {
     prefs.motion = (prefs.motion === 'reduce') ? 'auto' : 'reduce';
     savePrefs();
     applyMotion();
-    applyEffect();   // stop/restart ambient effect to respect the new motion setting
+    applyEffect();
     setSwitchState('setting-motion', prefs.motion === 'reduce');
 }
 
@@ -626,7 +612,6 @@ function toggleAutoCollapse() {
     setSwitchState('setting-auto-collapse', !!prefs.autoCollapse);
 }
 
-// ── Accessibility: high contrast, text scaling, data saver ──
 function applyHighContrast() {
     if (prefs.highContrast) document.documentElement.dataset.contrast = 'high';
     else document.documentElement.removeAttribute('data-contrast');
@@ -656,12 +641,11 @@ function toggleDataSaver() {
     prefs.dataSaver = !prefs.dataSaver;
     savePrefs();
     applyDataSaver();
-    applyEffect();   // data saver also pauses ambient effects
+    applyEffect();
     setSwitchState('setting-data-saver', !!prefs.dataSaver);
     toast(prefs.dataSaver ? 'Data saver on — images hidden' : 'Data saver off', 'gauge-high');
 }
 
-// ── Ambient effects: snow / rain / sakura (canvas overlay) ──
 let _fxRAF = null, _fxCanvas = null, _fxResize = null;
 function stopEffect() {
     if (_fxRAF) { cancelAnimationFrame(_fxRAF); _fxRAF = null; }
@@ -672,7 +656,6 @@ function applyEffect() {
     stopEffect();
     const type = prefs.effect || 'none';
     if (type === 'none') return;
-    // Honour reduced-motion + data-saver — no perpetual animation in those modes.
     if (prefs.motion === 'reduce' || prefs.dataSaver) return;
     startEffect(type);
 }
@@ -688,7 +671,6 @@ function startEffect(type) {
 
     function spawn() {
         if (RAIN) return { x: Math.random() * w, y: Math.random() * -h, len: 9 + Math.random() * 13, sp: 7 + Math.random() * 7 };
-        // snow / sakura share a drifting model
         return {
             x: Math.random() * w, y: Math.random() * -h,
             r: SAKURA ? 4 + Math.random() * 4 : 1 + Math.random() * 2.6,
@@ -747,7 +729,6 @@ function resetAllPrefs() {
     location.reload();
 }
 
-// ── QoL v2: Copy all download links ──
 function copyAllLinks(urlsJson) {
     let urls;
     try { urls = JSON.parse(decodeURIComponent(urlsJson)); } catch { return; }
@@ -755,7 +736,6 @@ function copyAllLinks(urlsJson) {
     copyText(urls.join('\n'), `Copied ${urls.length} link${urls.length>1?'s':''}`);
 }
 
-// ── QoL v2: Scroll progress bar ──
 function updateScrollProgress() {
     const bar = document.getElementById('scroll-progress');
     if (!bar) return;
@@ -764,7 +744,6 @@ function updateScrollProgress() {
     bar.style.width = p + '%';
 }
 
-// ── QoL v2: Online/offline ──
 function showNetIndicator(online) {
     const el = document.getElementById('net-indicator');
     if (!el) return;
@@ -777,7 +756,6 @@ function showNetIndicator(online) {
     showNetIndicator._t = setTimeout(() => el.classList.add('hidden'), 2400);
 }
 
-// ── QoL v2: PWA install ──
 let _deferredInstallPrompt = null;
 function installPwa() {
     if (!_deferredInstallPrompt) return;
@@ -788,7 +766,6 @@ function installPwa() {
     });
 }
 
-// ── QoL: Settings modal renderers ──
 function renderLanguageSelect() {
     const sel = document.getElementById('setting-language');
     if (!sel) return;
@@ -807,6 +784,7 @@ function renderSettingsSegmented() {
     if (th) th.innerHTML = themes.map(([v, lbl]) => `<button onclick="setThemePref('${v}')" class="${prefs.theme === v ? 'active' : ''}">${escapeHtml(lbl)}</button>`).join('');
     const ds = document.getElementById('setting-density-select'); if (ds) ds.value = prefs.density || 'cozy';
     setSwitchState('setting-motion', prefs.motion === 'reduce');
+    setSwitchState('setting-ai-similar', !!prefs.aiSimilar);
 }
 function setThemePref(v) { prefs.theme = v; savePrefs(); applyTheme(); renderSettingsSegmented(); }
 function openSettings() {
@@ -863,7 +841,6 @@ function toggleSettingDesc(btn) {
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 
-// ── QoL: Export / import favorites ──
 function exportFavorites() {
     const data = { version: 1, favorites: [...favorites], exportedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -900,7 +877,6 @@ function importFavorites(event) {
     reader.readAsText(file);
 }
 
-// ── QoL: Markdown renderer (minimal but safe; supports tables) ──
 function renderMarkdown(text) {
     if (!text) return '';
     const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -954,7 +930,6 @@ function formatInline(s) {
         .replace(/(?<!["=>])(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 }
 
-// ── QoL: Open all downloads ──
 function openAllDownloads(urlsJson) {
     let urls;
     try { urls = JSON.parse(decodeURIComponent(urlsJson)); } catch { return; }
@@ -963,7 +938,6 @@ function openAllDownloads(urlsJson) {
     urls.forEach((u, i) => setTimeout(() => window.open(u, '_blank', 'noopener'), i * 120));
 }
 
-// ── QoL: Animated counters ──
 function animateCount(el, to, durationMs = 700) {
     const from = 0;
     const start = performance.now();
@@ -978,7 +952,6 @@ function animateCount(el, to, durationMs = 700) {
     requestAnimationFrame(tick);
 }
 
-// ── QoL: Touch swipe on screenshot modal ──
 function attachSwipeOnScreenshots() {
     const target = document.querySelector('#screenshots-modal .screenshot-main-container');
     if (!target) return;
@@ -1004,7 +977,6 @@ function loadFavorites() {
 }
 function saveFavorites() { try { localStorage.setItem(FAVS_KEY, JSON.stringify([...favorites])); } catch {} }
 
-// ── QoL: Theme ──
 function applyTheme() {
     let mode;
     if (prefs.theme === 'auto')        mode = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
@@ -1028,7 +1000,6 @@ function cycleTheme() {
     renderSettingsSegmented();
 }
 
-// ── QoL: Toast ──
 function toast(message, icon = 'circle-check') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -1044,14 +1015,12 @@ function toast(message, icon = 'circle-check') {
     }, 2200);
 }
 
-// ── QoL: Copy + share ──
 async function copyText(text, label) {
     let ok = false;
     try {
         await navigator.clipboard.writeText(text);
         ok = true;
     } catch {
-        // Fallback for non-secure contexts, unfocused docs, or older browsers
         try {
             const ta = document.createElement('textarea');
             ta.value = text;
@@ -1079,18 +1048,16 @@ function shareClient(clientId, name) {
             const p = navigator.share({ title, url });
             if (p && typeof p.then === 'function') {
                 p.catch(err => {
-                    // User dismissed the share sheet — that's not an error, don't fall back.
                     if (err && err.name === 'AbortError') return;
                     copyText(url, t('toast_link_copied'));
                 });
             }
             return;
-        } catch { /* synchronous throw (e.g. permissions policy) → fall through to copy */ }
+        } catch { }
     }
     copyText(url, t('toast_link_copied'));
 }
 
-// ── QoL: Favorites ──
 function toggleFavorite(clientId, name) {
     if (favorites.has(clientId)) {
         favorites.delete(clientId);
@@ -1107,7 +1074,6 @@ function toggleFavorite(clientId, name) {
     if (currentCategory === '__favorites__') renderClients(currentQuery);
 }
 
-// ── QoL: Random ──
 function randomClient() {
     if (allClients.length === 0) return;
     const c = allClients[Math.floor(Math.random() * allClients.length)];
@@ -1115,7 +1081,6 @@ function randomClient() {
     toast(`${t('toast_random')}: ${c.displayName}`, 'shuffle');
 }
 
-// ── QoL: Sort + filter ──
 function applySortFilter(clients) {
     const tagFilters = prefs.tagFilters;
     let arr = clients;
@@ -1143,7 +1108,6 @@ function applySortFilter(clients) {
     return [...arr].sort(sortFn);
 }
 
-// ── QoL: Toolbar menus ──
 function renderSortMenu() {
     const menu = document.getElementById('sort-menu');
     if (!menu) return;
@@ -1231,11 +1195,9 @@ function clearAllFilters() {
     toast(t('toast_filters_cleared'), 'broom');
 }
 
-// ── QoL: Help modal ──
 function openHelp() { document.getElementById('help-modal').classList.add('active'); }
 function closeHelp() { document.getElementById('help-modal').classList.remove('active'); }
 
-// ── QoL: Hash routing (supports ?client=, #cat=, and bare #slug deep links) ──
 function applyHashOnce() {
     const hash = location.hash.slice(1);
     if (!hash) return;
@@ -1252,7 +1214,6 @@ function applyHashOnce() {
     }
 }
 
-// ── QoL: Keyboard navigation across cards ──
 function moveKbFocus(delta) {
     const blocks = Array.from(document.querySelectorAll('.client-block'));
     if (blocks.length === 0) return;
@@ -1264,14 +1225,10 @@ function moveKbFocus(delta) {
 function getMonetizedUrl(targetUrl) {
     if (!isMonetizationOn() || !LINKVERTISE_USER_ID) return targetUrl;
     try {
-        // targetUrl is already fully percent-encoded (see encodedPath above), so it is
-        // ASCII-safe for btoa. Do NOT re-encode it: encodeURI turns each '%' into '%25',
-        // double-encoding the path (e.g. %20 -> %2520, %5B -> %255B) and 404ing the link.
         const encoded = encodeURIComponent(btoa(targetUrl));
         const random = Math.random() * 1000;
         return `https://link-to.net/${LINKVERTISE_USER_ID}/${random}/dynamic/?r=${encoded}`;
     } catch (e) {
-        console.error("Monetization failed for:", targetUrl, e);
         return targetUrl;
     }
 }
@@ -1289,7 +1246,6 @@ function formatFileSize(bytes) {
     return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
 }
 
-// ── Recently-added helpers (addedAt is a unix-seconds timestamp from CI) ──
 const NEW_WINDOW_DAYS = 14;
 function isNewClient(c) {
     if (!c || !c.addedAt) return false;
@@ -1314,8 +1270,6 @@ function libraryLastUpdated() {
 function libraryTotalBytes() {
     return allClients.reduce((sum, c) => sum + (c.totalBytes || 0), 0);
 }
-
-// ── Toggle helpers (no full re-render) ──
 
 function toggleClientCollapse(clientId) {
     const body = document.getElementById(`body-${clientId}`);
@@ -1377,8 +1331,6 @@ function expandCollapseAll() {
     allExpanded = !allExpanded;
 }
 
-// ── Search (single-pass for both results + count) ──
-
 function highlightMatch(text, query) {
     if (!query) return escapeHtml(text);
     const idx = text.toLowerCase().indexOf(query.toLowerCase());
@@ -1386,7 +1338,6 @@ function highlightMatch(text, query) {
     return escapeHtml(text.slice(0, idx)) + '<span class="search-highlight">' + escapeHtml(text.slice(idx, idx + query.length)) + '</span>' + escapeHtml(text.slice(idx + query.length));
 }
 
-// Subsequence fuzzy match (typo/abbreviation tolerant), e.g. "lethr" → "Leather"
 function fuzzySubseq(needle, haystack) {
     let i = 0;
     for (let h = 0; h < haystack.length && i < needle.length; h++) {
@@ -1489,7 +1440,6 @@ function renderSearchDropdown(query) {
     dropdown.classList.remove('hidden');
 }
 
-// ── Dynamic document title + social meta for deep-linked clients ──
 function setMeta(prop, value, attr) {
     attr = attr || 'property';
     let el = document.head.querySelector(`meta[${attr}="${prop}"]`);
@@ -1556,8 +1506,6 @@ function clearSearch() {
     dropdownIndex = -1;
     renderClients();
 }
-
-// ── Screenshots ──
 
 function renderScreenshotMedia(item) {
     const mainImg = document.getElementById('screenshot-main');
@@ -1631,8 +1579,6 @@ function toggleZoom() {
 function nextScreenshot() { showScreenshot((currentScreenshotIndex + 1) % currentScreenshots.length); }
 function prevScreenshot() { showScreenshot(currentScreenshotIndex === 0 ? currentScreenshots.length - 1 : currentScreenshotIndex - 1); }
 
-// ── Helpers ──
-
 const smartSort = (a, b) => a.rawName.localeCompare(b.rawName, undefined, { numeric: true, sensitivity: 'base' });
 
 function isOptifinePack(name, desc) {
@@ -1646,14 +1592,13 @@ function detectTags(parts) {
     return ['working', 'legacy', 'trash'].filter(tag => parts.some(p => p.toLowerCase() === tag));
 }
 
-// ── FIXED version detection (avoids false positives like v1.1.15 → 1.15) ──
 function detectVersionsFromFilename(filename) {
     const versions = new Set();
     const patterns = [
         /MCPE[- ]?(\d+)[._](\d+)/gi,
         /MC[- ]?(\d+)[._](\d+)/gi,
         /\b(\d+)[._](\d+)[._](\d+)\b/g,
-        /(?<![.\d])(\d+)[._](\d{2})\b/g   // ← negative lookbehind added here
+        /(?<![.\d])(\d+)[._](\d{2})\b/g
     ];
     for (const pat of patterns) {
         let m;
@@ -1689,7 +1634,6 @@ function extractVersion(name) {
     return m ? { major: parseInt(m[1]), minor: parseInt(m[2]) } : null;
 }
 
-// ── Display helper: legacy "1.x" (≤1.21) vs new year-based naming (≥22 → v26) ──
 function formatVersionDisplay(versionStr) {
     const m = versionStr.match(/^(\d+)_(\d+)$/);
     if (m) {
@@ -1728,8 +1672,6 @@ function jsArg(value) {
     return escapeAttr(JSON.stringify(String(value)).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026'));
 }
 
-// ── Stats ──
-
 function renderStats(animate = false) {
     const statsBar = document.getElementById('stats-bar');
     let totalClients = 0, totalFiles = 0, totalCategories = libraryTree.length;
@@ -1749,8 +1691,6 @@ function renderStats(animate = false) {
     }
 }
 
-// ── Build search string for a client (pre-computed, called once) ──
-
 function buildSearchString(client) {
     let s = client.displayName.toLowerCase() + '\0';
     if (client.description) s += client.description.toLowerCase() + '\0';
@@ -1761,8 +1701,6 @@ function buildSearchString(client) {
     return s;
 }
 
-// ── Tab cycler ──
-
 function updateTabScrollButtons() {
     const scrollContainer = document.getElementById('category-tabs');
     const leftBtn = document.getElementById('tab-scroll-left');
@@ -1772,7 +1710,6 @@ function updateTabScrollButtons() {
     if (canScroll) {
         leftBtn.classList.add('visible');
         rightBtn.classList.add('visible');
-        // Hide left button at start, right at end
         leftBtn.style.opacity = scrollContainer.scrollLeft <= 1 ? '0' : '1';
         rightBtn.style.opacity = scrollContainer.scrollLeft + scrollContainer.clientWidth >= scrollContainer.scrollWidth - 2 ? '0' : '1';
     } else {
@@ -1791,8 +1728,6 @@ function scrollTabs(direction) {
     });
 }
 
-// ── Init ──
-
 async function init() {
     try {
         const cacheBust = Date.now();
@@ -1805,7 +1740,6 @@ async function init() {
         const structured = {};
         const detectedCategories = new Set();
 
-        // Support both old format (array of strings) and new format (array of objects)
         const isNewFormat = rawEntries.length > 0 && typeof rawEntries[0] === 'object';
 
         rawEntries.forEach(entry => {
@@ -1820,7 +1754,6 @@ async function init() {
             }
             const encodedPath = parts.map(p => encodeURIComponent(p)).join('/');
             const fullUrl = `${BASE_RAW_URL}/${encodedPath}`;
-            // LFS binaries must be fetched from the media endpoint to get the real file.
             const downloadUrl = LFS_EXTENSIONS.test(fileName) ? `${BASE_MEDIA_URL}/${encodedPath}` : fullUrl;
             const lowerName = fileName.toLowerCase();
             const client = structured[category][clientName];
@@ -1894,6 +1827,7 @@ async function init() {
             Object.entries(structured[cat]).forEach(([name, data]) => {
                 if ((data.tags || []).includes('popular')) {
                     popularClients[name] = { ...data, originalCategory: cat };
+                    delete structured[cat][name];
                 }
             });
         });
@@ -1906,7 +1840,7 @@ async function init() {
         const sorted = sortCategories(Array.from(detectedCategories).map(name => ({
             name,
             displayName: extractVersion(name)
-                ? `Version: ${formatVersionDisplay(name)}`   // ← display v26 style
+                ? `Version: ${formatVersionDisplay(name)}`
                 : name
         })));
 
@@ -1975,7 +1909,6 @@ async function init() {
             requestAnimationFrame(() => { main.style.opacity = '1'; });
         }, 250);
     } catch (err) {
-        console.error('Failed to load library:', err);
         document.getElementById('status-text').textContent = t('failed_load');
         document.querySelector('.spinner')?.classList.add('hidden');
     }
@@ -2028,8 +1961,6 @@ function switchCategory(name) {
     }
     if (window.innerWidth < 768) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
-// ── Render ──
 
 function renderClients(query = '') {
     currentQuery = query;
@@ -2220,8 +2151,6 @@ function renderClients(query = '') {
     }
 }
 
-// ── Events ──
-
 document.addEventListener('DOMContentLoaded', () => {
     applyAccent();
     applyDensity();
@@ -2235,22 +2164,18 @@ document.addEventListener('DOMContentLoaded', () => {
     applyTheme();
     applyTranslations();
 
-    // Scroll progress
     window.addEventListener('scroll', updateScrollProgress, { passive: true });
     updateScrollProgress();
 
-    // Online/offline
     window.addEventListener('online',  () => showNetIndicator(true));
     window.addEventListener('offline', () => showNetIndicator(false));
 
-    // PWA install prompt
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         _deferredInstallPrompt = e;
         document.getElementById('pwa-install')?.classList.remove('hidden');
     });
 
-    // Delegate download clicks to track per-client counts
     document.addEventListener('click', (e) => {
         const a = e.target.closest('a.btn-dl');
         if (!a) return;
@@ -2372,7 +2297,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// ── Pins (separate from favorites; show at top) ──
 const PINS_KEY = 'nyxora_pins_v1';
 function loadPins() { try { return new Set(JSON.parse(localStorage.getItem(PINS_KEY) || '[]')); } catch { return new Set(); } }
 function savePins(s) { try { localStorage.setItem(PINS_KEY, JSON.stringify([...s])); } catch {} }
@@ -2384,7 +2308,6 @@ function togglePin(clientId, name) {
     document.querySelectorAll(`[data-pin-id="${clientId}"]`).forEach(el => el.classList.toggle('active', pinned.has(clientId)));
 }
 
-// ── Per-client notes ──
 const NOTES_KEY = 'nyxora_notes_v1';
 function loadNotes() { try { return JSON.parse(localStorage.getItem(NOTES_KEY) || '{}'); } catch { return {}; } }
 function saveNotes(o) { try { localStorage.setItem(NOTES_KEY, JSON.stringify(o)); } catch {} }
@@ -2400,7 +2323,6 @@ function openNote(clientId, name) {
     document.querySelectorAll(`[data-note-id="${clientId}"]`).forEach(el => el.classList.toggle('has-note', !!updated.trim()));
 }
 
-// ── Smart search operators: tag:, version:, has: ──
 function parseSearch(raw) {
     const ops = { tag: [], version: [], has: [] };
     let rest = raw;
@@ -2425,21 +2347,58 @@ function matchesOps(client, ops) {
     return true;
 }
 
-// ── Similar clients (by tag/version overlap) ──
-// Dedupes by rawName so a client that exists in several categories is shown once.
-// Excludes the active client both by id and by rawName so it never recommends itself.
-function similarClients(client, limit) {
-    limit = limit || 5;
-    const tags = new Set([...(client.tags || []), client.isOptifine ? 'optifine' : '', client.isPopular ? 'popular' : ''].filter(Boolean));
+function similarClients(client, limit = 6) {
     const activeKey = (client.rawName || client.displayName || client.id).toLowerCase();
     const seen = new Set([activeKey]);
+
+    const clientTags = new Set([
+        ...(client.tags || []),
+        client.isOptifine ? 'optifine' : '',
+        client.isPopular ? 'popular' : ''
+    ].filter(Boolean));
+
+    const clientVersions = new Set(client.compatVersions || []);
+    const clientAuthor = (client.author && client.author.name || '').trim().toLowerCase();
+
     return allClients
         .filter(c => c.id !== client.id)
         .map(c => {
-            const otherTags = new Set([...(c.tags || []), c.isOptifine ? 'optifine' : '', c.isPopular ? 'popular' : ''].filter(Boolean));
-            let overlap = 0; tags.forEach(t => { if (otherTags.has(t)) overlap++; });
-            const versionMatch = (client.compatVersions || []).some(v => (c.compatVersions || []).includes(v)) ? 1 : 0;
-            return { c, score: overlap * 2 + versionMatch };
+            const otherTags = new Set([
+                ...(c.tags || []),
+                c.isOptifine ? 'optifine' : '',
+                c.isPopular ? 'popular' : ''
+            ].filter(Boolean));
+
+            const intersection = [...clientTags].filter(t => otherTags.has(t));
+            const union = new Set([...clientTags, ...otherTags]);
+            const tagScore = union.size ? (intersection.length / union.size) * 3 : 0;
+
+            let versionScore = 0;
+            for (const v of client.compatVersions || []) {
+                if ((c.compatVersions || []).includes(v)) {
+                    versionScore = 2.5;
+                    break;
+                }
+            }
+            if (versionScore === 0) {
+                const families = new Set(
+                    (client.compatVersions || []).map(v => v.replace(/_\d+$/, ''))
+                );
+                const otherFamilies = new Set(
+                    (c.compatVersions || []).map(v => v.replace(/_\d+$/, ''))
+                );
+                if ([...families].some(f => otherFamilies.has(f))) {
+                    versionScore = 1.0;
+                }
+            }
+
+            const otherAuthor = (c.author && c.author.name || '').trim().toLowerCase();
+            const authorScore = (clientAuthor && otherAuthor && clientAuthor === otherAuthor) ? 5.0 : 0;
+
+            const catScore = (client.originalCategory && c.originalCategory && client.originalCategory === c.originalCategory) ? 2.0 : 0;
+
+            const score = tagScore + versionScore + authorScore + catScore;
+            return { c, score };
         })
         .filter(x => x.score > 0)
         .sort((a, b) => b.score - a.score)
@@ -2453,7 +2412,6 @@ function similarClients(client, limit) {
         .map(x => x.c);
 }
 
-// ── Command palette ──
 function buildCmdkActions() {
     return [
         { id:'a:settings', label:'Open settings',         icon:'fa-gear',         run:openSettings },
@@ -2525,7 +2483,6 @@ function closeCmdK() {
     document.body.style.overflow = '';
 }
 
-// ── Stats dashboard ──
 function openStats() {
     const grid = document.getElementById('stats-grid'); if (!grid) return;
     const counts = loadDlCounts();
@@ -2554,7 +2511,6 @@ function openStats() {
 }
 function closeStats() { document.getElementById('stats-modal')?.classList.remove('active'); }
 
-// ── QR code share (public qrserver API) ──
 function openQr(clientId, name) {
     const url = `${location.origin}${location.pathname}#client=${encodeURIComponent(clientId)}`;
     document.getElementById('qr-target').innerHTML = `<img alt="QR for ${escapeAttr(name)}" src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(url)}" width="240" height="240" loading="lazy">`;
@@ -2563,7 +2519,6 @@ function openQr(clientId, name) {
 }
 function closeQr() { document.getElementById('qr-modal')?.classList.remove('active'); }
 
-// ── Bulk actions on the currently-rendered set ──
 function currentVisibleClients() {
     const ids = [...document.querySelectorAll('.client-block')].map(el => el.id.replace(/^block-/, ''));
     return allClients.filter(c => ids.indexOf(c.id) !== -1);
@@ -2599,7 +2554,6 @@ function bulkCopyLinks() {
     copyText(urls.join('\n'), `Copied ${urls.length} links`);
 }
 
-// ── Konami code → party mode ──
 let _konamiBuf = '';
 const _KONAMI = 'ArrowUpArrowUpArrowDownArrowDownArrowLeftArrowRightArrowLeftArrowRightba';
 function partyMode() {
@@ -2621,7 +2575,6 @@ function partyMode() {
     toast('Party mode!', 'champagne-glasses');
 }
 
-// ── Global key + input wiring ──
 document.addEventListener('keydown', (e) => {
     if (!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) {
         _konamiBuf = (_konamiBuf + e.key).slice(-_KONAMI.length);
@@ -2654,7 +2607,6 @@ document.addEventListener('input', (e) => {
     if (e.target && e.target.id === 'cmdk-input') renderCmdk(e.target.value);
 });
 
-// ── Inject extra actions (pin/note/qr) into each client header ──
 function decorateClientActions() {
     document.querySelectorAll('.client-actions[data-client-id]').forEach(actions => {
         if (actions.dataset.qolv3) return;
@@ -2686,18 +2638,40 @@ function decorateClientActions() {
         if (block.dataset.simInjected) return;
         const id = block.id.replace(/^block-/, ''); if (!id) return;
         const client = allClients.find(c => c.id === id); if (!client) return;
-        const sims = similarClients(client, 5);
-        if (sims.length === 0) return;
+
+        const sims = prefs.aiSimilar ? [] : similarClients(client, 5);
+        const stripContainerId = `sim-strip-${id}`;
+        const stripHtml = `<div class="similar-strip" id="${stripContainerId}">
+            <span class="similar-label"><i class="fa-solid fa-shuffle"></i> Similar clients</span>
+            <div class="similar-list" id="${stripContainerId}-list">
+                ${sims.length ? sims.map(s => `<button class="similar-chip" onclick="scrollToClient(${jsArg(s.id)})">${s.iconUrl?`<img src="${escapeAttr(s.iconUrl)}" alt="" loading="lazy">`:'<i class="fa-solid fa-cube"></i>'}<span>${escapeHtml(s.displayName)}</span></button>`).join('') : (prefs.aiSimilar ? '<span class="similar-loading">Loading…</span>' : '<span class="similar-empty">No similar clients found</span>')}
+            </div>
+        </div>`;
+
         block.dataset.simInjected = '1';
-        const stripHtml = `<div class="similar-strip"><span class="similar-label"><i class="fa-solid fa-shuffle"></i> Similar clients</span><div class="similar-list">${sims.map(s => `<button class="similar-chip" onclick="scrollToClient(${jsArg(s.id)})">${s.iconUrl?`<img src="${escapeAttr(s.iconUrl)}" alt="" loading="lazy">`:'<i class="fa-solid fa-cube"></i>'}<span>${escapeHtml(s.displayName)}</span></button>`).join('')}</div></div>`;
-        const existing = block.querySelector('.details-inner');
-        if (existing) { existing.insertAdjacentHTML('beforeend', stripHtml); return; }
-        const bodyInner = block.querySelector('.client-body-inner');
-        if (!bodyInner) return;
-        const safeId = jsArg(id);
-        const panelHtml = `<div id="details-${escapeAttr(id)}" class="details-panel"><div class="details-panel-inner"><div class="details-inner">${stripHtml}</div></div></div>`
-            + `<button id="details-btn-${escapeAttr(id)}" onclick="toggleDescription(${safeId})" class="details-toggle">${escapeHtml(t('show_details'))} <i class="fa-solid fa-chevron-down"></i></button>`;
-        bodyInner.insertAdjacentHTML('afterbegin', panelHtml);
+
+        const existingDetails = block.querySelector('.details-inner');
+        if (existingDetails) {
+            existingDetails.insertAdjacentHTML('beforeend', stripHtml);
+        } else {
+            const bodyInner = block.querySelector('.client-body-inner');
+            if (!bodyInner) return;
+            const panelHtml = `<div id="details-${escapeAttr(id)}" class="details-panel"><div class="details-panel-inner"><div class="details-inner">${stripHtml}</div></div></div>`
+                + `<button id="details-btn-${escapeAttr(id)}" onclick="toggleDescription(${jsArg(id)})" class="details-toggle">${escapeHtml(t('show_details'))} <i class="fa-solid fa-chevron-down"></i></button>`;
+            bodyInner.insertAdjacentHTML('afterbegin', panelHtml);
+        }
+
+        if (prefs.aiSimilar) {
+            fetchAISimilarClients(client, 5).then(aiSims => {
+                const listEl = document.getElementById(`${stripContainerId}-list`);
+                if (!listEl) return;
+                if (aiSims.length === 0) {
+                    listEl.innerHTML = '<span class="similar-empty">No similar clients found</span>';
+                    return;
+                }
+                listEl.innerHTML = aiSims.map(s => `<button class="similar-chip" onclick="scrollToClient(${jsArg(s.id)})">${s.iconUrl?`<img src="${escapeAttr(s.iconUrl)}" alt="" loading="lazy">`:'<i class="fa-solid fa-cube"></i>'}<span>${escapeHtml(s.displayName)}</span></button>`).join('');
+            });
+        }
     });
 
     if (pinned.size > 0) {
@@ -2720,7 +2694,6 @@ function decorateClientActions() {
     });
 }
 
-// ── Patch renderClients to also run decorators + bulk bar + smart-search ──
 (function patchRender() {
     const originalRender = window.renderClients;
     if (!originalRender) return;
@@ -2747,7 +2720,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (c) mo.observe(c, { childList: true });
 });
 
-// ── Gemini AI assistant ──
 const AI_HISTORY_KEY = 'nyxora_ai_history_v1';
 let aiHistory = [];
 let aiBusy = false;
@@ -2992,7 +2964,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// ── Helper: create a modal shell on demand (reuses .help-modal styling) ──
 function ensureModal(id, closeFn) {
     let m = document.getElementById(id);
     if (m) return m;
@@ -3005,14 +2976,12 @@ function ensureModal(id, closeFn) {
     return m;
 }
 
-// Friendly category label for a client (handles version folders + merged categories)
 function clientCategoryLabel(c) {
     const raw = c.originalCategory || (libraryTree.find(cat => cat.clients.includes(c)) || {}).name || '';
     if (!raw) return '—';
     return extractVersion(raw) ? `Version: ${formatVersionDisplay(raw)}` : raw;
 }
 
-// ── Compare clients (up to 4, side by side) ──
 let compareSet = new Set();
 const COMPARE_MAX = 4;
 function isComparing(id) { return compareSet.has(id); }
@@ -3053,6 +3022,7 @@ function openCompare() {
     const rows = [
         ['Category', c => escapeHtml(clientCategoryLabel(c))],
         ['Versions', c => (c.compatVersions || []).map(v => formatVersionDisplay(v)).join(', ') || '—'],
+        ['Author', c => c.author?.name ? escapeHtml(c.author.name) : '—'],
         ['Files', c => String(c.files.length)],
         ['Extensions', c => String(c.extensions.length)],
         ['Screenshots', c => String(c.screenshots?.length || 0)],
@@ -3070,7 +3040,6 @@ function openCompare() {
 }
 function closeCompare() { document.getElementById('compare-modal')?.classList.remove('active'); }
 
-// ── Browse by tag (tag cloud) ──
 function collectTags() {
     const counts = {};
     allClients.forEach(c => {
@@ -3101,7 +3070,6 @@ function tagBrowseSelect(tag) {
     toast(`${t('filter')}: ${tag}`, 'tags');
 }
 
-// ── Export full catalogue to CSV ──
 function csvCell(v) {
     v = (v == null) ? '' : String(v);
     return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
@@ -3133,7 +3101,6 @@ function exportCatalogCsv() {
     toast(`Exported ${allClients.length} clients`, 'file-csv');
 }
 
-// ── Copy a client as Markdown ──
 function copyClientMarkdown(clientId) {
     const c = allClients.find(x => x.id === clientId);
     if (!c) return;
@@ -3148,7 +3115,6 @@ function copyClientMarkdown(clientId) {
     copyText(lines.join('\n'), 'Copied as Markdown');
 }
 
-// ── Report a broken / dead client link ──
 function reportClient(clientId, name) {
     const c = allClients.find(x => x.id === clientId);
     const label = c ? c.displayName : name;
@@ -3156,10 +3122,8 @@ function reportClient(clientId, name) {
     window.open(REPORT_DISCORD_URL, '_blank', 'noopener');
 }
 
-// ── Service worker: offline support + "update available" toast ──
 function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
-    // Avoid SW on insecure origins / file:// previews where it would just error.
     if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').then((reg) => {
@@ -3167,7 +3131,6 @@ function registerServiceWorker() {
                 const installing = reg.installing;
                 if (!installing) return;
                 installing.addEventListener('statechange', () => {
-                    // A new SW is installed and an old one already controls the page → update is ready.
                     if (installing.state === 'installed' && navigator.serviceWorker.controller) {
                         showUpdateToast(reg);
                     }
@@ -3197,7 +3160,6 @@ function showUpdateToast(reg) {
 }
 registerServiceWorker();
 
-// ── Final: call init when DOM is ready ──
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
