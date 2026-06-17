@@ -1,0 +1,1 @@
+copy of Badlion Client for Bedrock Edition which doesn't actually look like Badlion at all, presumably made in 1.16 by HJN (a well-known member of the community). It would later be rebranded to BadTiger for obvious reasons.
