@@ -1,0 +1,1 @@
+Version block stops at Nova Client version 1.3.9
