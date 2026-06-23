@@ -1,0 +1,1 @@
+Central Client was Flexyus's second client. It started off as an APK and later turned into a texture pack (since the APK was just Minecraft with the texture pack built in). Two versions have been released, with mostly skidded modules and UIs. Flexyus later teamed up with other developers and the project evolved into Project Future.
