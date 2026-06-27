@@ -296,11 +296,19 @@ a:hover {
     box-shadow: 0 0 0 3px var(--accent-dim);
 }
 
-.search-clear {
+/* trailing control cluster — flex group so bolt + clear never overlap on any viewport */
+.search-actions {
     position: absolute;
-    right: 0.75rem;
+    right: 0.5rem;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    z-index: 2;
+}
+
+.search-clear {
     background: none;
     border: none;
     color: var(--text-dim);
@@ -311,8 +319,8 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s var(--ease);
-    z-index: 2;
+    transition: color 0.2s var(--ease), background 0.2s var(--ease),
+                transform 0.16s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .search-clear:hover {
@@ -320,9 +328,13 @@ a:hover {
     background: rgba(255, 255, 255, 0.06);
 }
 
+.search-clear:active {
+    transform: scale(0.92);
+}
+
 .search-count {
     position: absolute;
-    right: 3.5rem;
+    right: 4.4rem;
     top: 50%;
     transform: translateY(-50%);
     font-size: 0.6875rem;
@@ -332,13 +344,10 @@ a:hover {
     padding: 0.15rem 0.5rem;
     border-radius: 4px;
     pointer-events: none;
+    z-index: 2;
 }
 
 .search-cmdk {
-    position: absolute;
-    right: 0.55rem;
-    top: 50%;
-    transform: translateY(-50%);
     width: 30px;
     height: 30px;
     border-radius: 8px;
@@ -350,13 +359,18 @@ a:hover {
     align-items: center;
     justify-content: center;
     font-size: 0.78rem;
-    transition: all 0.15s var(--ease);
+    transition: color 0.15s var(--ease), background 0.15s var(--ease),
+                transform 0.16s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .search-cmdk:hover {
     background: var(--accent);
     color: white;
-    transform: translateY(-50%) scale(1.02);
+    transform: scale(1.05);
+}
+
+.search-cmdk:active {
+    transform: scale(0.94);
 }
 
 /* search dropdown */
@@ -1836,10 +1850,6 @@ a:hover {
 
     .search-input {
         font-size: 16px;
-    }
-
-    .search-clear {
-        right: 0.5rem;
     }
 
     .search-count {

@@ -101,13 +101,15 @@
                class="search-input"
                autocomplete="off"
                aria-label="Search clients, versions, or extensions">
-        <button id="search-clear" class="search-clear hidden" aria-label="Clear search">
-          <i class="fa-solid fa-times"></i>
-        </button>
-        <button id="cmdk-open" class="search-cmdk" aria-label="Open command palette" title="Command palette (Ctrl+K)" onclick="openCmdK()">
-          <i class="fa-solid fa-bolt"></i>
-        </button>
         <div id="search-results-count" class="search-count hidden"></div>
+        <div class="search-actions">
+          <button id="search-clear" class="search-clear hidden" aria-label="Clear search">
+            <i class="fa-solid fa-times"></i>
+          </button>
+          <button id="cmdk-open" class="search-cmdk" aria-label="Open command palette" title="Command palette (Ctrl+K)" onclick="openCmdK()">
+            <i class="fa-solid fa-bolt"></i>
+          </button>
+        </div>
         <div id="search-dropdown" class="search-dropdown hidden"></div>
       </div>
 
