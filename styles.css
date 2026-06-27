@@ -1766,7 +1766,7 @@ a:hover {
         padding: 0.5rem 0.5rem 1.5rem;
         width: 100%;
         z-index: 200;
-        animation: sheetUp 0.25s var(--ease);
+        animation: sheetUp 0.32s cubic-bezier(0.32, 0.72, 0, 1);
     }
 
     .toolbar-menu::before {
@@ -2476,9 +2476,14 @@ a:hover {
     padding: 0.35rem;
     z-index: 50;
     min-width: 220px;
-    animation: menuIn 0.15s var(--ease);
+    /* origin-aware: the menu scales out of its trigger (top-right), not from center */
+    transform-origin: top right;
+    animation: menuIn 0.16s cubic-bezier(0.23, 1, 0.32, 1);
 }
-@keyframes menuIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes menuIn {
+    from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
 .toolbar-menu button {
     display: flex;
     width: 100%;
@@ -2492,9 +2497,11 @@ a:hover {
     font-size: 0.8125rem;
     text-align: left;
     align-items: center;
-    transition: background 0.15s var(--ease), color 0.15s var(--ease);
+    transition: background 0.15s var(--ease), color 0.15s var(--ease),
+                transform 0.13s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .toolbar-menu button:hover { background: var(--card-hover); color: var(--white); }
+.toolbar-menu button:active { transform: scale(0.98); }
 .toolbar-menu button.active { color: var(--accent); background: var(--accent-dim); }
 .toolbar-menu button i.fa-check { margin-left: auto; opacity: 0; font-size: 0.7rem; }
 .toolbar-menu button.active i.fa-check { opacity: 1; }
@@ -2516,7 +2523,7 @@ a:hover {
         padding: 0.5rem 0.75rem 1.5rem;
         z-index: 200;
         box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
-        animation: sheetUp 0.25s var(--ease);
+        animation: sheetUp 0.32s cubic-bezier(0.32, 0.72, 0, 1);
     }
     .toolbar-menu button {
         padding: 0.85rem 0.9rem;
@@ -2524,6 +2531,7 @@ a:hover {
         border-radius: 10px;
         min-height: 44px;
     }
+    .toolbar-menu button:active { transform: scale(0.97); background: var(--accent-dim); }
 }
 
 /* mobile bottom-sheet backdrop */

@@ -1122,12 +1122,22 @@ function openSortSheet() {
     renderSortMenu();
     menu.classList.remove('hidden');
     if (isMobile()) {
+        // Portal the sheet to <body> so it escapes the sticky toolbar's
+        // stacking context — otherwise z-index 200 is trapped under the
+        // toolbar (z-index 35) and renders behind the backdrop blur.
+        document.body.appendChild(menu);
         document.getElementById('sheet-backdrop')?.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
 }
 function closeSortSheet() {
-    document.getElementById('sort-menu')?.classList.add('hidden');
+    const menu = document.getElementById('sort-menu');
+    if (menu) {
+        menu.classList.add('hidden');
+        // Restore into the toolbar wrapper so the desktop dropdown anchors correctly.
+        const wrapper = document.getElementById('sort-btn')?.parentElement;
+        if (wrapper && menu.parentElement !== wrapper) wrapper.appendChild(menu);
+    }
     document.getElementById('sheet-backdrop')?.classList.add('hidden');
     document.body.style.overflow = '';
 }
@@ -2213,7 +2223,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const sortWrap = document.getElementById('sort-btn')?.parentElement;
         const sortMenu = document.getElementById('sort-menu');
-        if (sortMenu && sortWrap && !sortWrap.contains(e.target) && !document.getElementById('sheet-backdrop')?.contains(e.target)) {
+        if (sortMenu && !sortMenu.classList.contains('hidden') && sortWrap &&
+            !sortWrap.contains(e.target) && !sortMenu.contains(e.target)) {
             closeSortSheet();
         }
     });
