@@ -283,24 +283,40 @@ a:hover {
     background: var(--bg-elevated);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 0.75rem 5rem 0.75rem 2.75rem;
+    padding: 0.8rem 5rem 0.8rem 2.75rem;
     color: var(--white);
     font-size: 0.875rem;
     font-family: inherit;
     outline: none;
+    /* machined-surface inner highlight + diffused, hue-tinted ambient shadow */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04),
+                0 4px 20px -12px rgba(0, 0, 0, 0.6);
     transition: border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
 }
 
+.search-input::placeholder { color: var(--text-dim); }
+
 .search-input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-dim);
+    /* focus ring + a soft accent-tinted glow instead of a hard outline */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 0 0 3px var(--accent-dim),
+                0 10px 30px -10px var(--accent-glow);
+}
+
+/* trailing control cluster — flex group so bolt + clear never overlap on any viewport */
+.search-actions {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    z-index: 2;
 }
 
 .search-clear {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
     background: none;
     border: none;
     color: var(--text-dim);
@@ -311,8 +327,8 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s var(--ease);
-    z-index: 2;
+    transition: color 0.2s var(--ease), background 0.2s var(--ease),
+                transform 0.16s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .search-clear:hover {
@@ -320,9 +336,13 @@ a:hover {
     background: rgba(255, 255, 255, 0.06);
 }
 
+.search-clear:active {
+    transform: scale(0.92);
+}
+
 .search-count {
     position: absolute;
-    right: 3.5rem;
+    right: 4.4rem;
     top: 50%;
     transform: translateY(-50%);
     font-size: 0.6875rem;
@@ -332,31 +352,40 @@ a:hover {
     padding: 0.15rem 0.5rem;
     border-radius: 4px;
     pointer-events: none;
+    z-index: 2;
 }
 
 .search-cmdk {
-    position: absolute;
-    right: 0.55rem;
-    top: 50%;
-    transform: translateY(-50%);
     width: 30px;
     height: 30px;
     border-radius: 8px;
     background: var(--accent-dim);
-    border: 1px solid transparent;
+    /* machined island: hairline edge + inner highlight so it reads as a raised key */
+    border: 1px solid rgba(108, 92, 231, 0.22);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
     color: var(--accent);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.78rem;
-    transition: all 0.15s var(--ease);
+    transition: color 0.15s var(--ease), background 0.15s var(--ease),
+                box-shadow 0.15s var(--ease),
+                transform 0.16s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .search-cmdk:hover {
     background: var(--accent);
     color: white;
-    transform: translateY(-50%) scale(1.02);
+    border-color: var(--accent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 6px 16px -6px var(--accent-glow);
+    transform: scale(1.05);
+}
+
+.search-cmdk:active {
+    transform: scale(0.94);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* search dropdown */
@@ -371,7 +400,10 @@ a:hover {
     max-height: 380px;
     overflow-y: auto;
     z-index: 50;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    /* layered, hue-tinted elevation + inner highlight — a panel that sits in a tray */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 2px 8px -2px rgba(0, 0, 0, 0.4),
+                0 18px 44px -12px rgba(10, 8, 30, 0.7);
 }
 
 .search-dropdown-item {
@@ -1752,17 +1784,17 @@ a:hover {
         padding: 0.5rem 0.5rem 1.5rem;
         width: 100%;
         z-index: 200;
-        animation: sheetUp 0.25s var(--ease);
+        animation: sheetUp 0.32s cubic-bezier(0.32, 0.72, 0, 1);
     }
 
     .toolbar-menu::before {
         content: '';
         display: block;
-        width: 40px;
+        width: 38px;
         height: 4px;
-        background: var(--border);
+        background: rgba(255, 255, 255, 0.18);
         border-radius: 999px;
-        margin: 0.5rem auto 0.75rem;
+        margin: 0.4rem auto 0.85rem;
     }
     .toolbar-menu button {
         padding: 0.85rem 0.9rem;
@@ -1836,10 +1868,6 @@ a:hover {
 
     .search-input {
         font-size: 16px;
-    }
-
-    .search-clear {
-        right: 0.5rem;
     }
 
     .search-count {
@@ -2461,14 +2489,22 @@ a:hover {
     right: 0;
     background: var(--bg-elevated);
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
-    padding: 0.35rem;
+    border-radius: var(--radius);
+    /* layered, hue-tinted elevation + inner highlight (double-bezel feel) */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 2px 8px -2px rgba(0, 0, 0, 0.4),
+                0 16px 40px -12px rgba(10, 8, 30, 0.65);
+    padding: 0.4rem;
     z-index: 50;
-    min-width: 220px;
-    animation: menuIn 0.15s var(--ease);
+    min-width: 224px;
+    /* origin-aware: the menu scales out of its trigger (top-right), not from center */
+    transform-origin: top right;
+    animation: menuIn 0.16s cubic-bezier(0.23, 1, 0.32, 1);
 }
-@keyframes menuIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes menuIn {
+    from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
 .toolbar-menu button {
     display: flex;
     width: 100%;
@@ -2482,9 +2518,11 @@ a:hover {
     font-size: 0.8125rem;
     text-align: left;
     align-items: center;
-    transition: background 0.15s var(--ease), color 0.15s var(--ease);
+    transition: background 0.15s var(--ease), color 0.15s var(--ease),
+                transform 0.13s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .toolbar-menu button:hover { background: var(--card-hover); color: var(--white); }
+.toolbar-menu button:active { transform: scale(0.98); }
 .toolbar-menu button.active { color: var(--accent); background: var(--accent-dim); }
 .toolbar-menu button i.fa-check { margin-left: auto; opacity: 0; font-size: 0.7rem; }
 .toolbar-menu button.active i.fa-check { opacity: 1; }
@@ -2502,11 +2540,14 @@ a:hover {
         min-width: 0;
         max-height: 70vh;
         overflow-y: auto;
-        border-radius: 18px 18px 0 0;
-        padding: 0.5rem 0.75rem 1.5rem;
+        border-radius: 22px 22px 0 0;
+        padding: 0.5rem 0.85rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
         z-index: 200;
-        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
-        animation: sheetUp 0.25s var(--ease);
+        border-bottom: none;
+        /* top edge highlight + soft hue-tinted lift off the backdrop */
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                    0 -16px 48px -12px rgba(10, 8, 30, 0.7);
+        animation: sheetUp 0.32s cubic-bezier(0.32, 0.72, 0, 1);
     }
     .toolbar-menu button {
         padding: 0.85rem 0.9rem;
@@ -2514,16 +2555,19 @@ a:hover {
         border-radius: 10px;
         min-height: 44px;
     }
+    .toolbar-menu button:active { transform: scale(0.97); background: var(--accent-dim); }
 }
 
 /* mobile bottom-sheet backdrop */
 .sheet-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
+    /* hue-tinted scrim, deeper toward the sheet for a sense of depth */
+    background: linear-gradient(to top, rgba(6, 5, 16, 0.66), rgba(6, 5, 16, 0.42));
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     z-index: 150;
-    animation: fadeIn 0.2s var(--ease);
+    animation: fadeIn 0.22s var(--ease);
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
