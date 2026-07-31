@@ -1,0 +1,1 @@
+An unofficial continuation of Asteroid client by Sulfur Studios. Interestingly, it picks up at v2 instead of v3, where Asteroid development officially ended. Has all the credit from Chixuty completely removed, claiming it as their own.
