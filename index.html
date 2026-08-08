@@ -545,6 +545,29 @@
     </div>
   </div>
 
+  <!-- Client takedown request -->
+  <button id="takedown-request" class="takedown-request" type="button" onclick="openTakedownRequest()"
+          aria-haspopup="dialog" aria-controls="takedown-modal" title="Submit a client takedown request">
+    <span class="takedown-request-icon" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
+    <span>Client takedown</span>
+  </button>
+  <div id="takedown-modal" class="help-modal takedown-modal" onclick="closeTakedownRequest()"
+       role="dialog" aria-modal="true" aria-labelledby="takedown-title">
+    <div class="help-content takedown-content" onclick="event.stopPropagation()">
+      <button class="help-close" type="button" onclick="closeTakedownRequest()" aria-label="Close"><i class="fa-solid fa-times"></i></button>
+      <h2 id="takedown-title" class="help-title"><i class="fa-solid fa-shield-halved"></i> Client takedown request</h2>
+      <p>If you own a client listed here and would like it removed, submit a request using the form below. You can also contact us on Discord.</p>
+      <a class="takedown-form-link" href="https://docs.google.com/forms/d/e/1FAIpQLSfkAppQh4dC-yIcnQ1KPTA5tl6cJ7CGoeKvuL1CUyDKi5X1gQ/viewform?usp=publish-editor" target="_blank" rel="noopener noreferrer">
+        <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+        Submit a takedown request
+      </a>
+      <div class="takedown-contact">
+        <span>Contact</span>
+        <strong>jamie.local, llit008, or pepeyt</strong>
+      </div>
+    </div>
+  </div>
+
   <!-- AI Assistant -->
   <button id="ai-fab" class="ai-fab" onclick="toggleAiChat()" aria-label="Ask Nyxora AI" title="Ask Nyxora AI">
     <i class="fa-solid fa-wand-magic-sparkles"></i>

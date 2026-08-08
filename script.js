@@ -1207,6 +1207,8 @@ function clearAllFilters() {
 
 function openHelp() { document.getElementById('help-modal').classList.add('active'); }
 function closeHelp() { document.getElementById('help-modal').classList.remove('active'); }
+function openTakedownRequest() { document.getElementById('takedown-modal')?.classList.add('active'); }
+function closeTakedownRequest() { document.getElementById('takedown-modal')?.classList.remove('active'); }
 
 function applyHashOnce() {
     const hash = location.hash.slice(1);
@@ -2241,6 +2243,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (document.getElementById('help-modal').classList.contains('active')) {
             if (e.key === 'Escape') closeHelp();
+            return;
+        }
+        if (document.getElementById('takedown-modal')?.classList.contains('active')) {
+            if (e.key === 'Escape') closeTakedownRequest();
             return;
         }
         if (document.getElementById('settings-modal').classList.contains('active')) {

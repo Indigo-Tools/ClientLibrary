@@ -1637,6 +1637,114 @@ a:hover {
     transform: translateY(-2px);
 }
 
+/* client takedown request */
+.takedown-request {
+    position: fixed;
+    left: max(1rem, env(safe-area-inset-left));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 90;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.8rem 0.5rem 0.5rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-hover);
+    border-radius: 999px;
+    box-shadow: 0 7px 24px rgba(0, 0, 0, 0.28);
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    transition: transform 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.takedown-request-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
+.takedown-request:hover {
+    background: var(--card-hover);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.takedown-request:focus-visible {
+    outline: 2px solid var(--accent-light);
+    outline-offset: 3px;
+}
+
+.takedown-content {
+    max-width: 430px;
+}
+
+.takedown-content > p {
+    margin-top: 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.takedown-form-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.7rem 0.9rem;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.takedown-form-link:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-light);
+    color: #fff;
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.takedown-form-link:focus-visible {
+    outline: 2px solid var(--accent-light);
+    outline-offset: 3px;
+}
+
+.takedown-contact {
+    display: grid;
+    gap: 0.2rem;
+    margin-top: 1rem;
+    padding: 0.8rem 0.9rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.takedown-contact span {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.takedown-contact strong {
+    color: var(--white);
+    font-size: 0.9rem;
+}
+
 /* help / settings modals */
 .help-modal,
 .settings-modal {
@@ -1851,6 +1959,11 @@ a:hover {
     .pwa-install {
         bottom: 8rem;
         right: 1rem;
+    }
+
+    .takedown-request {
+        left: max(0.75rem, env(safe-area-inset-left));
+        bottom: max(0.75rem, env(safe-area-inset-bottom));
     }
 
     .icon-btn {
