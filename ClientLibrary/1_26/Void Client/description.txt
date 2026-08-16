@@ -1,0 +1,5 @@
+This client contains stolen code and some optimisation 'methods' that simply don't work. It's just another FPS boost pack that sells you a false product.  These files include a 'cpu_fast' file and others.
+The code was stolen from the CM Client and others.
+
+Official website:
+https://vindaone.github.io/Vindaone3/webvi.html#home
