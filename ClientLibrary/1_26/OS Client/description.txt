@@ -1,0 +1,3 @@
+Only example extensions have been added
+Fully customizable through:
+https://oskullo-yt.github.io/OS-CLIENT/
